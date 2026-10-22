@@ -29,9 +29,9 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
       >
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-[#34D399]" />
-          <span className="font-medium">DuckDB Columnar Engine · LangGraph Active</span>
+          <span className="font-medium">DuckDB · LangGraph Active</span>
         </div>
-        <span className="text-[11px] font-mono tabular-nums">Sub-second vectorized latency</span>
+        <span className="text-[11px] font-mono tabular-nums">Sub-second latency</span>
       </div>
     );
   }
