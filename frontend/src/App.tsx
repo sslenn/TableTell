@@ -10,8 +10,9 @@ export function App() {
   const { activeTab, theme } = useAppStore();
 
   useEffect(() => {
-    // Ensure initial data-theme attribute on root html element
+    // Ensure both data-theme attribute and dark class on root html element
     document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
 
   return (

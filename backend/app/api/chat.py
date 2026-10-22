@@ -147,12 +147,12 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
 
             yield {
                 "event": "complete",
-                "data": json.dumps(payload)
+                "data": json.dumps(payload, default=str)
             }
         except Exception as e:
             yield {
                 "event": "error",
-                "data": json.dumps({"error": str(e)})
+                "data": json.dumps({"error": str(e)}, default=str)
             }
 
     return EventSourceResponse(event_generator())

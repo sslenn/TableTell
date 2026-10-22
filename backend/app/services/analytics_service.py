@@ -125,7 +125,7 @@ class AnalyticsService:
         client = get_gemini_client()
         if client and len(rows) > 0:
             try:
-                sample_data_str = json.dumps(rows[:8])
+                sample_data_str = json.dumps(rows[:8], default=str)
                 sum_prompt = f"""User Question: "{query}"
 SQL Query Executed: {sql}
 Result Data: {sample_data_str}

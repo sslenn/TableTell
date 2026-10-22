@@ -13,7 +13,9 @@ import {
   Zap,
   PlusCircle,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  User,
+  Home
 } from 'lucide-react';
 import { useAppStore, type AppTab } from '../../store/useAppStore';
 import { BrandLogo, type LogoVariant } from '../common/BrandLogo';
@@ -42,11 +44,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   } = useAppStore();
 
   const [datasetDropdownOpen, setDatasetDropdownOpen] = useState(false);
+  const [headerDatasetOpen, setHeaderDatasetOpen] = useState(false);
   const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [datasetSearch, setDatasetSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'clean' | 'raw'>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const headerDatasetRef = useRef<HTMLDivElement>(null);
   const logoDropdownRef = useRef<HTMLDivElement>(null);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -54,8 +60,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setDatasetDropdownOpen(false);
       }
+      if (headerDatasetRef.current && !headerDatasetRef.current.contains(event.target as Node)) {
+        setHeaderDatasetOpen(false);
+      }
       if (logoDropdownRef.current && !logoDropdownRef.current.contains(event.target as Node)) {
         setLogoDropdownOpen(false);
+      }
+      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+        setUserDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -178,10 +190,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     });
   }, [datasets, datasetSearch, filterType]);
 
-  const activeDatasetObj = datasets.find((d) => d.dataset_id === datasetId);
-
   return (
-    <div className="flex h-screen w-screen overflow-hidden select-none" style={{ backgroundColor: 'var(--tt-bg-canvas)' }}>
+    <div className="flex h-screen w-screen overflow-hidden select-none bg-[var(--tt-bg-canvas)]">
       {/* Toast Notification Container */}
       <ToastContainer />
 
@@ -189,29 +199,25 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       <aside
         className={`${
           sidebarCollapsed ? 'w-16' : 'w-64'
-        } shrink-0 flex flex-col justify-between border-r p-3 transition-all duration-300 relative`}
-        style={{
-          backgroundColor: 'var(--tt-bg-surface)',
-          borderColor: 'var(--tt-border-subtle)'
-        }}
+        } shrink-0 flex flex-col justify-between border-r border-[var(--tt-border-subtle)] p-4 transition-all duration-300 relative bg-[var(--tt-bg-surface)] z-20`}
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {/* Brand Lockup */}
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'} px-1`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             <div
-              className="flex items-center gap-2.5 cursor-pointer"
+              className="flex items-center gap-3 cursor-pointer"
               onClick={() => setActiveTab('studio')}
             >
-              <BrandLogo size={sidebarCollapsed ? 30 : 34} variant={logoVariant} />
+              <BrandLogo size={sidebarCollapsed ? 30 : 34} variant={logoVariant || 'growth-chevron'} />
               {!sidebarCollapsed && (
                 <div>
                   <div
-                    className="font-extrabold text-base tracking-tight leading-none"
-                    style={{ color: 'var(--tt-text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                    className="font-extrabold text-[17px] tracking-tight text-[var(--tt-text-primary)] leading-tight"
+                    style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
                   >
                     TableTell
                   </div>
-                  <div className="text-[10px] font-medium mt-0.5" style={{ color: 'var(--tt-text-muted)' }}>
+                  <div className="text-[11px] font-medium text-[var(--tt-text-muted)]">
                     Autonomous Data Analyst
                   </div>
                 </div>
@@ -222,12 +228,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1 rounded-md border text-xs cursor-pointer opacity-70 hover:opacity-100 hover:border-[#2DD4BF] transition-all"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-secondary)'
-                }}
+                className="p-1 rounded-md border border-[var(--tt-border-subtle)] text-xs cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all"
                 title="Collapse sidebar (Ctrl+B)"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
@@ -235,100 +236,73 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             )}
           </div>
 
-          {/* Searchable Dataset Combobox */}
+          {/* Active Workspace Card & Dropdown */}
           {!sidebarCollapsed ? (
             <div className="relative" ref={dropdownRef}>
-              <div className="flex items-center justify-between px-1 mb-1">
-                <span className="text-[10px] font-mono font-bold tracking-wider uppercase" style={{ color: 'var(--tt-text-muted)' }}>
-                  Active Workspace
-                </span>
-                <span className="text-[10px] font-mono opacity-60" style={{ color: 'var(--tt-text-muted)' }}>
-                  {datasets.length} tables
-                </span>
+              <div className="text-[10px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1.5 px-0.5">
+                ACTIVE WORKSPACE
               </div>
 
               <button
                 type="button"
                 onClick={() => setDatasetDropdownOpen(!datasetDropdownOpen)}
-                className="w-full flex items-center justify-between px-2.5 py-2 rounded-xl border text-xs font-mono transition-all cursor-pointer hover:border-[#2DD4BF] shadow-xs"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: datasetDropdownOpen ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-primary)'
-                }}
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs transition-all cursor-pointer shadow-[var(--tt-shadow-card)]"
               >
-                <div className="flex items-center gap-2 truncate">
-                  <span className="w-2 h-2 rounded-full bg-[#34D399] shrink-0" />
-                  <span className="truncate font-semibold">{datasetId}</span>
+                <div className="flex items-center gap-2.5 truncate">
+                  <div className="w-6 h-6 rounded-lg bg-[var(--tt-bg-elevated)] border border-[var(--tt-border-subtle)] flex items-center justify-center shrink-0 text-[#0D9488]">
+                    <Database className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="truncate font-semibold text-[var(--tt-text-primary)]">TableTell Workspace</span>
                 </div>
-                <ChevronDown className={`w-3.5 h-3.5 shrink-0 opacity-70 transition-transform ${datasetDropdownOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-[var(--tt-text-muted)] shrink-0 transition-transform ${datasetDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Popover Dropdown Panel */}
               {datasetDropdownOpen && (
                 <div
-                  className="absolute left-0 top-full mt-1.5 w-72 rounded-2xl border shadow-2xl p-2.5 z-50 flex flex-col gap-2 animate-in fade-in"
-                  style={{
-                    backgroundColor: 'var(--tt-bg-surface)',
-                    borderColor: 'var(--tt-border-strong)',
-                    boxShadow: 'var(--tt-shadow-floating)'
-                  }}
+                  className="absolute left-0 top-full mt-1.5 w-72 rounded-2xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-2.5 z-50 flex flex-col gap-2"
                 >
                   {/* Search Bar */}
                   <div
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-mono"
-                    style={{
-                      backgroundColor: 'var(--tt-bg-elevated)',
-                      borderColor: 'var(--tt-border-subtle)',
-                      color: 'var(--tt-text-primary)'
-                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-xs"
                   >
-                    <Search className="w-3 h-3 opacity-60 text-[#2DD4BF]" />
+                    <Search className="w-3 h-3 text-[#0D9488]" />
                     <input
                       type="text"
                       value={datasetSearch}
                       onChange={(e) => setDatasetSearch(e.target.value)}
                       placeholder="Search tables..."
-                      className="w-full bg-transparent outline-none text-xs"
+                      className="w-full bg-transparent outline-none text-xs text-[var(--tt-text-primary)]"
                       autoFocus
                     />
                   </div>
 
                   {/* Classification Filter Tabs */}
-                  <div className="flex items-center gap-1 border-b pb-1.5" style={{ borderColor: 'var(--tt-border-subtle)' }}>
+                  <div className="flex items-center gap-1 border-b border-[var(--tt-border-subtle)] pb-1.5">
                     <button
                       type="button"
                       onClick={() => setFilterType('all')}
-                      className="px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors"
-                      style={{
-                        backgroundColor: filterType === 'all' ? 'var(--tt-primary-subtle)' : 'transparent',
-                        color: filterType === 'all' ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-                        fontWeight: filterType === 'all' ? 700 : 500
-                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
+                        filterType === 'all' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                      }`}
                     >
                       All ({datasets.length})
                     </button>
                     <button
                       type="button"
                       onClick={() => setFilterType('clean')}
-                      className="px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors"
-                      style={{
-                        backgroundColor: filterType === 'clean' ? 'var(--tt-primary-subtle)' : 'transparent',
-                        color: filterType === 'clean' ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-                        fontWeight: filterType === 'clean' ? 700 : 500
-                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
+                        filterType === 'clean' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                      }`}
                     >
                       Cleaned
                     </button>
                     <button
                       type="button"
                       onClick={() => setFilterType('raw')}
-                      className="px-2 py-0.5 rounded text-[10px] font-mono cursor-pointer transition-colors"
-                      style={{
-                        backgroundColor: filterType === 'raw' ? 'var(--tt-primary-subtle)' : 'transparent',
-                        color: filterType === 'raw' ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-                        fontWeight: filterType === 'raw' ? 700 : 500
-                      }}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
+                        filterType === 'raw' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                      }`}
                     >
                       Raw
                     </button>
@@ -337,7 +311,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   {/* Dataset List */}
                   <div className="max-h-56 overflow-y-auto flex flex-col gap-1 pr-0.5">
                     {filteredDatasets.length === 0 ? (
-                      <div className="text-center py-4 text-xs font-mono" style={{ color: 'var(--tt-text-muted)' }}>
+                      <div className="text-center py-4 text-xs text-[var(--tt-text-muted)]">
                         No tables matched
                       </div>
                     ) : (
@@ -353,29 +327,25 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                               setDatasetDropdownOpen(false);
                               toast.info('Active Workspace Changed', `Switched to ${d.dataset_id}`);
                             }}
-                            className="flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs font-mono group hover:bg-[#2DD4BF]/10"
-                            style={{
-                              backgroundColor: isSelected ? 'var(--tt-primary-subtle)' : 'transparent',
-                              color: isSelected ? 'var(--tt-primary)' : 'var(--tt-text-primary)'
-                            }}
+                            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs group ${
+                              isSelected ? 'bg-[#0D9488]/15 text-[#0D9488]' : 'hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
+                            }`}
                           >
                             <div className="flex flex-col truncate pr-2">
                               <span className="truncate font-semibold">{d.dataset_id}</span>
-                              <span className="text-[10px] opacity-60">
+                              <span className="text-[10px] text-[var(--tt-text-muted)]">
                                 {d.total_rows.toLocaleString()} rows · {d.total_cols} cols
                               </span>
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span
-                                className="text-[9px] px-1.5 py-0.2 rounded font-bold uppercase"
-                                style={{
-                                  backgroundColor: isClean ? 'rgba(52, 211, 153, 0.15)' : 'rgba(251, 146, 60, 0.15)',
-                                  color: isClean ? '#34D399' : '#FB923C'
-                                }}
+                                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                  isClean ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
+                                }`}
                               >
                                 {isClean ? 'Clean' : 'Raw'}
                               </span>
-                              {isSelected && <Check className="w-3.5 h-3.5 text-[#2DD4BF]" />}
+                              {isSelected && <Check className="w-3.5 h-3.5 text-[#0D9488]" />}
                             </div>
                           </button>
                         );
@@ -391,25 +361,17 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               type="button"
               onClick={toggleSidebar}
               title={`Active: ${datasetId} (Click to expand)`}
-              className="flex items-center justify-center p-2.5 rounded-xl border cursor-pointer hover:border-[#2DD4BF] transition-all"
-              style={{
-                backgroundColor: 'var(--tt-bg-elevated)',
-                borderColor: 'var(--tt-border-subtle)',
-                color: 'var(--tt-primary)'
-              }}
+              className="flex items-center justify-center p-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
             >
-              <Zap className="w-4 h-4 text-[#2DD4BF]" />
+              <Zap className="w-4 h-4 text-[#0D9488]" />
             </button>
           )}
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1">
             {!sidebarCollapsed && (
-              <div
-                className="text-[10px] font-mono font-bold tracking-wider uppercase px-1 mb-1"
-                style={{ color: 'var(--tt-text-muted)' }}
-              >
-                Navigation
+              <div className="text-[10px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1 px-0.5">
+                NAVIGATION
               </div>
             )}
             {navItems.map((item) => {
@@ -421,20 +383,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   type="button"
                   onClick={() => setActiveTab(item.id)}
                   className={`flex items-center ${
-                    sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-2.5 px-3 py-2'
-                  } rounded-xl text-xs font-medium transition-all text-left cursor-pointer hover:border-[#2DD4BF] relative group`}
-                  style={{
-                    backgroundColor: isActive ? 'var(--tt-primary-subtle)' : 'transparent',
-                    color: isActive ? 'var(--tt-primary)' : 'var(--tt-text-secondary)',
-                    fontWeight: isActive ? 600 : 500
-                  }}
+                    sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+                  } rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${
+                    isActive
+                      ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                      : 'text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)]'
+                  }`}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
-                  {/* Glowing active bar on left */}
-                  {isActive && !sidebarCollapsed && (
-                    <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-[#2DD4BF]" />
-                  )}
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2DD4BF]' : 'group-hover:text-[#2DD4BF]'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0D9488]' : 'text-[var(--tt-text-muted)]'}`} />
                   {!sidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
@@ -443,162 +400,232 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="flex flex-col gap-2.5 pt-3 border-t" style={{ borderColor: 'var(--tt-border-subtle)' }}>
+        <div className="flex flex-col gap-2 pt-3 border-t border-[var(--tt-border-subtle)]">
           {sidebarCollapsed ? (
             <div className="flex flex-col items-center gap-2">
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-md border cursor-pointer hover:border-[#2DD4BF]"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-secondary)'
-                }}
+                className="p-1.5 rounded-md border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]"
                 title="Expand sidebar (Ctrl+B)"
               >
-                <PanelLeftOpen className="w-4 h-4 text-[#2DD4BF]" />
+                <PanelLeftOpen className="w-4 h-4 text-[#0D9488]" />
               </button>
               <ThemeToggle />
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#34D399]" />
-                  <span className="text-[11px] font-mono" style={{ color: 'var(--tt-text-muted)' }}>
-                    DuckDB In-Memory Lake
-                  </span>
-                </div>
-                <ThemeToggle />
-              </div>
-
               <a
                 href="http://localhost:8000/docs"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-[11px] font-mono transition-colors hover:border-[#2DD4BF]"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-secondary)'
-                }}
+                className="flex items-center justify-between p-2 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[11px] text-[var(--tt-text-secondary)] font-medium transition-colors shadow-[var(--tt-shadow-card)]"
               >
-                <span>FastAPI OpenAPI</span>
-                <ExternalLink className="w-3 h-3 opacity-70" />
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                  <span>DuckDB in Memory Lake</span>
+                </div>
+                <ExternalLink className="w-3 h-3 text-[var(--tt-text-muted)]" />
               </a>
+
+              <div className="flex items-center justify-between px-1">
+                <a
+                  href="http://localhost:8000/docs"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 text-[11px] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] font-medium"
+                >
+                  <span>FastAPI | OpenAPI</span>
+                  <ExternalLink className="w-3 h-3 text-[var(--tt-text-muted)]" />
+                </a>
+                <ThemeToggle />
+              </div>
             </>
           )}
         </div>
       </aside>
 
       {/* Main App Workspace */}
-      <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden">
+      <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-[var(--tt-bg-canvas)]">
         {/* Top Header */}
-        <header
-          className="h-14 shrink-0 border-b flex items-center justify-between px-5 transition-all select-none"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)'
-          }}
-        >
+        <header className="h-14 shrink-0 border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center justify-between px-6 transition-all select-none">
           {/* Left: Breadcrumbs & Dataset Quick Switcher */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             {sidebarCollapsed && (
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-lg border text-xs cursor-pointer hover:border-cyan-500/50 transition-all mr-1"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-secondary)'
-                }}
+                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer hover:bg-[var(--tt-bg-elevated)] transition-all mr-1 text-[var(--tt-text-muted)]"
                 title="Expand sidebar (Ctrl+B)"
               >
-                <PanelLeftOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <PanelLeftOpen className="w-3.5 h-3.5 text-[#0D9488]" />
               </button>
             )}
 
-            {/* Section Indicator */}
-            <div className="flex items-center gap-2">
-              <span
-                className="text-xs font-semibold tracking-wide flex items-center gap-1.5"
-                style={{ color: 'var(--tt-text-muted)' }}
-              >
-                {(() => {
-                  const current = navItems.find((n) => n.id === activeTab);
-                  if (!current) return null;
-                  const Icon = current.icon;
-                  return (
-                    <>
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{current.label}</span>
-                    </>
-                  );
-                })()}
-              </span>
-
-              <ChevronRight className="w-3.5 h-3.5 opacity-30" />
-
-              {/* Dataset Switcher Pill */}
+            {/* Breadcrumb Trail */}
+            <div className="flex items-center gap-2 text-xs text-[var(--tt-text-muted)]">
               <button
                 type="button"
-                onClick={() => setDatasetDropdownOpen(!datasetDropdownOpen)}
-                className="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-xs font-mono font-medium border cursor-pointer transition-all hover:border-cyan-500/40 hover:bg-slate-800/50"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-primary)'
-                }}
-                title="Active dataset (click to switch)"
+                onClick={() => setActiveTab('studio')}
+                className="hover:text-[var(--tt-text-primary)] cursor-pointer flex items-center p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] transition-all"
+                title="Go to Ask & Analyze (Home)"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                <span className="font-semibold">{datasetId}</span>
-                {activeDatasetObj && (
-                  <span className="hidden sm:inline-block text-[10px] opacity-60 ml-0.5" style={{ color: 'var(--tt-text-muted)' }}>
-                    ({activeDatasetObj.total_rows.toLocaleString()} rows · {activeDatasetObj.total_cols} cols)
-                  </span>
-                )}
-                <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${datasetDropdownOpen ? 'rotate-180' : ''}`} />
+                <Home className="w-3.5 h-3.5 text-[var(--tt-text-muted)] hover:text-[#0D9488] transition-colors" />
               </button>
+
+              <ChevronRight className="w-3.5 h-3.5 text-[var(--tt-text-muted)] opacity-40 shrink-0" />
+
+              {/* Active Section Label with Tab Icon */}
+              {(() => {
+                const currentNav = navItems.find((n) => n.id === activeTab);
+                const NavIcon = currentNav?.icon || MessageSquare;
+                return (
+                  <div className="flex items-center gap-1.5 font-semibold text-[var(--tt-text-secondary)]">
+                    <NavIcon className="w-3.5 h-3.5 text-[#0D9488]" />
+                    <span className="hidden sm:inline">{currentNav?.label || 'Overview'}</span>
+                  </div>
+                );
+              })()}
+
+              <ChevronRight className="w-3.5 h-3.5 text-[var(--tt-text-muted)] opacity-40 shrink-0" />
+
+              {/* Dataset Switcher Pill with its OWN anchored Dropdown */}
+              <div className="relative" ref={headerDatasetRef}>
+                <button
+                  type="button"
+                  id="header-dataset-selector-btn"
+                  onClick={() => setHeaderDatasetOpen(!headerDatasetOpen)}
+                  className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs font-semibold border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)]"
+                  title="Switch Active Dataset"
+                >
+                  <Database className="w-3.5 h-3.5 text-[#0D9488]" />
+                  <span className="max-w-[140px] sm:max-w-[200px] md:max-w-[260px] truncate">{datasetId}</span>
+                  <ChevronDown className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${headerDatasetOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {headerDatasetOpen && (
+                  <div
+                    id="header-dataset-dropdown-panel"
+                    className="absolute left-0 top-full mt-1.5 w-76 rounded-2xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-2.5 z-50 flex flex-col gap-2 animate-in fade-in"
+                  >
+                    {/* Search Bar */}
+                    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-xs">
+                      <Search className="w-3 h-3 text-[#0D9488]" />
+                      <input
+                        type="text"
+                        value={datasetSearch}
+                        onChange={(e) => setDatasetSearch(e.target.value)}
+                        placeholder="Search tables..."
+                        className="w-full bg-transparent outline-none text-xs text-[var(--tt-text-primary)] placeholder-[var(--tt-text-muted)]"
+                        autoFocus
+                      />
+                    </div>
+
+                    {/* Filter Tabs */}
+                    <div className="flex items-center gap-1 border-b border-[var(--tt-border-subtle)] pb-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setFilterType('all')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
+                          filterType === 'all' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                        }`}
+                      >
+                        All ({datasets.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterType('clean')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
+                          filterType === 'clean' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                        }`}
+                      >
+                        Cleaned
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFilterType('raw')}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
+                          filterType === 'raw' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                        }`}
+                      >
+                        Raw
+                      </button>
+                    </div>
+
+                    {/* Table List */}
+                    <div className="max-h-56 overflow-y-auto flex flex-col gap-1 pr-0.5">
+                      {filteredDatasets.length === 0 ? (
+                        <div className="text-center py-4 text-xs text-[var(--tt-text-muted)]">
+                          No tables matched
+                        </div>
+                      ) : (
+                        filteredDatasets.map((d) => {
+                          const isSelected = d.dataset_id === datasetId;
+                          const isClean = d.dataset_id.toLowerCase().includes('clean');
+                          return (
+                            <button
+                              key={d.dataset_id}
+                              type="button"
+                              onClick={() => {
+                                setDatasetId(d.dataset_id);
+                                setHeaderDatasetOpen(false);
+                                toast.info('Active Dataset Switched', `Now querying ${d.dataset_id}`);
+                              }}
+                              className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs ${
+                                isSelected ? 'bg-[#0D9488]/15 text-[#0D9488] font-semibold' : 'hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
+                              }`}
+                            >
+                              <div className="flex flex-col truncate pr-2">
+                                <span className="truncate font-semibold">{d.dataset_id}</span>
+                                <span className="text-[10px] text-[var(--tt-text-muted)]">
+                                  {d.total_rows.toLocaleString()} rows · {d.total_cols} cols
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span
+                                  className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
+                                    isClean ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
+                                  }`}
+                                >
+                                  {isClean ? 'Clean' : 'Raw'}
+                                </span>
+                                {isSelected && <Check className="w-3.5 h-3.5 text-[#0D9488]" />}
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right: Actions, Logo Selector, and Telemetry Engine Status */}
-          <div className="flex items-center gap-2.5">
+          {/* Right: Actions, Connected Badge, and User Avatar */}
+          <div className="flex items-center gap-3">
             {/* Logo Variant Selector Dropdown */}
             <div className="relative" ref={logoDropdownRef}>
               <button
                 type="button"
                 id="logo-variant-selector-btn"
                 onClick={() => setLogoDropdownOpen(!logoDropdownOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all hover:border-cyan-500/40"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: logoDropdownOpen ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-primary)'
-                }}
+                className="flex items-center gap-1.5 h-8 px-2.5 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
                 title="Switch Brand Logo Style"
               >
-                <BrandLogo size={18} variant={logoVariant} />
-                <span className="hidden md:inline font-mono text-[11px]">Logo: {logoOptions.find(l => l.id === logoVariant)?.title.split(' ')[0]}</span>
-                <ChevronDown className={`w-3 h-3 opacity-60 transition-transform ${logoDropdownOpen ? 'rotate-180' : ''}`} />
+                <BrandLogo size={16} variant={logoVariant} />
+                <span className="hidden md:inline text-[11px]">Logo Concept</span>
+                <ChevronDown className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${logoDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {logoDropdownOpen && (
                 <div
                   id="logo-variant-dropdown-panel"
-                  className="absolute right-0 top-full mt-1.5 w-92 max-h-[460px] overflow-y-auto rounded-xl border shadow-2xl p-2 z-50 flex flex-col gap-1.5"
-                  style={{
-                    backgroundColor: 'var(--tt-bg-surface)',
-                    borderColor: 'var(--tt-border-strong)',
-                    boxShadow: 'var(--tt-shadow-floating)'
-                  }}
+                  className="absolute right-0 top-full mt-1.5 w-80 max-h-[420px] overflow-y-auto rounded-xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-2 z-50 flex flex-col gap-1.5"
                 >
-                  <div className="sticky top-0 pb-1.5 pt-0.5 px-2 text-[10px] font-mono font-bold uppercase tracking-wider flex items-center justify-between border-b z-10" style={{ color: 'var(--tt-text-muted)', backgroundColor: 'var(--tt-bg-surface)', borderColor: 'var(--tt-border-subtle)' }}>
+                  <div className="sticky top-0 pb-1.5 pt-0.5 px-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-[var(--tt-text-muted)] z-10">
                     <span>12 Brand Concepts</span>
-                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <Sparkles className="w-3 h-3 text-[#0D9488]" />
                   </div>
                   {logoOptions.map((opt) => {
                     const isSelected = logoVariant === opt.id;
@@ -611,26 +638,23 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                           setLogoDropdownOpen(false);
                           toast.info(`Logo set to ${opt.title}`);
                         }}
-                        className="flex items-start gap-3 p-2.5 rounded-lg text-left transition-all cursor-pointer border"
-                        style={{
-                          backgroundColor: isSelected ? 'var(--tt-primary-subtle)' : 'var(--tt-bg-elevated)',
-                          borderColor: isSelected ? 'var(--tt-primary)' : 'transparent',
-                          color: 'var(--tt-text-primary)'
-                        }}
+                        className={`flex items-start gap-2.5 p-2 rounded-lg text-left transition-all cursor-pointer border ${
+                          isSelected ? 'bg-[#0D9488]/15 border-[#0D9488]/40 text-[#0D9488]' : 'border-transparent hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
+                        }`}
                       >
-                        <BrandLogo size={28} variant={opt.id} className="mt-0.5 shrink-0" />
+                        <BrandLogo size={24} variant={opt.id} className="mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-1">
                             <span className="text-xs font-semibold">{opt.title}</span>
-                            <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: 'var(--tt-bg-surface)', color: 'var(--tt-text-muted)', border: '1px solid var(--tt-border-subtle)' }}>
+                            <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-[var(--tt-bg-canvas)] text-[var(--tt-text-muted)]">
                               {opt.category}
                             </span>
                           </div>
-                          <p className="text-[10px] leading-relaxed mt-0.5 line-clamp-2" style={{ color: 'var(--tt-text-muted)' }}>
+                          <p className="text-[10px] text-[var(--tt-text-muted)] leading-tight line-clamp-1 mt-0.5">
                             {opt.subtitle}
                           </p>
                         </div>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-1" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 text-[#0D9488] shrink-0 mt-0.5" />}
                       </button>
                     );
                   })}
@@ -643,40 +667,130 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               <button
                 type="button"
                 onClick={clearMessages}
-                className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium cursor-pointer transition-all hover:border-cyan-500/50"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-secondary)'
-                }}
+                className="hidden sm:flex items-center gap-1.5 h-8 px-3 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
                 title="Start a new analytical query"
               >
-                <PlusCircle className="w-3.5 h-3.5 text-cyan-400" />
+                <PlusCircle className="w-3.5 h-3.5 text-[#0D9488]" />
                 <span>New Query</span>
               </button>
             )}
 
-            {/* Live Engine Indicator */}
-            <div
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-mono"
-              style={{
-                backgroundColor: 'rgba(16, 185, 129, 0.08)',
-                borderColor: 'rgba(16, 185, 129, 0.25)',
-                color: '#10B981'
-              }}
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="font-semibold hidden md:inline">DuckDB</span>
-              <span className="text-[10px] opacity-80 font-mono">0.4ms</span>
+            {/* Logged-In User Profile & Account Menu */}
+            <div className="relative" ref={userDropdownRef}>
+              <button
+                type="button"
+                id="user-profile-menu-btn"
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center gap-2 h-8 pl-1.5 pr-2.5 py-0.5 rounded-full border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all group select-none"
+                title="User Profile & Session (Active Analyst)"
+              >
+                {/* Avatar with Online Indicator */}
+                <div className="relative">
+                  <div className="w-6 h-6 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-[11px] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    TT
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-surface)]" />
+                </div>
+
+                {/* User Name & Status */}
+                <div className="hidden sm:flex items-center gap-1.5 text-left">
+                  <span className="text-xs font-bold leading-tight text-[var(--tt-text-primary)]">
+                    Analyst
+                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                </div>
+
+                <ChevronDown
+                  className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${
+                    userDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {/* User Profile Popover */}
+              {userDropdownOpen && (
+                <div
+                  id="user-profile-dropdown-panel"
+                  className="absolute right-0 top-full mt-1.5 w-68 rounded-2xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-3 z-50 flex flex-col gap-2.5 animate-in fade-in select-none"
+                >
+                  {/* User Profile Header */}
+                  <div className="flex items-center gap-3 pb-2.5 border-b border-[var(--tt-border-subtle)]">
+                    <div className="w-10 h-10 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-sm flex items-center justify-center shrink-0">
+                      TT
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-[var(--tt-text-primary)] truncate">Data Analyst</span>
+                        <span className="bg-emerald-500/15 text-emerald-500 text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border border-emerald-500/30">
+                          Admin
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[var(--tt-text-muted)] truncate font-mono">
+                        analyst@tabletell.local
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Active Workspace & Engine Details */}
+                  <div className="flex flex-col gap-1 text-[11px] text-[var(--tt-text-secondary)] font-mono">
+                    <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
+                      <span className="text-[var(--tt-text-muted)]">Engine:</span>
+                      <span className="font-semibold text-[#0D9488]">DuckDB Vectorized</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
+                      <span className="text-[var(--tt-text-muted)]">Active Table:</span>
+                      <span className="font-semibold text-[var(--tt-text-primary)] truncate max-w-[120px]">{datasetId}</span>
+                    </div>
+                    <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
+                      <span className="text-[var(--tt-text-muted)]">Auth State:</span>
+                      <span className="flex items-center gap-1 text-emerald-500 font-semibold">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                        Persistent Session
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Quick Session Actions */}
+                  <div className="pt-1.5 border-t border-[var(--tt-border-subtle)] flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        toast.info('Active Account', 'You are logged in with Administrative privileges');
+                      }}
+                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)] transition-colors cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <User className="w-3.5 h-3.5 text-[var(--tt-text-muted)]" />
+                        <span>Analyst Profile</span>
+                      </div>
+                      <span className="text-[10px] text-[var(--tt-text-muted)]">Verified</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUserDropdownOpen(false);
+                        toast.success('Session Active', 'Authentication state remains intact');
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Logged In (Session Intact)</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        {/* Dynamic Tab Body: Fixed for Studio, Scrollable for other tabs */}
-        <div className={`flex-1 min-h-0 ${activeTab === 'studio' ? 'h-full overflow-hidden p-3 sm:p-4' : 'overflow-y-auto p-5'}`}>
+        {/* Dynamic Tab Body */}
+        <div className={`flex-1 min-h-0 ${activeTab === 'studio' ? 'h-full overflow-hidden p-3 sm:p-4' : 'overflow-y-auto p-6 lg:p-8'}`}>
           {children}
         </div>
       </main>
     </div>
   );
 };
+

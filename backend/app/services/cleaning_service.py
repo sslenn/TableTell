@@ -27,6 +27,8 @@ from app.cleaning.transformers import (
     CleanQuantitiesTransformer,
     ImputeMissingValuesTransformer,
     NormalizeHeadersTransformer,
+    StandardizeCategoriesTransformer,
+    MergeCategoriesTransformer,
 )
 from app.cleaning.planner import cleaning_planner
 from app.cleaning.validation import validate_transformed_data

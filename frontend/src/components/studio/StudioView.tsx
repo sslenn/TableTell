@@ -254,47 +254,33 @@ export const StudioView: React.FC = () => {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 px-4 text-center max-w-3xl mx-auto">
               {/* Brand Hero Lockup */}
-              <div
-                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 border shadow-md relative"
-                style={{
-                  backgroundColor: 'var(--tt-primary-subtle)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-primary)'
-                }}
-              >
-                <Sparkles className="w-7 h-7 text-[#2DD4BF]" />
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3.5 bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] shadow-[var(--tt-shadow-card)]">
+                <Sparkles className="w-7 h-7 text-[#0D9488]" />
               </div>
 
               <h2
-                className="text-2xl sm:text-3xl font-extrabold mb-1.5 tracking-tight"
-                style={{
-                  color: 'var(--tt-text-primary)',
-                  fontFamily: 'Plus Jakarta Sans, sans-serif'
-                }}
+                className="text-2xl sm:text-3xl font-extrabold mb-1.5 tracking-tight text-[var(--tt-text-primary)]"
+                style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
               >
                 Autonomous Data Intelligence
               </h2>
-              <p className="text-xs sm:text-sm max-w-xl mb-6 leading-relaxed" style={{ color: 'var(--tt-text-muted)' }}>
+              <p className="text-xs sm:text-sm max-w-xl mb-6 leading-relaxed text-[var(--tt-text-muted)]">
                 Ask questions in plain English. TableTell synthesizes verified DuckDB SQL, eliminates
                 math hallucination, self-heals syntax errors, and plots interactive visualizations.
               </p>
 
               {/* Active Dataset Overview Pill Banner */}
               {activeDatasetObj && (
-                <div
-                  className="w-full p-3.5 rounded-2xl border mb-6 flex flex-wrap items-center justify-between gap-3 text-left shadow-sm"
-                  style={{
-                    backgroundColor: 'var(--tt-bg-surface)',
-                    borderColor: 'var(--tt-border-subtle)'
-                  }}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Database className="w-4 h-4 text-[#2DD4BF] shrink-0" />
+                <div className="w-full p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] mb-6 flex flex-wrap items-center justify-between gap-3 text-left shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center text-[#0D9488]">
+                      <Database className="w-4 h-4 text-[#0D9488] shrink-0" />
+                    </div>
                     <div>
-                      <div className="text-xs font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
+                      <div className="text-xs font-bold font-mono text-[var(--tt-text-primary)]">
                         {activeDatasetObj.dataset_id}
                       </div>
-                      <div className="text-[11px] font-mono opacity-70" style={{ color: 'var(--tt-text-muted)' }}>
+                      <div className="text-[11px] font-mono text-[var(--tt-text-muted)] mt-0.5">
                         {activeDatasetObj.total_rows.toLocaleString()} rows · {activeDatasetObj.total_cols} columns · {activeDatasetObj.size_kb} KB
                       </div>
                     </div>
@@ -302,14 +288,11 @@ export const StudioView: React.FC = () => {
 
                   <div className="flex items-center gap-2">
                     <span
-                      className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor:
-                          activeDatasetObj.data_health_score >= 80
-                            ? 'rgba(52, 211, 153, 0.15)'
-                            : 'rgba(251, 146, 60, 0.15)',
-                        color: activeDatasetObj.data_health_score >= 80 ? '#34D399' : '#FB923C'
-                      }}
+                      className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                        activeDatasetObj.data_health_score >= 80
+                          ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                      }`}
                     >
                       Health: {activeDatasetObj.data_health_score}/100
                     </span>
@@ -317,12 +300,7 @@ export const StudioView: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setIsSchemaOpen(true)}
-                      className="px-2.5 py-1 rounded-lg border text-[11px] font-mono cursor-pointer hover:border-[#2DD4BF] transition-all"
-                      style={{
-                        backgroundColor: 'var(--tt-bg-elevated)',
-                        borderColor: 'var(--tt-border-subtle)',
-                        color: 'var(--tt-primary)'
-                      }}
+                      className="px-3 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[11px] font-mono text-[#0D9488] font-semibold cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
                     >
                       View Schema
                     </button>
@@ -331,7 +309,7 @@ export const StudioView: React.FC = () => {
               )}
 
               {/* Quick Prompt Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full text-left">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full text-left">
                 {dynamicPrompts.map((p, idx) => {
                   const Icon = p.icon;
                   return (
@@ -339,38 +317,22 @@ export const StudioView: React.FC = () => {
                       key={idx}
                       type="button"
                       onClick={() => handleRunQuery(p.query)}
-                      className="p-4 rounded-2xl border text-left transition-all duration-200 cursor-pointer hover:border-[#2DD4BF] hover:-translate-y-0.5 group shadow-xs hover:shadow-lg"
-                      style={{
-                        backgroundColor: 'var(--tt-bg-surface)',
-                        borderColor: 'var(--tt-border-subtle)'
-                      }}
+                      className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-left transition-all duration-200 cursor-pointer hover:border-[#0D9488] hover:-translate-y-0.5 group shadow-[var(--tt-shadow-card)] hover:shadow-[var(--tt-shadow-hover)]"
                     >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="w-6 h-6 rounded-lg flex items-center justify-center border"
-                            style={{
-                              backgroundColor: 'var(--tt-primary-subtle)',
-                              borderColor: 'var(--tt-border-subtle)'
-                            }}
-                          >
-                            <Icon className="w-3.5 h-3.5 text-[#2DD4BF]" />
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488]">
+                            <Icon className="w-3.5 h-3.5" />
                           </span>
-                          <span className="text-xs font-bold" style={{ color: 'var(--tt-text-primary)' }}>
+                          <span className="text-xs font-bold text-[var(--tt-text-primary)]">
                             {p.title}
                           </span>
                         </div>
-                        <span
-                          className="text-[9px] font-mono uppercase px-1.5 py-0.2 rounded font-semibold opacity-70 group-hover:opacity-100"
-                          style={{
-                            backgroundColor: 'var(--tt-bg-elevated)',
-                            color: 'var(--tt-primary)'
-                          }}
-                        >
+                        <span className="text-[9px] font-mono uppercase px-2 py-0.5 rounded font-semibold bg-[var(--tt-bg-canvas)] text-[var(--tt-text-muted)] group-hover:bg-[#0D9488]/15 group-hover:text-[#0D9488] transition-colors border border-[var(--tt-border-subtle)]">
                           {p.tag}
                         </span>
                       </div>
-                      <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: 'var(--tt-text-secondary)' }}>
+                      <p className="text-xs line-clamp-2 leading-relaxed text-[var(--tt-text-secondary)]">
                         {p.desc}
                       </p>
                     </button>

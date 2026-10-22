@@ -193,7 +193,11 @@ def evaluate_consistency_rules(profile: Dict[str, Any]) -> Tuple[int, int, List[
 
 def evaluate_anomaly_rules(profile: Dict[str, Any]) -> Tuple[int, int, List[QualityIssue], str]:
     """
-    Evaluates statistical IQR anomalies and outliers.
+    Evaluates both numerical (1.5x IQR) and categorical anomalies:
+    1. Numerical outliers (1.5x IQR boundary excursion)
+    2. Categorical typos & near-duplicate variations
+    3. Low-frequency rare categories (< 1% occurrence)
+    4. Categorical casing and whitespace inconsistencies
     Outliers are marked as review candidates, never automatically deleted!
     """
     columns = profile.get("columns", [])
@@ -202,7 +206,12 @@ def evaluate_anomaly_rules(profile: Dict[str, Any]) -> Tuple[int, int, List[Qual
     issues: List[QualityIssue] = []
 
     for col in columns:
-        if col.get("semantic_type") == "numeric":
+        col_name = col.get("column_name", "")
+        sem_type = col.get("semantic_type", "")
+        var_type = col.get("variable_type", "")
+
+        # 1. Numerical Outliers (1.5x IQR)
+        if sem_type == "numeric":
             outlier_count = col.get("outlier_count", 0)
             outlier_pct = col.get("outlier_pct", 0.0)
             if outlier_count > 0:
@@ -211,19 +220,88 @@ def evaluate_anomaly_rules(profile: Dict[str, Any]) -> Tuple[int, int, List[Qual
                     rule_id="RULE_ANOMALY_IQR_OUTLIERS",
                     dimension="anomaly",
                     severity="info",
-                    affected_columns=[col["column_name"]],
+                    affected_columns=[col_name],
                     affected_rows=outlier_count,
                     affected_pct=outlier_pct,
-                    evidence=f"Column '{col['column_name']}' has {outlier_count} statistical outlier values ({outlier_pct}%) outside 1.5x IQR.",
+                    evidence=f"Column '{col_name}' has {outlier_count} statistical outlier values ({outlier_pct}%) outside 1.5x IQR.",
                     proposed_action="Review statistical distribution; preserve raw values unless business confirms data entry error.",
                     approval_required=True
                 ))
             else:
                 passed += 1
 
+        # 2. Categorical Anomalies
+        elif sem_type in ["categorical", "boolean"] or var_type == "Categorical":
+            cat_stats = col.get("categorical_stats") or {}
+            fuzzy_dups = cat_stats.get("fuzzy_duplicates") or []
+            rare_cats = cat_stats.get("rare_categories") or []
+            casing_anomalies = cat_stats.get("casing_anomalies") or []
+            whitespace_anomalies = cat_stats.get("whitespace_anomalies") or []
+            dist_c = col.get("distinct_count", 1)
+
+            col_has_anomaly = False
+
+            # Check 2a: Fuzzy Typo Duplicates
+            if fuzzy_dups:
+                failed += 1
+                col_has_anomaly = True
+                examples = ", ".join(f"'{f['original']}' -> '{f['suggested_canonical']}'" for f in fuzzy_dups[:2])
+                issues.append(QualityIssue(
+                    rule_id="RULE_ANOMALY_CATEGORICAL_TYPOS",
+                    dimension="anomaly",
+                    severity="warning",
+                    affected_columns=[col_name],
+                    affected_rows=len(fuzzy_dups),
+                    affected_pct=round((len(fuzzy_dups) / max(1, dist_c)) * 100, 2),
+                    evidence=f"Column '{col_name}' contains {len(fuzzy_dups)} potential categorical typo(s) / near-duplicates ({examples}).",
+                    proposed_action=f"Merge near-duplicate variants into canonical forms in '{col_name}'.",
+                    approval_required=True
+                ))
+
+            # Check 2b: Inconsistent Casing & Trailing Whitespace
+            if casing_anomalies or whitespace_anomalies:
+                cnt = len(casing_anomalies) + len(whitespace_anomalies)
+                failed += 1
+                col_has_anomaly = True
+                issues.append(QualityIssue(
+                    rule_id="RULE_ANOMALY_CATEGORICAL_CASING",
+                    dimension="consistency",
+                    severity="info",
+                    affected_columns=[col_name],
+                    affected_rows=cnt,
+                    affected_pct=round((cnt / max(1, dist_c)) * 100, 2),
+                    evidence=f"Column '{col_name}' contains {cnt} values with casing discrepancies or trailing spaces.",
+                    proposed_action=f"Trim whitespace and normalize casing for column '{col_name}'.",
+                    approval_required=False
+                ))
+
+            # Check 2c: Rare Outlier Categories (< 1% frequency)
+            if rare_cats and len(rare_cats) > 0 and dist_c > 3:
+                sample_rare = ", ".join(f"'{r['value']}'" for r in rare_cats[:3])
+                tot_rare_rows = sum(r.get("count", 1) for r in rare_cats)
+                tot_rare_pct = round(sum(r.get("pct", 0) for r in rare_cats), 2)
+                # Only flag if rare categories don't dominate the whole column
+                if tot_rare_pct < 50.0:
+                    failed += 1
+                    col_has_anomaly = True
+                    issues.append(QualityIssue(
+                        rule_id="RULE_ANOMALY_RARE_CATEGORIES",
+                        dimension="anomaly",
+                        severity="info",
+                        affected_columns=[col_name],
+                        affected_rows=tot_rare_rows,
+                        affected_pct=tot_rare_pct,
+                        evidence=f"Column '{col_name}' contains {len(rare_cats)} low-frequency outlier categories (< 1% frequency: {sample_rare}).",
+                        proposed_action=f"Review rare categories in '{col_name}' or consolidate into 'Other'.",
+                        approval_required=True
+                    ))
+
+            if not col_has_anomaly:
+                passed += 1
+
     total_checks = passed + failed
     if total_checks == 0:
         passed = 1
         total_checks = 1
-    explanation = f"{passed}/{total_checks} numeric dimensions have zero statistical IQR outliers."
+    explanation = f"{passed}/{total_checks} numerical and categorical dimensions are free of statistical & typo anomalies."
     return passed, failed, issues, explanation

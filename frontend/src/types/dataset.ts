@@ -57,6 +57,8 @@ export interface ColumnStat {
   column_name: string;
   data_type: string;
   semantic_type?: string;
+  variable_type?: string;
+  statistical_type?: string;
   null_count: number;
   null_pct: number;
   distinct_count: number;
@@ -69,6 +71,22 @@ export interface ColumnStat {
   outlier_count?: number;
   outlier_pct?: number;
   distribution?: DistributionProfile | null;
+  categorical_stats?: {
+    top_values?: { value: string; count: number; pct: number }[];
+    rare_categories?: { value: string; count: number; pct: number }[];
+    rare_count?: number;
+    casing_anomalies?: { variant: string; canonical: string }[];
+    whitespace_anomalies?: string[];
+    fuzzy_duplicates?: { original: string; suggested_canonical: string; similarity: number }[];
+    cardinality_ratio?: number;
+    is_high_cardinality?: boolean;
+  } | null;
+}
+
+export interface DimensionAuditRule {
+  rule_name: string;
+  passed: boolean;
+  description: string;
 }
 
 export interface QualityDimensionScore {
@@ -78,6 +96,7 @@ export interface QualityDimensionScore {
   checks_passed: number;
   checks_failed: number;
   explanation: string;
+  rules_checked?: DimensionAuditRule[];
 }
 
 export interface QualityIssue {

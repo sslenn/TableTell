@@ -166,7 +166,7 @@ def visualize_and_summarize_node(state: AgentState) -> Dict[str, Any]:
     summary = ""
     if client and len(rows) > 0:
         try:
-            sample_data_str = json.dumps(rows[:8])
+            sample_data_str = json.dumps(rows[:8], default=str)
             sum_prompt = SUMMARY_PROMPT.format(
                 user_query=query,
                 sql=sql,

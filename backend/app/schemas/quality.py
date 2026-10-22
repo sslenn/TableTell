@@ -44,6 +44,8 @@ class ColumnStat(BaseModel):
     column_name: str
     data_type: str
     semantic_type: Optional[str] = "categorical"
+    variable_type: Optional[str] = "Categorical"
+    statistical_type: Optional[str] = "Nominal"
     null_count: int
     null_pct: float
     distinct_count: int
@@ -56,6 +58,13 @@ class ColumnStat(BaseModel):
     outlier_count: int = 0
     outlier_pct: float = 0.0
     distribution: Optional[DistributionProfile] = None
+    categorical_stats: Optional[Dict[str, Any]] = None
+
+
+class DimensionAuditRule(BaseModel):
+    rule_name: str
+    passed: bool
+    description: str
 
 
 class QualityDimensionScore(BaseModel):
@@ -65,6 +74,7 @@ class QualityDimensionScore(BaseModel):
     checks_passed: int
     checks_failed: int
     explanation: str
+    rules_checked: List[DimensionAuditRule] = Field(default_factory=list)
 
 
 class QualityIssue(BaseModel):

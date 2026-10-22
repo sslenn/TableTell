@@ -140,118 +140,86 @@ export const DatasetsView: React.FC = () => {
       : 100;
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-8">
+    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
       {/* View Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2
-            className="text-xl sm:text-2xl font-bold tracking-tight"
-            style={{ color: 'var(--tt-text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+          <h1
+            className="text-2xl font-bold tracking-tight text-[var(--tt-text-primary)]"
+            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
           >
-            Local Parquet Data Lake & Catalog
-          </h2>
-          <p className="text-xs sm:text-sm" style={{ color: 'var(--tt-text-muted)' }}>
-            Vectorized columnar tables stored locally for deterministic sub-second DuckDB queries.
+            Data Catalog & Ingestion
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--tt-text-muted)] mt-1">
+            Local DuckDB tables and vectorized Parquet files ready for sub-second analytical queries.
           </p>
         </div>
 
         <button
           onClick={loadData}
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors hover:border-[#2DD4BF]"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)',
-            color: 'var(--tt-text-secondary)'
-          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
         >
-          <RefreshCw className="w-3.5 h-3.5 text-[#2DD4BF]" />
+          <RefreshCw className="w-3.5 h-3.5 text-[#0D9488]" />
           <span>Refresh Catalog</span>
         </button>
       </div>
 
       {/* Lake Summary Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div
-          className="p-3.5 rounded-2xl border flex flex-col justify-between"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)',
-            boxShadow: 'var(--tt-shadow-card)'
-          }}
-        >
-          <div className="flex items-center justify-between text-muted text-xs">
-            <span style={{ color: 'var(--tt-text-muted)' }}>Datasets In Lake</span>
-            <Database className="w-4 h-4 text-[#2DD4BF]" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#0D9488]">
+            <Database className="w-5 h-5" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums mt-1" style={{ color: 'var(--tt-text-primary)' }}>
-            {datasets.length}
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Tables in Lake</span>
+            <div className="text-xl font-bold font-mono text-[var(--tt-text-primary)] tabular-nums mt-0.5">
+              {datasets.length}
+            </div>
           </div>
         </div>
 
-        <div
-          className="p-3.5 rounded-2xl border flex flex-col justify-between"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)',
-            boxShadow: 'var(--tt-shadow-card)'
-          }}
-        >
-          <div className="flex items-center justify-between text-muted text-xs">
-            <span style={{ color: 'var(--tt-text-muted)' }}>Total Records</span>
-            <Layers className="w-4 h-4 text-[#34D399]" />
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#10B981]">
+            <Layers className="w-5 h-5" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums mt-1" style={{ color: 'var(--tt-text-primary)' }}>
-            {totalRows.toLocaleString()}
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Total Records</span>
+            <div className="text-xl font-bold font-mono text-[var(--tt-text-primary)] tabular-nums mt-0.5">
+              {totalRows.toLocaleString()}
+            </div>
           </div>
         </div>
 
-        <div
-          className="p-3.5 rounded-2xl border flex flex-col justify-between"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)',
-            boxShadow: 'var(--tt-shadow-card)'
-          }}
-        >
-          <div className="flex items-center justify-between text-muted text-xs">
-            <span style={{ color: 'var(--tt-text-muted)' }}>Columnar Storage</span>
-            <HardDrive className="w-4 h-4 text-[#38BDF8]" />
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#0284C7]">
+            <HardDrive className="w-5 h-5" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums mt-1" style={{ color: 'var(--tt-text-primary)' }}>
-            {totalKb > 1024 ? `${(totalKb / 1024).toFixed(1)} MB` : `${totalKb.toFixed(0)} KB`}
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Columnar Storage</span>
+            <div className="text-xl font-bold font-mono text-[var(--tt-text-primary)] tabular-nums mt-0.5">
+              {totalKb > 1024 ? `${(totalKb / 1024).toFixed(1)} MB` : `${totalKb.toFixed(0)} KB`}
+            </div>
           </div>
         </div>
 
-        <div
-          className="p-3.5 rounded-2xl border flex flex-col justify-between"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)',
-            boxShadow: 'var(--tt-shadow-card)'
-          }}
-        >
-          <div className="flex items-center justify-between text-muted text-xs">
-            <span style={{ color: 'var(--tt-text-muted)' }}>Avg Health Score</span>
-            <Activity className="w-4 h-4 text-[#FB923C]" />
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#F59E0B]">
+            <Activity className="w-5 h-5" />
           </div>
-          <div className="text-xl sm:text-2xl font-extrabold font-mono tabular-nums mt-1 text-[#34D399]">
-            {avgHealth}/100
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Avg Health Score</span>
+            <div className="text-xl font-bold font-mono text-[#10B981] tabular-nums mt-0.5">
+              {avgHealth}/100
+            </div>
           </div>
         </div>
       </div>
 
       {/* Error Notice */}
       {errorMessage && (
-        <div
-          className="p-3 rounded-xl border text-xs font-mono flex items-center gap-2"
-          style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            borderColor: 'var(--tt-error)',
-            color: 'var(--tt-error)'
-          }}
-        >
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-mono text-red-500 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
           <span>{errorMessage}</span>
         </div>
       )}
@@ -269,13 +237,11 @@ export const DatasetsView: React.FC = () => {
           const file = e.dataTransfer.files?.[0];
           if (file) handleFileUpload(file);
         }}
-        className={`p-7 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center text-center transition-all relative ${
-          isDragging ? 'border-[#2DD4BF] bg-[#2DD4BF]/5 scale-[1.01]' : ''
-        }`}
-        style={{
-          backgroundColor: isDragging ? 'var(--tt-primary-subtle)' : 'var(--tt-bg-surface)',
-          borderColor: isDragging ? 'var(--tt-primary)' : 'var(--tt-border-strong)'
-        }}
+        className={`p-8 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-center transition-all relative ${
+          isDragging
+            ? 'border-[#0D9488] bg-[#0D9488]/10'
+            : 'border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] hover:border-[#0D9488]'
+        } shadow-[var(--tt-shadow-card)]`}
       >
         <input
           key={fileInputKey}
@@ -288,35 +254,28 @@ export const DatasetsView: React.FC = () => {
           disabled={isUploading}
           className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
         />
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center mb-2.5 border"
-          style={{
-            backgroundColor: 'var(--tt-primary-subtle)',
-            borderColor: 'var(--tt-border-subtle)',
-            color: 'var(--tt-primary)'
-          }}
-        >
-          <UploadCloud className={`w-6 h-6 ${isUploading ? 'animate-bounce' : 'text-[#2DD4BF]'}`} />
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-2.5 bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488]">
+          <UploadCloud className={`w-6 h-6 ${isUploading ? 'animate-bounce' : 'text-[#0D9488]'}`} />
         </div>
-        <div className="text-sm font-bold mb-1" style={{ color: 'var(--tt-text-primary)' }}>
+        <div className="text-sm font-bold text-[var(--tt-text-primary)] mb-1">
           {isUploading ? 'Ingesting & Converting to Parquet...' : 'Drop or Browse CSV, Excel, or Parquet Data'}
         </div>
-        <div className="text-xs max-w-md leading-relaxed" style={{ color: 'var(--tt-text-muted)' }}>
+        <div className="text-xs text-[var(--tt-text-muted)] max-w-md leading-relaxed">
           Files are automatically converted into compressed columnar Parquet and registered in the DuckDB catalog.
         </div>
         <div className="flex items-center gap-2 mt-3">
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded border" style={{ borderColor: 'var(--tt-border-subtle)', color: 'var(--tt-text-muted)' }}>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-secondary)]">
             .CSV
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded border" style={{ borderColor: 'var(--tt-border-subtle)', color: 'var(--tt-text-muted)' }}>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-secondary)]">
             .XLSX
           </span>
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded border" style={{ borderColor: 'var(--tt-border-subtle)', color: 'var(--tt-text-muted)' }}>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-secondary)]">
             .PARQUET
           </span>
         </div>
         {uploadMessage && (
-          <div className="mt-3 text-xs font-mono text-[#34D399] font-medium">
+          <div className="mt-3 text-xs font-mono text-[#10B981] font-medium">
             {uploadMessage}
           </div>
         )}
@@ -324,32 +283,25 @@ export const DatasetsView: React.FC = () => {
 
       {/* Cleaning Report Banner */}
       {cleanResult && (
-        <div
-          className="p-4 rounded-xl border flex flex-col gap-2 animate-in fade-in"
-          style={{
-            backgroundColor: 'rgba(52, 211, 153, 0.1)',
-            borderColor: 'var(--tt-success)',
-            color: 'var(--tt-text-primary)'
-          }}
-        >
+        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/25 flex flex-col gap-2 text-xs shadow-[var(--tt-shadow-card)]">
           <div className="flex items-center gap-2">
-            <CheckCircle className="w-4 h-4 text-[#34D399]" />
-            <span className="text-xs font-bold uppercase tracking-wide text-[#34D399]">
-              OOP Cleaning Pipeline Executed Successfully
+            <CheckCircle className="w-4 h-4 text-[#10B981]" />
+            <span className="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+              Cleaning Pipeline Executed Successfully
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-xs font-mono tabular-nums pt-1">
-            <div className="p-2 rounded bg-black/10 dark:bg-black/30">
-              <span className="text-[10px] opacity-70 block">Original Rows</span>
-              <span className="font-bold">{cleanResult.original_rows.toLocaleString()}</span>
+          <div className="grid grid-cols-3 gap-2 font-mono tabular-nums pt-1">
+            <div className="p-2.5 rounded-lg bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)]">
+              <span className="text-[10px] text-[var(--tt-text-muted)] block">Original Rows</span>
+              <span className="font-bold text-[var(--tt-text-primary)]">{cleanResult.original_rows.toLocaleString()}</span>
             </div>
-            <div className="p-2 rounded bg-black/10 dark:bg-black/30">
-              <span className="text-[10px] opacity-70 block">Cleaned Rows</span>
-              <span className="font-bold">{cleanResult.cleaned_rows.toLocaleString()}</span>
+            <div className="p-2.5 rounded-lg bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)]">
+              <span className="text-[10px] text-[var(--tt-text-muted)] block">Cleaned Rows</span>
+              <span className="font-bold text-[var(--tt-text-primary)]">{cleanResult.cleaned_rows.toLocaleString()}</span>
             </div>
-            <div className="p-2 rounded bg-black/10 dark:bg-black/30">
-              <span className="text-[10px] opacity-70 block">Duplicates Removed</span>
-              <span className="font-bold">{cleanResult.removed_duplicates}</span>
+            <div className="p-2.5 rounded-lg bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)]">
+              <span className="text-[10px] text-[var(--tt-text-muted)] block">Duplicates Removed</span>
+              <span className="font-bold text-[#10B981]">{cleanResult.removed_duplicates}</span>
             </div>
           </div>
         </div>
@@ -357,58 +309,48 @@ export const DatasetsView: React.FC = () => {
 
       {/* Filter & Search Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs w-full sm:w-72"
-          style={{
-            backgroundColor: 'var(--tt-bg-surface)',
-            borderColor: 'var(--tt-border-subtle)',
-            color: 'var(--tt-text-primary)'
-          }}
-        >
-          <Search className="w-3.5 h-3.5 opacity-60 text-[#2DD4BF]" />
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-xs w-full sm:w-72 shadow-[var(--tt-shadow-card)]">
+          <Search className="w-3.5 h-3.5 text-[#0D9488]" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search datasets in lake..."
-            className="w-full bg-transparent outline-none text-xs"
+            className="w-full bg-transparent outline-none text-xs text-[var(--tt-text-primary)]"
           />
         </div>
 
-        <div className="flex items-center gap-1.5 p-1 rounded-xl border" style={{ borderColor: 'var(--tt-border-subtle)', backgroundColor: 'var(--tt-bg-surface)' }}>
+        <div className="flex items-center gap-1 p-1 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-card)]">
           <button
             type="button"
             onClick={() => setFilterType('all')}
-            className="px-2.5 py-1 rounded-lg text-xs font-mono cursor-pointer transition-colors"
-            style={{
-              backgroundColor: filterType === 'all' ? 'var(--tt-primary-subtle)' : 'transparent',
-              color: filterType === 'all' ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-              fontWeight: filterType === 'all' ? 700 : 500
-            }}
+            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              filterType === 'all'
+                ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+            }`}
           >
             All ({datasets.length})
           </button>
           <button
             type="button"
             onClick={() => setFilterType('clean')}
-            className="px-2.5 py-1 rounded-lg text-xs font-mono cursor-pointer transition-colors"
-            style={{
-              backgroundColor: filterType === 'clean' ? 'var(--tt-primary-subtle)' : 'transparent',
-              color: filterType === 'clean' ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-              fontWeight: filterType === 'clean' ? 700 : 500
-            }}
+            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              filterType === 'clean'
+                ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+            }`}
           >
             Cleaned
           </button>
           <button
             type="button"
             onClick={() => setFilterType('raw')}
-            className="px-2.5 py-1 rounded-lg text-xs font-mono cursor-pointer transition-colors"
-            style={{
-              backgroundColor: filterType === 'raw' ? 'var(--tt-primary-subtle)' : 'transparent',
-              color: filterType === 'raw' ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-              fontWeight: filterType === 'raw' ? 700 : 500
-            }}
+            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              filterType === 'raw'
+                ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+            }`}
           >
             Raw
           </button>
@@ -425,20 +367,18 @@ export const DatasetsView: React.FC = () => {
             return (
               <div
                 key={d.dataset_id}
-                className="p-4 rounded-2xl border flex flex-col justify-between transition-all duration-200 hover:border-[#2DD4BF] shadow-xs hover:shadow-lg"
-                style={{
-                  backgroundColor: 'var(--tt-bg-surface)',
-                  borderColor: isSelected ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
-                  boxShadow: isSelected ? '0 0 0 1px var(--tt-primary)' : 'var(--tt-shadow-card)'
-                }}
+                className={`p-4 rounded-xl border transition-all duration-200 shadow-[var(--tt-shadow-card)] flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-[#0D9488] ring-1 ring-[#0D9488] bg-[var(--tt-bg-surface)]'
+                    : 'border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:border-[#0D9488]'
+                }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2 truncate">
-                      <FileSpreadsheet className="w-4 h-4 text-[#2DD4BF] shrink-0" />
+                      <FileSpreadsheet className="w-4 h-4 text-[#0D9488] shrink-0" />
                       <span
-                        className="text-sm font-bold font-mono truncate"
-                        style={{ color: 'var(--tt-text-primary)' }}
+                        className="text-sm font-bold font-mono truncate text-[var(--tt-text-primary)]"
                         title={d.dataset_id}
                       >
                         {d.dataset_id}
@@ -447,41 +387,32 @@ export const DatasetsView: React.FC = () => {
 
                     {/* Health Score Badge */}
                     <div
-                      className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0"
-                      style={{
-                        backgroundColor:
-                          d.data_health_score >= 80
-                            ? 'rgba(52, 211, 153, 0.15)'
-                            : 'rgba(251, 146, 60, 0.15)',
-                        color: d.data_health_score >= 80 ? '#34D399' : '#FB923C'
-                      }}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 border ${
+                        d.data_health_score >= 80
+                          ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                      }`}
                     >
                       Health: {d.data_health_score}/100
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2 py-2.5 border-y text-xs font-mono tabular-nums my-2" style={{ borderColor: 'var(--tt-border-subtle)' }}>
+                  <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-[var(--tt-border-subtle)] text-xs font-mono tabular-nums my-2">
                     <div>
-                      <div className="text-[10px]" style={{ color: 'var(--tt-text-muted)' }}>
-                        Rows
-                      </div>
-                      <div className="font-semibold" style={{ color: 'var(--tt-text-primary)' }}>
+                      <div className="text-[10px] text-[var(--tt-text-muted)]">Rows</div>
+                      <div className="font-semibold text-[var(--tt-text-primary)]">
                         {d.total_rows.toLocaleString()}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px]" style={{ color: 'var(--tt-text-muted)' }}>
-                        Columns
-                      </div>
-                      <div className="font-semibold" style={{ color: 'var(--tt-text-primary)' }}>
+                      <div className="text-[10px] text-[var(--tt-text-muted)]">Columns</div>
+                      <div className="font-semibold text-[var(--tt-text-primary)]">
                         {d.total_cols}
                       </div>
                     </div>
                     <div>
-                      <div className="text-[10px]" style={{ color: 'var(--tt-text-muted)' }}>
-                        Format & Size
-                      </div>
-                      <div className="font-semibold truncate" style={{ color: 'var(--tt-text-primary)' }}>
+                      <div className="text-[10px] text-[var(--tt-text-muted)]">Format & Size</div>
+                      <div className="font-semibold truncate text-[var(--tt-text-primary)]">
                         {d.source_format?.toUpperCase() || 'PARQUET'} · {d.size_kb} KB
                       </div>
                     </div>
@@ -493,15 +424,10 @@ export const DatasetsView: React.FC = () => {
                     <button
                       onClick={() => handleInspectPreview(d.dataset_id)}
                       type="button"
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors hover:border-[#2DD4BF]"
-                      style={{
-                        backgroundColor: 'var(--tt-bg-elevated)',
-                        borderColor: 'var(--tt-border-subtle)',
-                        color: 'var(--tt-text-secondary)'
-                      }}
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
                       title="Inspect sample records and column types"
                     >
-                      <Eye className="w-3.5 h-3.5 text-[#2DD4BF]" />
+                      <Eye className="w-3.5 h-3.5 text-[#0D9488]" />
                       <span>Preview</span>
                     </button>
 
@@ -509,15 +435,10 @@ export const DatasetsView: React.FC = () => {
                       onClick={() => handleClean(d.dataset_id)}
                       disabled={isCleaning}
                       type="button"
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-colors hover:border-[#FB923C] disabled:opacity-50"
-                      style={{
-                        backgroundColor: 'var(--tt-bg-elevated)',
-                        borderColor: 'var(--tt-border-subtle)',
-                        color: 'var(--tt-text-secondary)'
-                      }}
-                      title="Run OOP data cleaning pipeline"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] disabled:opacity-50"
+                      title="Run data cleaning pipeline"
                     >
-                      <Sparkles className={`w-3.5 h-3.5 text-[#FB923C] ${isCleaning ? 'animate-spin' : ''}`} />
+                      <Sparkles className={`w-3.5 h-3.5 text-[#F59E0B] ${isCleaning ? 'animate-spin' : ''}`} />
                       <span>{isCleaning ? 'Cleaning...' : 'Auto-Clean'}</span>
                     </button>
                   </div>
@@ -526,14 +447,10 @@ export const DatasetsView: React.FC = () => {
                     <button
                       onClick={() => handleOpenInStudio(d.dataset_id)}
                       type="button"
-                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer shadow-sm hover:opacity-90"
-                      style={{
-                        backgroundColor: 'var(--tt-primary)',
-                        color: '#0A1214'
-                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0D9488] hover:bg-[#0F766E] text-white transition-all cursor-pointer shadow-[var(--tt-shadow-card)]"
                       title="Open dataset in Analytical Studio to ask questions"
                     >
-                      <MessageSquare className="w-3.5 h-3.5 text-black" />
+                      <MessageSquare className="w-3.5 h-3.5" />
                       <span>Ask in Studio</span>
                     </button>
                   </div>
@@ -543,6 +460,7 @@ export const DatasetsView: React.FC = () => {
           })}
         </div>
       </div>
+
 
       {/* Dataset Preview Modal */}
       {previewDatasetId && (

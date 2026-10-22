@@ -125,4 +125,54 @@ def generate_recommendations(audit: DatasetAuditReport) -> List[CleaningRecommen
             ))
             rec_counter += 1
 
+    # 6. Categorical Typos & Fuzzy Merges
+    for col in audit.columns:
+        cat_stats = col.categorical_stats or {}
+        fuzzy_dups = cat_stats.get("fuzzy_duplicates") or []
+        if fuzzy_dups:
+            mappings = {f["original"]: f["suggested_canonical"] for f in fuzzy_dups}
+            sample_merge = ", ".join(f"'{k}' -> '{v}'" for k, v in list(mappings.items())[:2])
+            recs.append(CleaningRecommendation(
+                recommendation_id=f"REC-{rec_counter:03d}",
+                rule_id="RULE_ANOMALY_CATEGORICAL_TYPOS",
+                action_type="merge_categories",
+                affected_columns=[col.column_name],
+                affected_rows=len(fuzzy_dups),
+                affected_pct=round((len(fuzzy_dups) / max(1, col.distinct_count)) * 100, 2),
+                evidence=f"Column '{col.column_name}' contains {len(fuzzy_dups)} potential typo variants ({sample_merge}).",
+                proposed_action=f"Merge {len(fuzzy_dups)} typo/near-duplicate variants into canonical values in '{col.column_name}'.",
+                reason="Prevents SQL GROUP BY queries and visualizations from fragmenting into duplicate categories.",
+                expected_impact=f"Standardizes {len(fuzzy_dups)} category variants into unified canonical categories.",
+                risk_level="medium",
+                approval_required=True,
+                approved=True,
+                parameters={"column": col.column_name, "mappings": mappings}
+            ))
+            rec_counter += 1
+
+    # 7. Categorical Whitespace & Casing Drift
+    for col in audit.columns:
+        cat_stats = col.categorical_stats or {}
+        casing = cat_stats.get("casing_anomalies") or []
+        whitespace = cat_stats.get("whitespace_anomalies") or []
+        if casing or whitespace:
+            cnt = len(casing) + len(whitespace)
+            recs.append(CleaningRecommendation(
+                recommendation_id=f"REC-{rec_counter:03d}",
+                rule_id="RULE_ANOMALY_CATEGORICAL_CASING",
+                action_type="standardize_categories",
+                affected_columns=[col.column_name],
+                affected_rows=cnt,
+                affected_pct=round((cnt / max(1, col.distinct_count)) * 100, 2),
+                evidence=f"Column '{col.column_name}' contains {cnt} values with trailing whitespace or casing inconsistencies.",
+                proposed_action=f"Trim whitespace and normalize string casing in column '{col.column_name}'.",
+                reason="Ensures consistent exact-match joins and string filtering in SQL queries.",
+                expected_impact=f"Sanitizes whitespace across values in '{col.column_name}'.",
+                risk_level="low",
+                approval_required=False,
+                approved=True,
+                parameters={"column": col.column_name}
+            ))
+            rec_counter += 1
+
     return recs

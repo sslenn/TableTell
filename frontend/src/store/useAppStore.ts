@@ -39,7 +39,7 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      theme: 'dark',
+      theme: 'light',
       logoVariant: 'columnar-t',
       datasetId: 'ecommerce_sales',
       activeTab: 'studio',
@@ -52,12 +52,14 @@ export const useAppStore = create<AppState>()(
 
       setTheme: (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.classList.toggle('dark', theme === 'dark');
         set({ theme });
       },
 
       toggleTheme: () => {
         const next = get().theme === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
+        document.documentElement.classList.toggle('dark', next === 'dark');
         set({ theme: next });
       },
 

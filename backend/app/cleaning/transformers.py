@@ -173,6 +173,44 @@ class NormalizeHeadersTransformer(BaseTransformer):
         return df, "Normalized column headers to snake_case."
 
 
+class StandardizeCategoriesTransformer(BaseTransformer):
+    """Strips leading/trailing whitespace and normalizes formatting in categorical columns."""
+
+    def transform(self, df: pd.DataFrame, params: Optional[Dict[str, Any]] = None) -> Tuple[pd.DataFrame, str]:
+        df = df.copy()
+        params = params or {}
+        col = params.get("column")
+        cols_to_clean = [col] if col and col in df.columns else [
+            c for c in df.columns if df[c].dtype == "object" or pd.api.types.is_string_dtype(df[c])
+        ]
+
+        cleaned_count = 0
+        for c in cols_to_clean:
+            if c in df.columns:
+                df[c] = df[c].astype(str).str.strip()
+                cleaned_count += 1
+
+        msg = f"Standardized whitespace across {cleaned_count} categorical columns." if cleaned_count > 0 else "No categorical columns modified."
+        return df, msg
+
+
+class MergeCategoriesTransformer(BaseTransformer):
+    """Merges near-duplicate or typo categories into canonical values."""
+
+    def transform(self, df: pd.DataFrame, params: Optional[Dict[str, Any]] = None) -> Tuple[pd.DataFrame, str]:
+        df = df.copy()
+        params = params or {}
+        col = params.get("column")
+        mappings = params.get("mappings", {})
+
+        if col and col in df.columns and mappings:
+            df[col] = df[col].replace(mappings)
+            merged_count = len(mappings)
+            return df, f"Merged {merged_count} category variants/typos into canonical values in '{col}'."
+
+        return df, "No categorical merges applied."
+
+
 TRANSFORMER_REGISTRY: Dict[str, BaseTransformer] = {
     "drop_duplicates": DropDuplicatesTransformer(),
     "drop_critical_nulls": DropMissingIdentifiersTransformer(),
@@ -181,4 +219,6 @@ TRANSFORMER_REGISTRY: Dict[str, BaseTransformer] = {
     "impute_numeric": ImputeMissingValuesTransformer(),
     "impute_categorical": ImputeMissingValuesTransformer(),
     "normalize_headers": NormalizeHeadersTransformer(),
+    "standardize_categories": StandardizeCategoriesTransformer(),
+    "merge_categories": MergeCategoriesTransformer(),
 }

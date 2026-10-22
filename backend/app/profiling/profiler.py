@@ -7,7 +7,12 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 import duckdb
 import pandas as pd
-from app.profiling.column_stats import classify_column_semantic_type, compute_numeric_stats
+from app.profiling.column_stats import (
+    classify_column_semantic_type,
+    classify_statistical_variable_type,
+    compute_numeric_stats,
+    compute_categorical_stats
+)
 from app.profiling.distribution import compute_column_distribution, compute_dataset_distribution_topology
 
 
@@ -82,6 +87,15 @@ class DatasetProfiler:
             sample_vals = []
             num_stats = {}
             dist_profile = None
+            cat_stats = None
+
+            stat_info = classify_statistical_variable_type(
+                col_name=col,
+                dtype=dtype,
+                distinct_count=dist_c,
+                total_rows=total_rows,
+                sample_values=sample_vals
+            )
 
             if not sample_df.empty and col in sample_df.columns:
                 raw_samples = sample_df[col].dropna().unique()[:3].tolist()
@@ -92,11 +106,34 @@ class DatasetProfiler:
                 if semantic_type == "numeric":
                     num_stats = compute_numeric_stats(sample_df[col])
                     dist_profile = compute_column_distribution(sample_df[col], col, total_rows)
+                elif semantic_type in ["categorical", "boolean"] or stat_info["variable_type"] == "Categorical":
+                    cat_stats = compute_categorical_stats(sample_df[col], distinct_count=dist_c, total_rows=total_rows)
+
+            has_cat_outliers = bool(cat_stats and (
+                cat_stats.get("rare_count", 0) > 0 or
+                len(cat_stats.get("fuzzy_duplicates", [])) > 0 or
+                len(cat_stats.get("whitespace_anomalies", [])) > 0 or
+                len(cat_stats.get("casing_anomalies", [])) > 0
+            ))
+            has_num_outliers = num_stats.get("outlier_count", 0) > 0
+            has_outliers = has_num_outliers or has_cat_outliers
+
+            cat_outlier_count = (
+                len(cat_stats.get("fuzzy_duplicates", [])) +
+                len(cat_stats.get("rare_categories", [])) +
+                len(cat_stats.get("whitespace_anomalies", []))
+            ) if cat_stats else 0
+            outlier_count = num_stats.get("outlier_count", 0) + cat_outlier_count
+            outlier_pct = num_stats.get("outlier_pct", 0.0)
+            if semantic_type != "numeric" and cat_outlier_count > 0:
+                outlier_pct = round((cat_outlier_count / max(1, dist_c)) * 100, 2)
 
             column_stats.append({
                 "column_name": col,
                 "data_type": dtype,
                 "semantic_type": semantic_type,
+                "variable_type": stat_info["variable_type"],
+                "statistical_type": stat_info["statistical_type"],
                 "null_count": null_c,
                 "null_pct": pct,
                 "distinct_count": dist_c,
@@ -105,10 +142,11 @@ class DatasetProfiler:
                 "max_val": num_stats.get("max"),
                 "mean_val": num_stats.get("mean"),
                 "is_identifier": semantic_type == "identifier",
-                "has_outliers": num_stats.get("outlier_count", 0) > 0,
-                "outlier_count": num_stats.get("outlier_count", 0),
-                "outlier_pct": num_stats.get("outlier_pct", 0.0),
-                "distribution": dist_profile.model_dump() if dist_profile else None
+                "has_outliers": has_outliers,
+                "outlier_count": outlier_count,
+                "outlier_pct": outlier_pct,
+                "distribution": dist_profile.model_dump() if dist_profile else None,
+                "categorical_stats": cat_stats
             })
 
         topology = compute_dataset_distribution_topology(column_stats)

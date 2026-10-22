@@ -3,7 +3,10 @@ import {
   BarChart3,
   Activity,
   Lightbulb,
-  Info
+  Info,
+  Tag,
+  AlertTriangle,
+  CheckCircle2
 } from 'lucide-react';
 import type { ColumnStat, DatasetDistributionTopology } from '../../types/dataset';
 
@@ -18,18 +21,20 @@ export const DistributionProfiler: React.FC<DistributionProfilerProps> = ({
   topology,
   datasetId
 }) => {
-  // Filter columns that have distribution profiles (typically numeric columns)
-  const numericCols = columns.filter((c) => Boolean(c.distribution));
+  // Filter columns that have distribution profiles (numeric) or categorical statistics
+  const profilableCols = columns.filter((c) => Boolean(c.distribution || c.categorical_stats));
 
   const [selectedColName, setSelectedColName] = useState<string>(
-    numericCols[0]?.column_name || ''
+    profilableCols[0]?.column_name || ''
   );
   const [hoveredBinIdx, setHoveredBinIdx] = useState<number | null>(null);
 
-  const selectedCol = numericCols.find((c) => c.column_name === selectedColName) || numericCols[0];
+  const selectedCol = profilableCols.find((c) => c.column_name === selectedColName) || profilableCols[0];
   const dist = selectedCol?.distribution;
+  const catStats = selectedCol?.categorical_stats;
+  const isCategorical = Boolean(!dist && catStats);
 
-  if (numericCols.length === 0) {
+  if (profilableCols.length === 0) {
     return (
       <div
         className="p-6 rounded-2xl border text-center text-xs font-mono"
@@ -39,7 +44,7 @@ export const DistributionProfiler: React.FC<DistributionProfilerProps> = ({
           color: 'var(--tt-text-muted)'
         }}
       >
-        No continuous numeric columns available for distribution profiling in '{datasetId}'.
+        No analyzable columns available for profiling in '{datasetId}'.
       </div>
     );
   }
@@ -182,18 +187,19 @@ export const DistributionProfiler: React.FC<DistributionProfilerProps> = ({
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#2DD4BF]">
-              Select Numeric Metric to Inspect Distribution:
+              Select Numerical or Categorical Dimension to Inspect:
             </span>
             <span className="text-[10px] font-mono opacity-60" style={{ color: 'var(--tt-text-muted)' }}>
-              {numericCols.length} Columns with Continuous Data
+              {profilableCols.length} Columns Available ({columns.filter((c) => Boolean(c.distribution)).length} numeric, {columns.filter((c) => Boolean(!c.distribution && c.categorical_stats)).length} categorical)
             </span>
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {numericCols.map((col) => {
+            {profilableCols.map((col) => {
               const isSelected = col.column_name === selectedColName;
               const hasOutliers = col.has_outliers;
               const colDist = col.distribution;
+              const isColCat = Boolean(!colDist && col.categorical_stats);
 
               return (
                 <button
@@ -208,29 +214,194 @@ export const DistributionProfiler: React.FC<DistributionProfilerProps> = ({
                     fontWeight: isSelected ? 700 : 500
                   }}
                 >
-                  <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+                  {isColCat ? (
+                    <Tag className="w-3.5 h-3.5 shrink-0 text-[#38BDF8]" />
+                  ) : (
+                    <BarChart3 className="w-3.5 h-3.5 shrink-0 text-[#2DD4BF]" />
+                  )}
                   <span>{col.column_name}</span>
 
                   {hasOutliers && (
                     <span
                       className="text-[9px] px-1 py-0.2 rounded font-bold uppercase"
-                      style={{ backgroundColor: 'rgba(248, 113, 113, 0.2)', color: '#F87171' }}
-                      title="Outliers detected"
+                      style={{ backgroundColor: 'rgba(251, 146, 60, 0.2)', color: '#FB923C' }}
+                      title="Anomalies or outliers detected"
                     >
-                      Outliers
+                      Anomaly
                     </span>
                   )}
 
-                  {colDist && (
+                  {colDist ? (
                     <span className="text-[10px] opacity-60">
                       ({colDist.distribution_type.replace('_', ' ')})
                     </span>
-                  )}
+                  ) : isColCat ? (
+                    <span className="text-[10px] opacity-60">
+                      (categorical)
+                    </span>
+                  ) : null}
                 </button>
               );
             })}
           </div>
         </div>
+
+        {/* Selected Categorical Column Detail View */}
+        {selectedCol && isCategorical && catStats && (
+          <div className="flex flex-col gap-4 pt-2 border-t" style={{ borderColor: 'var(--tt-border-subtle)' }}>
+            {/* Header Banner */}
+            <div
+              className="p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3"
+              style={{
+                backgroundColor: selectedCol.has_outliers ? 'rgba(251, 146, 60, 0.12)' : 'rgba(45, 212, 191, 0.10)',
+                borderColor: selectedCol.has_outliers ? 'rgba(251, 146, 60, 0.3)' : 'rgba(45, 212, 191, 0.25)'
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="px-2.5 py-1 rounded-md text-xs font-mono font-bold uppercase tracking-wider border"
+                  style={{
+                    backgroundColor: 'var(--tt-bg-surface)',
+                    borderColor: selectedCol.has_outliers ? 'rgba(251, 146, 60, 0.4)' : 'rgba(45, 212, 191, 0.3)',
+                    color: selectedCol.has_outliers ? '#FB923C' : '#2DD4BF'
+                  }}
+                >
+                  {selectedCol.has_outliers ? 'CATEGORICAL ANOMALIES FLAGGED' : 'CLEAN CATEGORICAL DISTRIBUTION'}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
+                      Column: '{selectedCol.column_name}'
+                    </span>
+                    <span className="text-[11px] font-mono text-[#2DD4BF]">
+                      ({selectedCol.distinct_count} distinct categories)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="px-2 py-0.5 rounded border text-[11px]" style={{ backgroundColor: 'var(--tt-bg-surface)', borderColor: 'var(--tt-border-subtle)' }}>
+                  Cardinality: {catStats.cardinality_ratio ? `${Math.round(catStats.cardinality_ratio * 100)}%` : '—'}
+                </span>
+                {catStats.rare_count ? (
+                  <span className="px-2 py-0.5 rounded border text-[11px] text-[#FB923C]" style={{ backgroundColor: 'rgba(251, 146, 60, 0.1)', borderColor: 'rgba(251, 146, 60, 0.3)' }}>
+                    {catStats.rare_count} Rare Outlier(s)
+                  </span>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Top Category Distribution Bars */}
+            <div
+              className="p-4 rounded-xl border flex flex-col gap-3"
+              style={{ backgroundColor: 'var(--tt-bg-elevated)', borderColor: 'var(--tt-border-subtle)' }}
+            >
+              <div className="flex items-center justify-between text-xs font-mono">
+                <span className="font-semibold text-[#2DD4BF]">Top Category Frequency Distribution</span>
+                <span className="text-[11px] opacity-70">Showing top {catStats.top_values?.length || 0} occurrences</span>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-1">
+                {(catStats.top_values || []).map((item, idx) => (
+                  <div key={idx} className="flex flex-col gap-1 text-xs font-mono">
+                    <div className="flex items-center justify-between">
+                      <span className="truncate max-w-[280px]" style={{ color: 'var(--tt-text-primary)' }}>
+                        {item.value || '(Empty String)'}
+                      </span>
+                      <span className="tabular-nums opacity-80 text-[11px]">
+                        {item.count.toLocaleString()} rows ({item.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--tt-bg-surface)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${Math.min(100, Math.max(2, item.pct))}%`,
+                          backgroundColor: idx === 0 ? '#2DD4BF' : '#38BDF8'
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Categorical Anomaly Findings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              {/* Fuzzy Typos Card */}
+              <div
+                className="p-3.5 rounded-xl border flex flex-col gap-2"
+                style={{ backgroundColor: 'var(--tt-bg-elevated)', borderColor: 'var(--tt-border-subtle)' }}
+              >
+                <div className="flex items-center gap-1.5 text-[#FB923C] font-semibold font-mono">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Fuzzy Typo Matches & Near-Duplicates</span>
+                </div>
+                {catStats.fuzzy_duplicates && catStats.fuzzy_duplicates.length > 0 ? (
+                  <div className="flex flex-col gap-1.5 font-mono text-[11px]">
+                    {catStats.fuzzy_duplicates.map((f, i) => (
+                      <div key={i} className="p-2 rounded border flex items-center justify-between" style={{ backgroundColor: 'var(--tt-bg-surface)', borderColor: 'rgba(251, 146, 60, 0.25)' }}>
+                        <div>
+                          <span className="text-[#F87171] font-semibold">{f.original}</span>
+                          <span className="opacity-60 mx-1.5">➔</span>
+                          <span className="text-[#34D399] font-semibold">{f.suggested_canonical}</span>
+                        </div>
+                        <span className="text-[10px] opacity-70">
+                          {Math.round(f.similarity * 100)}% match
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[#34D399] text-[11px] py-1 font-mono">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>No near-duplicate typos detected.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Rare Outliers & Formatting Card */}
+              <div
+                className="p-3.5 rounded-xl border flex flex-col gap-2"
+                style={{ backgroundColor: 'var(--tt-bg-elevated)', borderColor: 'var(--tt-border-subtle)' }}
+              >
+                <div className="flex items-center gap-1.5 text-[#38BDF8] font-semibold font-mono">
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>Rare Categories (&lt; 1% occurrence)</span>
+                </div>
+                {catStats.rare_categories && catStats.rare_categories.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {catStats.rare_categories.slice(0, 8).map((r, i) => (
+                      <span
+                        key={i}
+                        className="px-2 py-0.5 rounded border font-mono text-[10px]"
+                        style={{
+                          backgroundColor: 'rgba(251, 146, 60, 0.1)',
+                          borderColor: 'rgba(251, 146, 60, 0.3)',
+                          color: '#FB923C'
+                        }}
+                      >
+                        {r.value} ({r.count})
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-[#34D399] text-[11px] py-1 font-mono">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Zero rare singleton outliers detected.</span>
+                  </div>
+                )}
+
+                {(catStats.whitespace_anomalies && catStats.whitespace_anomalies.length > 0) && (
+                  <div className="pt-2 border-t text-[11px] font-mono text-[#FB923C]" style={{ borderColor: 'var(--tt-border-subtle)' }}>
+                    ⚠️ {catStats.whitespace_anomalies.length} value(s) contain unstripped leading/trailing spaces.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Selected Column Detail View */}
         {selectedCol && dist && (
@@ -255,8 +426,20 @@ export const DistributionProfiler: React.FC<DistributionProfilerProps> = ({
                   {dist.distribution_type.replace('_', ' ').toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-xs font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
-                    Column: '{selectedCol.column_name}'
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
+                      Column: '{selectedCol.column_name}'
+                    </span>
+                    <span
+                      className="px-1.5 py-0.2 rounded text-[10px] font-mono font-semibold border"
+                      style={{
+                        backgroundColor: 'rgba(45, 212, 191, 0.12)',
+                        borderColor: 'rgba(45, 212, 191, 0.3)',
+                        color: '#2DD4BF'
+                      }}
+                    >
+                      {selectedCol.statistical_type || 'Continuous (Ratio)'}
+                    </span>
                   </div>
                   <div className="text-[11px] opacity-75 font-mono" style={{ color: 'var(--tt-text-secondary)' }}>
                     Confidence: {Math.round(dist.confidence * 100)}% · Modality: {dist.modality}
