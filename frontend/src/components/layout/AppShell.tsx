@@ -20,6 +20,7 @@ import { useAppStore, type AppTab } from '../../store/useAppStore';
 import { BrandLogo, type LogoVariant } from '../common/BrandLogo';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { ToastContainer } from '../common/ToastContainer';
+import { TableTellAssistant } from '../assistant/TableTellAssistant';
 import { fetchDatasets } from '../../lib/api';
 import { toast } from '../../store/useToastStore';
 
@@ -199,6 +200,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     <div className="flex h-screen w-screen overflow-hidden select-none bg-[var(--tt-bg-canvas)]">
       {/* Toast Notification Container */}
       <ToastContainer />
+
+      {/* Global Draggable AI Copilot */}
+      <TableTellAssistant />
 
       {/* Left Navigation Sidebar */}
       <aside

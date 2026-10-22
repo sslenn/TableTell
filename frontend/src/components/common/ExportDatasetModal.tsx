@@ -8,9 +8,7 @@ import {
   FileText,
   Sparkles,
   Database,
-  Sliders,
-  CheckCircle2,
-  HardDrive
+  Sliders
 } from 'lucide-react';
 import { downloadDatasetExport, type ExportDatasetOptions } from '../../lib/api';
 import { toast } from '../../store/useToastStore';

@@ -365,7 +365,7 @@ export const DatasetsView: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleQuickExport(cleanResult.cleaned_dataset_id, cleanResult.cleaned_rows)}
+                onClick={() => handleQuickExport(cleanResult.cleaned_dataset_id || cleanResult.dataset_id, cleanResult.cleaned_rows)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#10B981] hover:bg-[#059669] text-white transition-colors cursor-pointer shadow-sm"
                 title="Download whole cleaned dataset as CSV"
               >
@@ -375,7 +375,7 @@ export const DatasetsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() =>
-                  openExportModal(cleanResult.cleaned_dataset_id, cleanResult.cleaned_rows, undefined, true)
+                  openExportModal(cleanResult.cleaned_dataset_id || cleanResult.dataset_id, cleanResult.cleaned_rows, undefined, true)
                 }
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer"
                 title="Configure CSV export options"

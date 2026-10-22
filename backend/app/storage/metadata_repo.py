@@ -103,9 +103,29 @@ class MetadataRepository:
                     created_at TEXT NOT NULL
                 );
 
+                CREATE TABLE IF NOT EXISTS assistant_conversations (
+                    id TEXT PRIMARY KEY,
+                    title TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    model TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
+                    is_archived INTEGER NOT NULL DEFAULT 0
+                );
+
+                CREATE TABLE IF NOT EXISTS assistant_messages (
+                    id TEXT PRIMARY KEY,
+                    conversation_id TEXT NOT NULL,
+                    role TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    tokens_used INTEGER DEFAULT 0,
+                    created_at TEXT NOT NULL,
+                    FOREIGN KEY (conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_versions_dataset ON dataset_versions(dataset_id);
                 CREATE INDEX IF NOT EXISTS idx_runs_dataset ON analytical_runs(dataset_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);
+                CREATE INDEX IF NOT EXISTS idx_assistant_messages_conv ON assistant_messages(conversation_id, created_at);
             """)
 
     # -------------------------------------------------------------------------
@@ -448,6 +468,79 @@ class MetadataRepository:
                 item["details"] = json.loads(item["details_json"] or "{}")
                 res.append(item)
             return res
+
+    # -------------------------------------------------------------------------
+    # AI Assistant Operations
+    # -------------------------------------------------------------------------
+
+    def get_or_create_default_conversation(self) -> Dict[str, Any]:
+        """Returns or creates the default persistent conversation for the assistant."""
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT * FROM assistant_conversations WHERE is_archived = 0 ORDER BY updated_at DESC LIMIT 1").fetchone()
+            if row:
+                return dict(row)
+            
+            # Create default conversation
+            import uuid
+            conv_id = f"conv_{uuid.uuid4().hex[:10]}"
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                "INSERT INTO assistant_conversations (id, title, created_at, updated_at, model) VALUES (?, ?, ?, ?, ?)",
+                (conv_id, "TableTell Copilot", now, now, "gemini-2.5-flash")
+            )
+            return {
+                "id": conv_id,
+                "title": "TableTell Copilot",
+                "created_at": now,
+                "updated_at": now,
+                "model": "gemini-2.5-flash",
+                "is_archived": 0
+            }
+
+    def save_assistant_message(
+        self,
+        conversation_id: str,
+        role: str,
+        content: str,
+        tokens_used: int = 0
+    ) -> Dict[str, Any]:
+        """Saves a message to the assistant thread and updates conversation timestamp."""
+        import uuid
+        msg_id = f"msg_{uuid.uuid4().hex[:12]}"
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            conn.execute(
+                "INSERT INTO assistant_messages (id, conversation_id, role, content, tokens_used, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                (msg_id, conversation_id, role, content, tokens_used, now)
+            )
+            conn.execute(
+                "UPDATE assistant_conversations SET updated_at = ? WHERE id = ?",
+                (now, conversation_id)
+            )
+        return {
+            "id": msg_id,
+            "conversation_id": conversation_id,
+            "role": role,
+            "content": content,
+            "tokens_used": tokens_used,
+            "created_at": now
+        }
+
+    def list_assistant_messages(self, conversation_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Retrieves messages for an assistant conversation in chronological order."""
+        with self._get_connection() as conn:
+            rows = conn.execute(
+                "SELECT * FROM assistant_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?",
+                (conversation_id, limit)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def clear_assistant_history(self, conversation_id: str) -> None:
+        """Clears all messages within an assistant conversation thread."""
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            conn.execute("DELETE FROM assistant_messages WHERE conversation_id = ?", (conversation_id,))
+            conn.execute("UPDATE assistant_conversations SET updated_at = ? WHERE id = ?", (now, conversation_id))
 
 
 metadata_repo = MetadataRepository()
