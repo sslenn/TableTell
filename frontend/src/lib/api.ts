@@ -113,3 +113,67 @@ export async function fetchSystemAuditLogs(): Promise<Record<string, unknown>[]>
   const data = await res.json();
   return data.logs || [];
 }
+
+export interface ExportDatasetOptions {
+  format?: 'csv' | 'tsv' | 'json' | 'parquet';
+  delimiter?: string;
+  includeHeader?: boolean;
+  bom?: boolean;
+  version?: number;
+  filename?: string;
+}
+
+export function getDatasetExportUrl(datasetId: string, options: ExportDatasetOptions = {}): string {
+  const params = new URLSearchParams();
+  if (options.format) params.set('format', options.format);
+  if (options.delimiter) params.set('delimiter', options.delimiter);
+  if (options.includeHeader !== undefined) params.set('include_header', String(options.includeHeader));
+  if (options.bom !== undefined) params.set('bom', String(options.bom));
+  if (options.version !== undefined) params.set('version', String(options.version));
+  if (options.filename) params.set('filename', options.filename);
+
+  const qs = params.toString();
+  return `${BASE_URL}/datasets/${encodeURIComponent(datasetId)}/export${qs ? `?${qs}` : ''}`;
+}
+
+export async function downloadDatasetExport(datasetId: string, options: ExportDatasetOptions = {}): Promise<string> {
+  const url = getDatasetExportUrl(datasetId, options);
+  const res = await fetch(url);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Export failed: ${res.statusText}`);
+  }
+
+  const blob = await res.blob();
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+
+  const disposition = res.headers.get('Content-Disposition');
+  let filename = options.filename || `${datasetId}.${options.format || 'csv'}`;
+  if (disposition && disposition.includes('filename=')) {
+    const match = disposition.match(/filename=["']?([^"';]+)["']?/);
+    if (match && match[1]) filename = match[1];
+  }
+
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  window.URL.revokeObjectURL(downloadUrl);
+
+  return filename;
+}
+
+export async function deleteDataset(datasetId: string): Promise<{ status: string; dataset_id: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}`, {
+    method: 'DELETE'
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to delete dataset: ${res.statusText}`);
+  }
+  return await res.json();
+}
+
+

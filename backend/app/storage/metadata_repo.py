@@ -204,6 +204,20 @@ class MetadataRepository:
                 (new_version, now, dataset_id)
             )
 
+    def delete_dataset(self, dataset_id: str) -> bool:
+        """
+        Deletes a dataset and cascades removal of all associated versions,
+        cleaning plans, and analytical runs in SQLite.
+        """
+        with self._get_connection() as conn:
+            row = conn.execute("SELECT id FROM datasets WHERE id = ?", (dataset_id,)).fetchone()
+            if not row:
+                return False
+            conn.execute("DELETE FROM datasets WHERE id = ?", (dataset_id,))
+        self.record_audit("dataset", dataset_id, "delete_dataset", {"deleted": True})
+        return True
+
+
     # -------------------------------------------------------------------------
     # Dataset Version Operations
     # -------------------------------------------------------------------------

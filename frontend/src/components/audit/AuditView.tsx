@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
-import { fetchAuditReport, cleanDataset, fetchDatasets } from '../../lib/api';
+import { fetchAuditReport, cleanDataset, fetchDatasets, downloadDatasetExport } from '../../lib/api';
 import type { DatasetAuditReport } from '../../types/dataset';
 import { DistributionProfiler } from './DistributionProfiler';
+import { ExportDatasetModal } from '../common/ExportDatasetModal';
 import { toast } from '../../store/useToastStore';
 import {
   ShieldCheck,
@@ -22,7 +23,10 @@ import {
   X,
   Eye,
   Activity,
-  ArrowRight
+  ArrowRight,
+  Download,
+  Sliders,
+  FileSpreadsheet
 } from 'lucide-react';
 
 export const AuditView: React.FC = () => {
@@ -36,6 +40,10 @@ export const AuditView: React.FC = () => {
   const [showCriteriaDetails, setShowCriteriaDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'distributions' | 'columns'>('overview');
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [quickExporting, setQuickExporting] = useState(false);
+
+  const isCleanDataset = datasetId.toLowerCase().includes('clean');
 
   const loadAudit = React.useCallback(() => {
     if (!datasetId) return;
@@ -86,7 +94,7 @@ export const AuditView: React.FC = () => {
       setCleanMessage(
         `Processed ${res.original_rows.toLocaleString()} rows (removed ${res.removed_duplicates} duplicates, dropped ${rowDiff > 0 ? rowDiff : 0} rows). New version ready.`
       );
-      toast.success('Cleaned Successfully', `Created '${cleanId}' with 0 duplicates`);
+      toast.success('Cleaned Successfully', `Created '${cleanId}' with 0 duplicates. Whole dataset ready for CSV export!`);
 
       // Update catalog and switch active dataset to cleaned version
       const catalog = await fetchDatasets();
@@ -98,6 +106,27 @@ export const AuditView: React.FC = () => {
       toast.error('Clean Failed', msg);
     } finally {
       setCleaning(false);
+    }
+  };
+
+  const handleQuickExportCsv = async () => {
+    if (!datasetId) return;
+    setQuickExporting(true);
+    try {
+      const saved = await downloadDatasetExport(datasetId, {
+        format: 'csv',
+        delimiter: ',',
+        includeHeader: true,
+        bom: true
+      });
+      toast.success(
+        'Clean Dataset Exported',
+        `Downloaded ${saved} (${report ? report.total_rows.toLocaleString() : 'whole'} rows)`
+      );
+    } catch (err) {
+      toast.error('Export Failed', err instanceof Error ? err.message : 'Could not export dataset');
+    } finally {
+      setQuickExporting(false);
     }
   };
 
@@ -125,7 +154,7 @@ export const AuditView: React.FC = () => {
             Ensure your data is accurate, complete, consistent and ready for analysis.
           </p>
 
-          <div className="flex items-center gap-3 mt-4">
+          <div className="flex flex-wrap items-center gap-3 mt-4">
             <button
               onClick={loadAudit}
               disabled={loading || cleaning}
@@ -145,6 +174,33 @@ export const AuditView: React.FC = () => {
               <Sparkles className={`w-3.5 h-3.5 text-[#0D9488] ${cleaning ? 'animate-spin' : ''}`} />
               <span>{cleaning ? 'Cleaning dataset...' : 'Auto-clean dataset'}</span>
             </button>
+
+            {/* Export Whole Dataset Button Group */}
+            <div className="flex items-center rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] overflow-hidden shadow-[var(--tt-shadow-card)]">
+              <button
+                type="button"
+                onClick={handleQuickExportCsv}
+                disabled={quickExporting || loading || cleaning}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50 ${
+                  isCleanDataset
+                    ? 'text-emerald-500 hover:bg-emerald-500/10'
+                    : 'text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)]'
+                }`}
+                title="Fast 1-click download of the complete clean dataset as CSV"
+              >
+                <Download className={`w-3.5 h-3.5 ${quickExporting ? 'animate-bounce' : ''}`} />
+                <span>{quickExporting ? 'Exporting...' : isCleanDataset ? 'Export Clean CSV' : 'Export CSV'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowExportModal(true)}
+                disabled={loading || cleaning}
+                className="px-2.5 py-2 border-l border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] transition-colors cursor-pointer"
+                title="Customize CSV export options (delimiter, encoding, header, formats)"
+              >
+                <Sliders className="w-3.5 h-3.5 text-[#0D9488]" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -176,14 +232,19 @@ export const AuditView: React.FC = () => {
 
       {/* Quality Check Success Alert Banner */}
       {!alertDismissed && (cleanMessage || report) && (
-        <div className="bg-emerald-500/10 dark:bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 flex items-center justify-between text-xs shadow-[var(--tt-shadow-card)] transition-all">
+        <div className="bg-emerald-500/10 dark:bg-emerald-950/25 border border-emerald-500/30 rounded-xl p-3.5 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs shadow-[var(--tt-shadow-card)] transition-all">
           <div className="flex items-center gap-3">
             <div className="w-5 h-5 rounded-full bg-[#10B981] text-white flex items-center justify-center font-bold text-xs shrink-0">
               ✓
             </div>
             <div>
-              <div className="font-semibold text-[var(--tt-text-primary)]">
-                Quality check completed successfully
+              <div className="font-semibold text-[var(--tt-text-primary)] flex items-center gap-2">
+                <span>Quality check completed successfully</span>
+                {isCleanDataset && (
+                  <span className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+                    Clean Version Ready
+                  </span>
+                )}
               </div>
               <div className="text-[var(--tt-text-secondary)] text-xs mt-0.5">
                 {cleanMessage ||
@@ -192,14 +253,37 @@ export const AuditView: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[var(--tt-text-muted)]">
-            <span className="text-[11px] font-mono hidden sm:inline">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Direct Export Clean CSV & Options inside the Alert Banner */}
+            <button
+              type="button"
+              onClick={handleQuickExportCsv}
+              disabled={quickExporting}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#10B981] hover:bg-[#059669] text-white transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+              title="Download whole clean dataset as CSV"
+            >
+              <Download className={`w-3.5 h-3.5 ${quickExporting ? 'animate-bounce' : ''}`} />
+              <span>{quickExporting ? 'Exporting...' : 'Export Clean CSV'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer"
+              title="Configure CSV options (delimiter, encoding, header)"
+            >
+              <Sliders className="w-3.5 h-3.5 text-[#10B981]" />
+              <span>Options...</span>
+            </button>
+
+            <span className="text-[11px] font-mono text-[var(--tt-text-muted)] hidden lg:inline ml-1">
               {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} • {new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
+
             <button
               type="button"
               onClick={() => setAlertDismissed(true)}
-              className="p-1 rounded hover:bg-emerald-500/20 text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] cursor-pointer transition-colors"
+              className="p-1 rounded hover:bg-emerald-500/20 text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] cursor-pointer transition-colors ml-1"
               title="Dismiss"
             >
               <X className="w-3.5 h-3.5" />
@@ -688,6 +772,15 @@ export const AuditView: React.FC = () => {
           )}
         </div>
       )}
+      {/* Export Clean Dataset Options Modal */}
+      <ExportDatasetModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        datasetId={datasetId}
+        totalRows={report?.total_rows}
+        totalCols={report?.total_cols}
+        isCleaned={isCleanDataset}
+      />
     </div>
   );
 };
