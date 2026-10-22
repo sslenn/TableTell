@@ -10,7 +10,6 @@ import {
   Check,
   PanelLeftClose,
   PanelLeftOpen,
-  Zap,
   PlusCircle,
   ChevronRight,
   Sparkles,

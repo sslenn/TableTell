@@ -97,30 +97,30 @@ export const StudioView: React.FC = () => {
     if (idLower.includes('churn') || colList.includes('churned') || colList.includes('plan_tier')) {
       return [
         {
-          tag: 'Retention KPI',
-          title: 'Churn Rate by Plan Tier',
-          desc: 'Calculate the percentage of accounts churned grouped by subscription tier.',
+          tag: 'Retention',
+          title: 'Churn by Plan Tier',
+          desc: 'Percentage of accounts churned by subscription tier.',
           icon: Users,
           query: 'What is the churn rate across different plan tiers? Show with a bar chart'
         },
         {
-          tag: 'Revenue Driver',
-          title: 'Monthly Spend by Industry',
-          desc: 'Rank industries by total and average monthly subscription revenue.',
+          tag: 'Revenue',
+          title: 'Spend by Industry',
+          desc: 'Rank industries by subscription revenue.',
           icon: DollarSign,
           query: 'Which industry generates the highest average monthly spend?'
         },
         {
-          tag: 'Behavioral Signal',
-          title: 'Support Tickets vs Churn Risk',
-          desc: 'Analyze whether accounts with high support ticket volume correlate with churn.',
+          tag: 'Risk',
+          title: 'Tickets vs Churn',
+          desc: 'Correlate support volume with churn risk.',
           icon: TrendingUp,
           query: 'Compare average support tickets for churned vs active accounts'
         },
         {
-          tag: 'Engagement',
+          tag: 'Activity',
           title: 'Active Days Distribution',
-          desc: 'Inspect customer platform activity distribution over the last 90 days.',
+          desc: 'Platform activity over the last 90 days.',
           icon: Layers,
           query: 'Show the distribution of active days over the last 90 days'
         }
@@ -136,30 +136,30 @@ export const StudioView: React.FC = () => {
     ) {
       return [
         {
-          tag: 'Top Categories',
-          title: 'Revenue by Product Category',
-          desc: 'Rank sales drivers and percentage breakdown across product categories.',
+          tag: 'Revenue',
+          title: 'Revenue by Category',
+          desc: 'Breakdown of sales drivers across categories.',
           icon: Layers,
           query: 'Which product category generates the highest revenue? Show with a chart'
         },
         {
-          tag: 'Price Elasticity',
-          title: 'Discount Elasticity vs Volume',
-          desc: 'Compare discount rates against margins and transaction velocity.',
+          tag: 'Elasticity',
+          title: 'Discount vs Volume',
+          desc: 'Compare discount rates against margins and velocity.',
           icon: TrendingUp,
           query: 'Compare discount rates vs total sales volume with a scatter or bubble chart'
         },
         {
-          tag: 'Operations',
-          title: 'Fulfillment & Delivery Status',
-          desc: 'Audit shipment performance and distribution of order fulfillment states.',
+          tag: 'Fulfillment',
+          title: 'Delivery Status',
+          desc: 'Distribution of order fulfillment states.',
           icon: BarChart2,
           query: 'Show the distribution of orders by delivery status and calculate on-time rate'
         },
         {
           tag: 'Timeline',
-          title: 'Revenue Trajectory Over Time',
-          desc: 'Track sales momentum, date trends, and seasonal velocity.',
+          title: 'Revenue Trend',
+          desc: 'Track sales momentum and date trends over time.',
           icon: DollarSign,
           query: 'Show the revenue trend over time with an interactive line chart'
         }
@@ -193,29 +193,29 @@ export const StudioView: React.FC = () => {
     return [
       {
         tag: 'Breakdown',
-        title: `Grouped by ${catCol}`,
-        desc: `Aggregate records, sum metrics, and group counts by ${catCol}.`,
+        title: `Group by ${catCol}`,
+        desc: `Aggregate records and metrics by ${catCol}.`,
         icon: Layers,
         query: `Show the breakdown of records by ${catCol} and plot the top categories`
       },
       {
         tag: 'Distribution',
-        title: `Average ${numCol} Analysis`,
-        desc: `Calculate statistical summary and highest values for ${numCol}.`,
+        title: `${numCol} Stats`,
+        desc: `Summary and top values for ${numCol}.`,
         icon: TrendingUp,
         query: `Calculate the average, min, and max for ${numCol} and rank top records`
       },
       {
         tag: 'Rankings',
-        title: 'Top 10 Ranked Records',
-        desc: 'Extract top performing entities ordered by key metrics.',
+        title: 'Top 10 Records',
+        desc: `Top records ordered by ${numCol} descending.`,
         icon: Award,
         query: `Show the top 10 rows in ${datasetId} ordered by ${numCol} descending`
       },
       {
         tag: 'Summary',
-        title: 'Complete Table Summary',
-        desc: 'Deterministic row counts and column completeness overview.',
+        title: 'Table Summary',
+        desc: `Row counts and completeness for ${datasetId}.`,
         icon: Users,
         query: `Provide a statistical summary and total row count for table ${datasetId}`
       }
@@ -259,21 +259,20 @@ export const StudioView: React.FC = () => {
               </div>
 
               <h2
-                className="text-2xl sm:text-3xl font-extrabold mb-1.5 tracking-tight text-[var(--tt-text-primary)]"
+                className="text-2xl sm:text-3xl font-bold mb-2 tracking-tight text-[var(--tt-text-primary)]"
                 style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
               >
-                Autonomous Data Intelligence
+                Data Intelligence
               </h2>
-              <p className="text-xs sm:text-sm max-w-xl mb-6 leading-relaxed text-[var(--tt-text-muted)]">
-                Ask questions in plain English. TableTell synthesizes verified DuckDB SQL, eliminates
-                math hallucination, self-heals syntax errors, and plots interactive visualizations.
+              <p className="text-xs sm:text-sm max-w-md mb-6 leading-relaxed text-[var(--tt-text-muted)]">
+                Query, analyze, and visualize your data in plain English.
               </p>
 
               {/* Active Dataset Overview Pill Banner */}
               {activeDatasetObj && (
-                <div className="w-full p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] mb-6 flex flex-wrap items-center justify-between gap-3 text-left shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+                <div className="w-full p-3.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] mb-6 flex flex-wrap items-center justify-between gap-3 text-left shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center text-[#0D9488]">
+                    <div className="w-8 h-8 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center text-[#0D9488]">
                       <Database className="w-4 h-4 text-[#0D9488] shrink-0" />
                     </div>
                     <div>
@@ -281,28 +280,28 @@ export const StudioView: React.FC = () => {
                         {activeDatasetObj.dataset_id}
                       </div>
                       <div className="text-[11px] font-mono text-[var(--tt-text-muted)] mt-0.5">
-                        {activeDatasetObj.total_rows.toLocaleString()} rows · {activeDatasetObj.total_cols} columns · {activeDatasetObj.size_kb} KB
+                        {activeDatasetObj.total_rows.toLocaleString()} rows · {activeDatasetObj.total_cols} cols · {activeDatasetObj.size_kb} KB
                       </div>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <span
-                      className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border ${
+                      className={`text-[10px] font-mono font-semibold px-2.5 py-0.5 rounded-full border ${
                         activeDatasetObj.data_health_score >= 80
                           ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
                           : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
                       }`}
                     >
-                      Health: {activeDatasetObj.data_health_score}/100
+                      {activeDatasetObj.data_health_score}% Health
                     </span>
 
                     <button
                       type="button"
                       onClick={() => setIsSchemaOpen(true)}
-                      className="px-3 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[11px] font-mono text-[#0D9488] font-semibold cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
+                      className="px-2.5 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[11px] font-mono text-[#0D9488] font-semibold cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
                     >
-                      View Schema
+                      Schema
                     </button>
                   </div>
                 </div>
@@ -317,14 +316,14 @@ export const StudioView: React.FC = () => {
                       key={idx}
                       type="button"
                       onClick={() => handleRunQuery(p.query)}
-                      className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-left transition-all duration-200 cursor-pointer hover:border-[#0D9488] hover:-translate-y-0.5 group shadow-[var(--tt-shadow-card)] hover:shadow-[var(--tt-shadow-hover)]"
+                      className="p-3.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-left transition-all duration-200 cursor-pointer hover:border-[#0D9488] hover:-translate-y-0.5 group shadow-[var(--tt-shadow-card)] hover:shadow-[var(--tt-shadow-hover)]"
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488]">
-                            <Icon className="w-3.5 h-3.5" />
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-lg flex items-center justify-center bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488]">
+                            <Icon className="w-3 h-3" />
                           </span>
-                          <span className="text-xs font-bold text-[var(--tt-text-primary)]">
+                          <span className="text-xs font-semibold text-[var(--tt-text-primary)]">
                             {p.title}
                           </span>
                         </div>
@@ -332,7 +331,7 @@ export const StudioView: React.FC = () => {
                           {p.tag}
                         </span>
                       </div>
-                      <p className="text-xs line-clamp-2 leading-relaxed text-[var(--tt-text-secondary)]">
+                      <p className="text-xs line-clamp-2 text-[var(--tt-text-secondary)]">
                         {p.desc}
                       </p>
                     </button>

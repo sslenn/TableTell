@@ -152,10 +152,10 @@ export const CommandDock: React.FC<CommandDockProps> = ({
   };
 
   const quickTemplates = [
-    { label: 'Top 10 Ranking', icon: Award, template: 'Show the top 10 records ordered by ' },
-    { label: 'Category Breakdown', icon: BarChart2, template: 'Compare total revenue and row counts across categories' },
-    { label: 'Time Trend', icon: TrendingUp, template: 'Show the weekly or monthly trend over time with a chart' },
-    { label: 'Statistical Summary', icon: Layers, template: 'Calculate statistical summary (mean, median, min, max) for ' }
+    { label: 'Top 10', icon: Award, template: 'Show the top 10 records ordered by ' },
+    { label: 'Breakdown', icon: BarChart2, template: 'Compare total revenue and row counts across categories' },
+    { label: 'Trends', icon: TrendingUp, template: 'Show the weekly or monthly trend over time with a chart' },
+    { label: 'Summary', icon: Layers, template: 'Calculate statistical summary (mean, median, min, max) for ' }
   ];
 
   return (
@@ -185,7 +185,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
       {/* Reset Confirmation Bar */}
       {showConfirmReset && (
         <div
-          className="mb-2.5 p-2.5 rounded-xl border flex items-center justify-between text-xs animate-in fade-in"
+          className="mb-2.5 p-2 rounded-xl border flex items-center justify-between text-xs animate-in fade-in"
           style={{
             backgroundColor: 'rgba(251, 146, 60, 0.12)',
             borderColor: 'var(--tt-accent-warm)',
@@ -193,8 +193,8 @@ export const CommandDock: React.FC<CommandDockProps> = ({
           }}
         >
           <div className="flex items-center gap-1.5 font-medium">
-            <AlertTriangle className="w-4 h-4 text-[#FB923C]" />
-            <span>Clear analytical conversation history?</span>
+            <AlertTriangle className="w-3.5 h-3.5 text-[#FB923C]" />
+            <span>Clear conversation?</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -204,9 +204,9 @@ export const CommandDock: React.FC<CommandDockProps> = ({
                 setShowConfirmReset(false);
                 toast.info('Chat Reset', 'Conversation history cleared');
               }}
-              className="px-2.5 py-1 rounded bg-[#FB923C] text-black font-bold text-xs cursor-pointer hover:opacity-90"
+              className="px-2.5 py-1 rounded bg-[#FB923C] text-black font-semibold text-xs cursor-pointer hover:opacity-90"
             >
-              Confirm Clear
+              Clear
             </button>
             <button
               type="button"
@@ -232,7 +232,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
                 handleSubmit();
               }
             }}
-            placeholder={`Ask a question about '${datasetId}' (e.g. 'Compare revenue by category and show weekly trend')...`}
+            placeholder={`Ask anything about ${datasetId}...`}
             rows={1}
             className="w-full resize-none bg-transparent outline-none text-sm placeholder:opacity-50 selection:bg-[#2DD4BF]/20 max-h-32 leading-relaxed"
             style={{
@@ -250,9 +250,6 @@ export const CommandDock: React.FC<CommandDockProps> = ({
 
         {/* Quick Query Templates */}
         <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          <span className="text-[10px] font-mono font-medium opacity-60 mr-1" style={{ color: 'var(--tt-text-muted)' }}>
-            Analytical Shortcuts:
-          </span>
           {quickTemplates.map((tpl, i) => {
             const Icon = tpl.icon;
             return (
@@ -303,16 +300,12 @@ export const CommandDock: React.FC<CommandDockProps> = ({
                   borderColor: isSchemaOpen ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
                   color: isSchemaOpen ? 'var(--tt-primary)' : 'var(--tt-text-secondary)'
                 }}
-                title="Toggle schema columns inspector"
+                title="Toggle schema inspector"
               >
                 <Columns3 className="w-3 h-3" />
-                <span>Schema ({activeColumns.length} cols)</span>
+                <span>Schema ({activeColumns.length})</span>
               </button>
             )}
-
-            <span className="hidden sm:inline-block text-[10px] font-mono opacity-50" style={{ color: 'var(--tt-text-muted)' }}>
-              ↵ Run · ⇧↵ New Line
-            </span>
           </div>
 
           {/* Action Buttons */}
@@ -320,7 +313,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
             <button
               type="button"
               onClick={() => setShowConfirmReset(true)}
-              title="Reset conversation history"
+              title="Reset conversation"
               className="p-1.5 rounded-lg border transition-all cursor-pointer opacity-80 hover:opacity-100 hover:border-[#2DD4BF]"
               style={{
                 backgroundColor: 'var(--tt-bg-elevated)',
@@ -334,7 +327,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
             <button
               type="button"
               onClick={handleMicToggle}
-              title={isListening ? 'Stop listening' : 'Dictate query with voice'}
+              title={isListening ? 'Stop listening' : 'Voice input'}
               className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                 isListening ? 'text-[#F87171] border-[#F87171] animate-pulse' : 'text-secondary hover:border-[#2DD4BF]'
               }`}
@@ -350,7 +343,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
             <button
               type="submit"
               disabled={!query.trim() || isStreaming}
-              className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer disabled:opacity-40 hover:opacity-95 shadow-md"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer disabled:opacity-40 hover:opacity-95 shadow-md"
               style={{
                 backgroundColor: 'var(--tt-primary)',
                 color: '#0A1214',
@@ -360,11 +353,11 @@ export const CommandDock: React.FC<CommandDockProps> = ({
               {isStreaming ? (
                 <>
                   <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                  <span>Synthesizing...</span>
+                  <span>Running...</span>
                 </>
               ) : (
                 <>
-                  <span>Run Query</span>
+                  <span>Run</span>
                   <Send className="w-3.5 h-3.5" />
                 </>
               )}

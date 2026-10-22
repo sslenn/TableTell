@@ -11,12 +11,7 @@ import {
   ScatterChart,
   ShieldCheck,
   Trash2,
-  Wand2,
-  Target,
-  CircleDot,
-  HelpCircle,
-  TrendingUp,
-  Layers
+  Wand2
 } from 'lucide-react';
 import type { ColumnStat, DatasetDistributionTopology } from '../../types/dataset';
 
