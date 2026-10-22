@@ -38,6 +38,7 @@ class DistributionProfile(BaseModel):
     bins: List[HistogramBin] = Field(default_factory=list)
     box_plot: Optional[BoxPlotStats] = None
     density_curve: List[Dict[str, float]] = Field(default_factory=list)
+    sample_observations: List[float] = Field(default_factory=list)
 
 
 class ColumnStat(BaseModel):

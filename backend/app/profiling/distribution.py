@@ -214,6 +214,16 @@ def compute_column_distribution(
             f"Inspect median ({median_val:.2f}) alongside mean ({mean_val:.2f}) to avoid distortion."
         )
 
+    # 7. Sample observations for scatter plots & visual observation inspection
+    sample_size = min(80, len(valid_series))
+    step = max(1, len(valid_series) // sample_size)
+    sample_obs = [round(float(x), 2) for x in valid_series.iloc[::step][:sample_size]]
+    # Ensure outlier samples are included in the sample observations if any exist
+    if not outlier_series.empty and len(outliers_list) > 0:
+        for out_val in outliers_list[:8]:
+            if out_val not in sample_obs:
+                sample_obs.append(out_val)
+
     return DistributionProfile(
         distribution_type=distribution_type,
         confidence=confidence,
@@ -226,7 +236,8 @@ def compute_column_distribution(
         business_recommendation=recommendation,
         bins=bins,
         box_plot=box_plot,
-        density_curve=density_curve
+        density_curve=density_curve,
+        sample_observations=sample_obs
     )
 
 

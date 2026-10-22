@@ -41,6 +41,7 @@ export interface DistributionProfile {
   bins: HistogramBin[];
   box_plot?: BoxPlotStats | null;
   density_curve?: { x: number; y: number }[];
+  sample_observations?: number[];
 }
 
 export interface DatasetDistributionTopology {
