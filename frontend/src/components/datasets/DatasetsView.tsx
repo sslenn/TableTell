@@ -1,0 +1,547 @@
+import React, { useState, useEffect } from 'react';
+import {
+  UploadCloud,
+  CheckCircle,
+  Sparkles,
+  FileSpreadsheet,
+  RefreshCw,
+  Search,
+  MessageSquare,
+  AlertCircle,
+  Database,
+  Layers,
+  HardDrive,
+  Activity,
+  Eye,
+  X,
+  Table as TableIcon
+} from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
+import { fetchDatasets, uploadDataset, cleanDataset, fetchDatasetPreview } from '../../lib/api';
+import type { CleaningResult } from '../../types/dataset';
+import { toast } from '../../store/useToastStore';
+import { DataGrid } from '../studio/DataGrid';
+
+export const DatasetsView: React.FC = () => {
+  const { datasets, setDatasets, datasetId, setDatasetId, setActiveTab } = useAppStore();
+  const [isUploading, setIsUploading] = useState(false);
+  const [cleaningId, setCleaningId] = useState<string | null>(null);
+  const [cleanResult, setCleanResult] = useState<CleaningResult | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'clean' | 'raw'>('all');
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Preview Modal state
+  const [previewDatasetId, setPreviewDatasetId] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    columns: string[];
+    rows: Record<string, unknown>[];
+    row_count: number;
+  } | null>(null);
+
+  const loadData = React.useCallback(() => {
+    fetchDatasets()
+      .then(setDatasets)
+      .catch((err) => console.error('Failed to load datasets:', err));
+  }, [setDatasets]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+
+    setIsUploading(true);
+    setUploadMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const res = await uploadDataset(file);
+      setUploadMessage(`Successfully ingested ${file.name} as '${res.dataset_id}'.`);
+      toast.success('Dataset Ingested', `Created local table '${res.dataset_id}'`);
+      setDatasetId(res.dataset_id);
+      loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Upload failed';
+      setErrorMessage(msg);
+      toast.error('Ingestion Failed', msg);
+    } finally {
+      setIsUploading(false);
+      setFileInputKey((k) => k + 1);
+    }
+  };
+
+  const handleClean = async (id: string) => {
+    setCleaningId(id);
+    setCleanResult(null);
+    setErrorMessage(null);
+
+    try {
+      const res = await cleanDataset(id);
+      setCleanResult(res);
+      toast.success('Cleaned Successfully', `Removed ${res.removed_duplicates} duplicates`);
+      loadData();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Cleaning pipeline failed';
+      setErrorMessage(msg);
+      toast.error('Clean Failed', msg);
+    } finally {
+      setCleaningId(null);
+    }
+  };
+
+  const handleOpenInStudio = (id: string) => {
+    setDatasetId(id);
+    setActiveTab('studio');
+    toast.info('Workspace Switched', `Active dataset: ${id}`);
+  };
+
+  const handleInspectPreview = async (id: string) => {
+    setPreviewDatasetId(id);
+    setPreviewLoading(true);
+    setPreviewData(null);
+
+    try {
+      const res = await fetchDatasetPreview(id, 10);
+      setPreviewData({
+        columns: (res.columns as string[]) || [],
+        rows: (res.rows as Record<string, unknown>[]) || [],
+        row_count: (res.row_count as number) || 0
+      });
+    } catch (err) {
+      toast.error('Preview Failed', 'Could not fetch sample rows');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const filteredList = React.useMemo(() => {
+    return datasets.filter((d) => {
+      const matchesSearch = d.dataset_id.toLowerCase().includes(searchQuery.toLowerCase());
+      const isClean = d.dataset_id.toLowerCase().includes('clean');
+      if (!matchesSearch) return false;
+      if (filterType === 'clean') return isClean;
+      if (filterType === 'raw') return !isClean;
+      return true;
+    });
+  }, [datasets, searchQuery, filterType]);
+
+  // Aggregate stats across catalog
+  const totalRows = datasets.reduce((sum, d) => sum + (d.total_rows || 0), 0);
+  const totalKb = datasets.reduce((sum, d) => sum + (d.size_kb || 0), 0);
+  const avgHealth =
+    datasets.length > 0
+      ? Math.round(datasets.reduce((sum, d) => sum + (d.data_health_score || 0), 0) / datasets.length)
+      : 100;
+
+  return (
+    <div className="flex flex-col gap-6 max-w-6xl mx-auto pb-10">
+      {/* View Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1
+            className="text-2xl font-bold tracking-tight text-[var(--tt-text-primary)]"
+            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+          >
+            Data Catalog & Ingestion
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--tt-text-muted)] mt-1">
+            Local DuckDB tables and vectorized Parquet files ready for sub-second analytical queries.
+          </p>
+        </div>
+
+        <button
+          onClick={loadData}
+          type="button"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
+        >
+          <RefreshCw className="w-3.5 h-3.5 text-[#0D9488]" />
+          <span>Refresh Catalog</span>
+        </button>
+      </div>
+
+      {/* Lake Summary Metrics */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#0D9488]">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Tables in Lake</span>
+            <div className="text-xl font-bold font-mono text-[var(--tt-text-primary)] tabular-nums mt-0.5">
+              {datasets.length}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#10B981]">
+            <Layers className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Total Records</span>
+            <div className="text-xl font-bold font-mono text-[var(--tt-text-primary)] tabular-nums mt-0.5">
+              {totalRows.toLocaleString()}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#0284C7]">
+            <HardDrive className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Columnar Storage</span>
+            <div className="text-xl font-bold font-mono text-[var(--tt-text-primary)] tabular-nums mt-0.5">
+              {totalKb > 1024 ? `${(totalKb / 1024).toFixed(1)} MB` : `${totalKb.toFixed(0)} KB`}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center gap-3.5 shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all">
+          <div className="w-10 h-10 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-center shrink-0 text-[#F59E0B]">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <span className="text-xs font-medium text-[var(--tt-text-muted)]">Avg Health Score</span>
+            <div className="text-xl font-bold font-mono text-[#10B981] tabular-nums mt-0.5">
+              {avgHealth}/100
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Error Notice */}
+      {errorMessage && (
+        <div className="p-3.5 rounded-xl border border-red-500/30 bg-red-500/10 text-xs font-mono text-red-500 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
+      {/* Drag & Drop Upload Zone */}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragging(true);
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDragging(false);
+          const file = e.dataTransfer.files?.[0];
+          if (file) handleFileUpload(file);
+        }}
+        className={`p-8 rounded-xl border-2 border-dashed flex flex-col items-center justify-center text-center transition-all relative ${
+          isDragging
+            ? 'border-[#0D9488] bg-[#0D9488]/10'
+            : 'border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] hover:border-[#0D9488]'
+        } shadow-[var(--tt-shadow-card)]`}
+      >
+        <input
+          key={fileInputKey}
+          type="file"
+          accept=".csv,.xlsx,.parquet"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFileUpload(f);
+          }}
+          disabled={isUploading}
+          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+        />
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-2.5 bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488]">
+          <UploadCloud className={`w-6 h-6 ${isUploading ? 'animate-bounce' : 'text-[#0D9488]'}`} />
+        </div>
+        <div className="text-sm font-bold text-[var(--tt-text-primary)] mb-1">
+          {isUploading ? 'Ingesting & Converting to Parquet...' : 'Drop or Browse CSV, Excel, or Parquet Data'}
+        </div>
+        <div className="text-xs text-[var(--tt-text-muted)] max-w-md leading-relaxed">
+          Files are automatically converted into compressed columnar Parquet and registered in the DuckDB catalog.
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-secondary)]">
+            .CSV
+          </span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-secondary)]">
+            .XLSX
+          </span>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-secondary)]">
+            .PARQUET
+          </span>
+        </div>
+        {uploadMessage && (
+          <div className="mt-3 text-xs font-mono text-[#10B981] font-medium">
+            {uploadMessage}
+          </div>
+        )}
+      </div>
+
+      {/* Cleaning Report Banner */}
+      {cleanResult && (
+        <div className="p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-950/25 flex flex-col gap-2 text-xs shadow-[var(--tt-shadow-card)]">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-[#10B981]" />
+            <span className="text-xs font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+              Cleaning Pipeline Executed Successfully
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2 font-mono tabular-nums pt-1">
+            <div className="p-2.5 rounded-lg bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)]">
+              <span className="text-[10px] text-[var(--tt-text-muted)] block">Original Rows</span>
+              <span className="font-bold text-[var(--tt-text-primary)]">{cleanResult.original_rows.toLocaleString()}</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)]">
+              <span className="text-[10px] text-[var(--tt-text-muted)] block">Cleaned Rows</span>
+              <span className="font-bold text-[var(--tt-text-primary)]">{cleanResult.cleaned_rows.toLocaleString()}</span>
+            </div>
+            <div className="p-2.5 rounded-lg bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)]">
+              <span className="text-[10px] text-[var(--tt-text-muted)] block">Duplicates Removed</span>
+              <span className="font-bold text-[#10B981]">{cleanResult.removed_duplicates}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter & Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-xs w-full sm:w-72 shadow-[var(--tt-shadow-card)]">
+          <Search className="w-3.5 h-3.5 text-[#0D9488]" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search datasets in lake..."
+            className="w-full bg-transparent outline-none text-xs text-[var(--tt-text-primary)]"
+          />
+        </div>
+
+        <div className="flex items-center gap-1 p-1 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-card)]">
+          <button
+            type="button"
+            onClick={() => setFilterType('all')}
+            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              filterType === 'all'
+                ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+            }`}
+          >
+            All ({datasets.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('clean')}
+            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              filterType === 'clean'
+                ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+            }`}
+          >
+            Cleaned
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterType('raw')}
+            className={`px-3 py-1 rounded-lg text-xs font-medium cursor-pointer transition-colors ${
+              filterType === 'raw'
+                ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
+                : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+            }`}
+          >
+            Raw
+          </button>
+        </div>
+      </div>
+
+      {/* Parquet Catalog Grid */}
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredList.map((d) => {
+            const isSelected = d.dataset_id === datasetId;
+            const isCleaning = cleaningId === d.dataset_id;
+
+            return (
+              <div
+                key={d.dataset_id}
+                className={`p-4 rounded-xl border transition-all duration-200 shadow-[var(--tt-shadow-card)] flex flex-col justify-between ${
+                  isSelected
+                    ? 'border-[#0D9488] ring-1 ring-[#0D9488] bg-[var(--tt-bg-surface)]'
+                    : 'border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:border-[#0D9488]'
+                }`}
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 truncate">
+                      <FileSpreadsheet className="w-4 h-4 text-[#0D9488] shrink-0" />
+                      <span
+                        className="text-sm font-bold font-mono truncate text-[var(--tt-text-primary)]"
+                        title={d.dataset_id}
+                      >
+                        {d.dataset_id}
+                      </span>
+                    </div>
+
+                    {/* Health Score Badge */}
+                    <div
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold shrink-0 border ${
+                        d.data_health_score >= 80
+                          ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30'
+                          : 'bg-amber-500/15 text-amber-500 border-amber-500/30'
+                      }`}
+                    >
+                      Health: {d.data_health_score}/100
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 py-2.5 border-y border-[var(--tt-border-subtle)] text-xs font-mono tabular-nums my-2">
+                    <div>
+                      <div className="text-[10px] text-[var(--tt-text-muted)]">Rows</div>
+                      <div className="font-semibold text-[var(--tt-text-primary)]">
+                        {d.total_rows.toLocaleString()}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[var(--tt-text-muted)]">Columns</div>
+                      <div className="font-semibold text-[var(--tt-text-primary)]">
+                        {d.total_cols}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-[var(--tt-text-muted)]">Format & Size</div>
+                      <div className="font-semibold truncate text-[var(--tt-text-primary)]">
+                        {d.source_format?.toUpperCase() || 'PARQUET'} · {d.size_kb} KB
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleInspectPreview(d.dataset_id)}
+                      type="button"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
+                      title="Inspect sample records and column types"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-[#0D9488]" />
+                      <span>Preview</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleClean(d.dataset_id)}
+                      disabled={isCleaning}
+                      type="button"
+                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] disabled:opacity-50"
+                      title="Run data cleaning pipeline"
+                    >
+                      <Sparkles className={`w-3.5 h-3.5 text-[#F59E0B] ${isCleaning ? 'animate-spin' : ''}`} />
+                      <span>{isCleaning ? 'Cleaning...' : 'Auto-Clean'}</span>
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => handleOpenInStudio(d.dataset_id)}
+                      type="button"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#0D9488] hover:bg-[#0F766E] text-white transition-all cursor-pointer shadow-[var(--tt-shadow-card)]"
+                      title="Open dataset in Analytical Studio to ask questions"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Ask in Studio</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+
+      {/* Dataset Preview Modal */}
+      {previewDatasetId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/75 backdrop-blur-md animate-in fade-in">
+          <div
+            className="w-full h-full max-w-5xl max-h-[85vh] rounded-2xl border flex flex-col overflow-hidden shadow-2xl"
+            style={{
+              backgroundColor: 'var(--tt-bg-surface)',
+              borderColor: 'var(--tt-border-strong)'
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              className="flex items-center justify-between px-5 py-3.5 border-b"
+              style={{
+                backgroundColor: 'var(--tt-bg-elevated)',
+                borderColor: 'var(--tt-border-subtle)'
+              }}
+            >
+              <div className="flex items-center gap-2.5">
+                <TableIcon className="w-4 h-4 text-[#2DD4BF]" />
+                <div>
+                  <div className="text-sm font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
+                    {previewDatasetId}
+                  </div>
+                  <div className="text-[11px] font-mono opacity-70" style={{ color: 'var(--tt-text-muted)' }}>
+                    Sample Preview (First 10 records)
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenInStudio(previewDatasetId);
+                    setPreviewDatasetId(null);
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer"
+                  style={{
+                    backgroundColor: 'var(--tt-primary)',
+                    color: '#0A1214'
+                  }}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Analyze in Studio</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPreviewDatasetId(null)}
+                  className="p-1.5 rounded-lg border cursor-pointer hover:border-[#2DD4BF] transition-all"
+                  style={{
+                    backgroundColor: 'var(--tt-bg-surface)',
+                    borderColor: 'var(--tt-border-subtle)',
+                    color: 'var(--tt-text-primary)'
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 p-4 overflow-y-auto min-h-0">
+              {previewLoading ? (
+                <div className="flex flex-col items-center justify-center py-20 text-xs font-mono" style={{ color: 'var(--tt-text-muted)' }}>
+                  <RefreshCw className="w-6 h-6 animate-spin text-[#2DD4BF] mb-2" />
+                  <span>Reading columnar Parquet file...</span>
+                </div>
+              ) : previewData ? (
+                <DataGrid tableResult={previewData} />
+              ) : (
+                <div className="text-center py-20 text-xs font-mono" style={{ color: 'var(--tt-text-muted)' }}>
+                  No preview available
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};

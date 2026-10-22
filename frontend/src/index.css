@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --color-tt-canvas: var(--tt-bg-canvas);
+  --color-tt-surface: var(--tt-bg-surface);
+  --color-tt-elevated: var(--tt-bg-elevated);
+  --color-tt-sunken: var(--tt-bg-sunken);
+  --color-tt-border: var(--tt-border-subtle);
+  --color-tt-border-strong: var(--tt-border-strong);
+  --color-tt-text: var(--tt-text-primary);
+  --color-tt-text-secondary: var(--tt-text-secondary);
+  --color-tt-text-muted: var(--tt-text-muted);
+  --color-tt-primary: var(--tt-primary);
+  --color-tt-primary-hover: var(--tt-primary-hover);
+  --color-tt-primary-subtle: var(--tt-primary-subtle);
+}
+
+:root,
+[data-theme="light"] {
+  --tt-bg-canvas: #EEF2F6;
+  --tt-bg-surface: #FFFFFF;
+  --tt-bg-elevated: #F8FAFC;
+  --tt-bg-sunken: #E2E8F0;
+  --tt-text-primary: #0F172A;
+  --tt-text-secondary: #334155;
+  --tt-text-muted: #64748B;
+  --tt-border-subtle: #CBD5E1;
+  --tt-border-strong: #94A3B8;
+  --tt-primary: #0D9488;
+  --tt-primary-hover: #0F766E;
+  --tt-primary-subtle: #ECFDF5;
+  --tt-accent-cyan: #0284C7;
+  --tt-accent-warm: #F59E0B;
+  --tt-success: #10B981;
+  --tt-warning: #D97706;
+  --tt-error: #EF4444;
+  --tt-shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.08), 0 3px 6px -1px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(203, 213, 225, 0.85);
+  --tt-shadow-hover: 0 10px 15px -3px rgba(15, 23, 42, 0.12), 0 4px 6px -4px rgba(15, 23, 42, 0.06), 0 0 0 1px rgba(148, 163, 184, 0.95);
+  --tt-shadow-floating: 0 20px 25px -5px rgba(15, 23, 42, 0.14), 0 8px 10px -6px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(203, 213, 225, 0.9);
+}
+
+[data-theme="dark"] {
+  --tt-bg-canvas: #090D12;
+  --tt-bg-surface: #131A22;
+  --tt-bg-elevated: #1B2430;
+  --tt-bg-sunken: #0B1015;
+  --tt-text-primary: #F8FAFC;
+  --tt-text-secondary: #CBD5E1;
+  --tt-text-muted: #94A3B8;
+  --tt-border-subtle: #24303F;
+  --tt-border-strong: #3B4B5E;
+  --tt-primary: #2DD4BF;
+  --tt-primary-hover: #14B8A6;
+  --tt-primary-subtle: rgba(45, 212, 191, 0.15);
+  --tt-accent-cyan: #38BDF8;
+  --tt-accent-warm: #FBBF24;
+  --tt-success: #34D399;
+  --tt-warning: #FBBF24;
+  --tt-error: #F87171;
+  --tt-shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.09);
+  --tt-shadow-hover: 0 12px 28px -4px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(45, 212, 191, 0.35);
+  --tt-shadow-floating: 0 20px 35px -5px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+/* Common High-Contrast Card System */
+.tt-card {
+  background-color: var(--tt-bg-surface);
+  border: 1px solid var(--tt-border-subtle);
+  box-shadow: var(--tt-shadow-card);
+  color: var(--tt-text-primary);
+  border-radius: 0.75rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.tt-card:hover {
+  border-color: var(--tt-border-strong);
+}
+
+.tt-card-hover:hover {
+  box-shadow: var(--tt-shadow-hover);
+  border-color: var(--tt-border-strong);
+}
+
+.tt-card-elevated {
+  background-color: var(--tt-bg-elevated);
+  border: 1px solid var(--tt-border-subtle);
+  box-shadow: var(--tt-shadow-card);
+  color: var(--tt-text-primary);
+  border-radius: 0.75rem;
+}
+
+html, body {
+  font-family: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--tt-bg-canvas);
+  color: var(--tt-text-primary);
+  min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Tabular figures for data grids, counters, and metrics */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Custom Nordic scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--tt-border-strong);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--tt-primary);
+}
+
+/* Nordic prose text formatting */
+.prose-nordic p {
+  margin-bottom: 0.65rem;
+  line-height: 1.65;
+}
+
+.prose-nordic p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-nordic strong {
+  color: var(--tt-text-primary);
+  font-weight: 700;
+}
+
+.prose-nordic ul {
+  list-style-type: disc;
+  padding-left: 1.25rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.prose-nordic ol {
+  list-style-type: decimal;
+  padding-left: 1.25rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.prose-nordic li {
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
+}
+
+/* Keyframe animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}

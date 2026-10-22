@@ -13,8 +13,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -22,37 +22,49 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache/
+.coverage
+htmlcov/
 
-# Secrets & Environment Variables (NEVER commit API keys)
+# Secrets & Environment Variables (NEVER commit API keys or credentials)
 .env
 .env.local
 .env.*.local
 *.env
+*.pem
+*.key
 
 # Data Lake & Large Binary / Parquet Caches
 data_lake/
+backend/data_lake/
 *.parquet
 *.duckdb
 *.duckdb.tmp
 *.sqlite
 *.db
 
-# Node.js / Next.js (For Frontend)
+# Node.js / Vite / Frontend
 node_modules/
+frontend/node_modules/
 .next/
 out/
+dist/
+frontend/dist/
+dist-ssr/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Archives & Large Zips
+# Archives & Large Compressed Files
 *.zip
 *.tar.gz
 *.rar
+*.7z
 
-# Agent & CLI caches
+# Agent & Tool Caches
 .agents/
+skills-lock.json
 
 # IDE & OS Metadata
 .vscode/
@@ -61,3 +73,6 @@ pnpm-debug.log*
 Thumbs.db
 *.swp
 *.swo
+
+# Ensure source library folder is NEVER ignored
+!frontend/src/lib/
