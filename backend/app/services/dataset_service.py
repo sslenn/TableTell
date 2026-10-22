@@ -94,6 +94,57 @@ class DatasetService:
         d["versions"] = versions
         return d
 
+    def delete_dataset(self, dataset_id: str) -> Dict[str, Any]:
+        """
+        Deletes a dataset and all associated versions, files, and metadata:
+        1. Checks existence
+        2. Deletes physical raw and processed parquet files
+        3. Cascades deletion in SQLite metadata repository
+        """
+        d = metadata_repo.get_dataset(dataset_id)
+        if not d:
+            raise DatasetNotFoundError(dataset_id)
+
+        deleted_files = []
+
+        # Remove explicit version files
+        versions = metadata_repo.list_versions(dataset_id)
+        for v in versions:
+            sp = v.get("storage_path")
+            if sp:
+                p = Path(sp)
+                if p.exists() and p.is_file():
+                    try:
+                        p.unlink()
+                        deleted_files.append(str(p))
+                    except Exception:
+                        pass
+
+        # Remove raw storage path if specified
+        raw_sp = d.get("raw_storage_path")
+        if raw_sp:
+            rp = Path(raw_sp)
+            if rp.exists() and rp.is_file():
+                try:
+                    rp.unlink()
+                    deleted_files.append(str(rp))
+                except Exception:
+                    pass
+
+        # Purge any matched lake files
+        additional_deleted = parquet_store.delete_dataset_files(dataset_id)
+        deleted_files.extend(additional_deleted)
+
+        # Remove dataset and all versions from SQLite
+        metadata_repo.delete_dataset(dataset_id)
+
+        return {
+            "status": "success",
+            "dataset_id": dataset_id,
+            "deleted_files_count": len(set(deleted_files)),
+            "message": f"Dataset '{dataset_id}' and all associated files deleted successfully"
+        }
+
     def upload_dataset(
         self,
         file_content: bytes,

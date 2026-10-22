@@ -5,7 +5,7 @@ Handles safe path resolution, file immutability, and storage isolation.
 
 from pathlib import Path
 import re
-from typing import Optional
+from typing import Optional, List
 from app.core.config import settings
 from app.core.exceptions import DatasetNotFoundError
 
@@ -76,6 +76,45 @@ class ParquetStore:
             return leg_path
 
         raise DatasetNotFoundError(dataset_id)
+
+    def delete_dataset_files(self, dataset_id: str) -> List[str]:
+        """
+        Safely deletes all physical files associated with a dataset from the data lake:
+        - Raw uploads in data_lake/raw/{dataset_id}.*
+        - Processed version parquets in data_lake/processed/{dataset_id}_v*.parquet
+        - Direct lake parquets/files in data_lake/{dataset_id}.*
+        """
+        safe_id = self.sanitize_id(dataset_id)
+        deleted = []
+
+        # 1. Raw uploads
+        for p in self.raw_dir.glob(f"{safe_id}.*"):
+            if p.is_file():
+                try:
+                    p.unlink()
+                    deleted.append(str(p))
+                except Exception:
+                    pass
+
+        # 2. Processed version files
+        for p in self.processed_dir.glob(f"{safe_id}_v*.parquet"):
+            if p.is_file():
+                try:
+                    p.unlink()
+                    deleted.append(str(p))
+                except Exception:
+                    pass
+
+        # 3. Direct base lake files
+        for p in self.base_dir.glob(f"{safe_id}.*"):
+            if p.is_file() and p.suffix.lower() in (".parquet", ".csv", ".xlsx", ".json"):
+                try:
+                    p.unlink()
+                    deleted.append(str(p))
+                except Exception:
+                    pass
+
+        return deleted
 
     def _ensure_safe_path(self, path: Path):
         try:
