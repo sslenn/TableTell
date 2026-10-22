@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="en" data-option="3" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TableTell — Master Design System: Color Palettes & Typography</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Lora:ital,wght@0,500;0,600;1,400;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =============================================================
+       TABLETELL 5-DIRECTION CHROMATIC & TYPOGRAPHIC MATRIX
+       ============================================================= */
+
+    /* OPTION 1: THE EDITORIAL PARCHMENT (Claude-Inspired Humanist & Literary Quant) */
+    html[data-option="1"][data-theme="light"] {
+      --bg-canvas: #FAF9F5;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #F5F4ED;
+      --bg-sunken: #EDECE4;
+      --text-primary: #141413;
+      --text-secondary: #474642;
+      --text-muted: #6B6A65;
+      --border-subtle: #E8E6DC;
+      --border-strong: #D4D2C5;
+      --primary: #D97757;
+      --primary-hover: #C26243;
+      --primary-subtle: rgba(217, 119, 87, 0.12);
+      --accent: #5080AF;
+      --accent-warm: #B87C14;
+      --success: #5F7346;
+      --chart-1: #D97757;
+      --chart-2: #6A9BCC;
+      --chart-3: #788C5D;
+      --chart-4: #D99B26;
+      --chart-5: #8C68A6;
+      --chart-6: #C46686;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-card: 0 2px 10px -1px rgba(20, 20, 19, 0.05);
+    }
+    html[data-option="1"][data-theme="dark"] {
+      --bg-canvas: #141413;
+      --bg-surface: #20201E;
+      --bg-elevated: #2D2D2A;
+      --bg-sunken: #0D0D0C;
+      --text-primary: #FAF9F5;
+      --text-secondary: #C4C3BA;
+      --text-muted: #9E9D96;
+      --border-subtle: rgba(250, 249, 245, 0.10);
+      --border-strong: rgba(250, 249, 245, 0.18);
+      --primary: #D97757;
+      --primary-hover: #E2886A;
+      --primary-subtle: rgba(217, 119, 87, 0.16);
+      --accent: #6A9BCC;
+      --accent-warm: #D99B26;
+      --success: #788C5D;
+      --chart-1: #D97757;
+      --chart-2: #6A9BCC;
+      --chart-3: #788C5D;
+      --chart-4: #D99B26;
+      --chart-5: #8C68A6;
+      --chart-6: #C46686;
+      --font-display: 'Instrument Serif', Georgia, serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.55);
+    }
+
+    /* OPTION 2: THE OBSIDIAN FOUNDRY (Industrial Quant & Columnar Speed) */
+    html[data-option="2"][data-theme="dark"] {
+      --bg-canvas: #07090E;
+      --bg-surface: #0F131D;
+      --bg-elevated: #192030;
+      --bg-sunken: #040508;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --primary: #6366F1;
+      --primary-hover: #4F46E5;
+      --primary-subtle: rgba(99, 102, 241, 0.15);
+      --accent: #06B6D4;
+      --accent-warm: #F59E0B;
+      --success: #10B981;
+      --chart-1: #6366F1;
+      --chart-2: #06B6D4;
+      --chart-3: #10B981;
+      --chart-4: #F59E0B;
+      --chart-5: #8B5CF6;
+      --chart-6: #F43F5E;
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+    html[data-option="2"][data-theme="light"] {
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #F1F5F9;
+      --bg-sunken: #EDF2F7;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --primary-subtle: #EEF2FF;
+      --accent: #0891B2;
+      --accent-warm: #D97706;
+      --success: #15803D;
+      --chart-1: #4F46E5;
+      --chart-2: #0891B2;
+      --chart-3: #15803D;
+      --chart-4: #D97706;
+      --chart-5: #7C3AED;
+      --chart-6: #DC2626;
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --shadow-card: 0 2px 10px -1px rgba(15, 23, 42, 0.06);
+    }
+
+    /* OPTION 3: THE NORDIC TERMINAL (Calm Teal & Birch Editorial) */
+    html[data-option="3"][data-theme="dark"] {
+      --bg-canvas: #0A1214;
+      --bg-surface: #112022;
+      --bg-elevated: #182C2F;
+      --bg-sunken: #050B0C;
+      --text-primary: #F0FDF4;
+      --text-secondary: #94A3B8;
+      --text-muted: #5E7A7D;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --primary: #2DD4BF;
+      --primary-hover: #14B8A6;
+      --primary-subtle: rgba(45, 212, 191, 0.15);
+      --accent: #38BDF8;
+      --accent-warm: #FBBF24;
+      --success: #34D399;
+      --chart-1: #2DD4BF;
+      --chart-2: #38BDF8;
+      --chart-3: #FBBF24;
+      --chart-4: #34D399;
+      --chart-5: #A78BFA;
+      --chart-6: #FB7185;
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.45);
+    }
+    html[data-option="3"][data-theme="light"] {
+      --bg-canvas: #F9F9F6;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #F2F1EC;
+      --bg-sunken: #E7E6DF;
+      --text-primary: #132223;
+      --text-secondary: #4A5D5E;
+      --text-muted: #728586;
+      --border-subtle: #E3E2DC;
+      --border-strong: #CDCBC3;
+      --primary: #0F766E;
+      --primary-hover: #115E59;
+      --primary-subtle: #F0FDFA;
+      --accent: #0284C7;
+      --accent-warm: #B45309;
+      --success: #166534;
+      --chart-1: #0F766E;
+      --chart-2: #0284C7;
+      --chart-3: #B45309;
+      --chart-4: #166534;
+      --chart-5: #6D28D9;
+      --chart-6: #BE123C;
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 18px;
+      --shadow-card: 0 2px 8px -1px rgba(19, 34, 35, 0.05);
+    }
+
+    /* OPTION 4: THE CYBER-KINETIC HIVE (High-Tech Cobalt & Signal Lime) */
+    html[data-option="4"][data-theme="dark"] {
+      --bg-canvas: #08080C;
+      --bg-surface: #111119;
+      --bg-elevated: #1B1B26;
+      --bg-sunken: #040406;
+      --text-primary: #FFFFFF;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --primary: #3B82F6;
+      --primary-hover: #2563EB;
+      --primary-subtle: rgba(59, 130, 246, 0.16);
+      --accent: #84CC16;
+      --accent-warm: #F59E0B;
+      --success: #10B981;
+      --chart-1: #3B82F6;
+      --chart-2: #84CC16;
+      --chart-3: #A855F7;
+      --chart-4: #F59E0B;
+      --chart-5: #06B6D4;
+      --chart-6: #F43F5E;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.6);
+    }
+    html[data-option="4"][data-theme="light"] {
+      --bg-canvas: #F4F4F7;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #EBEBF0;
+      --bg-sunken: #E0E0E6;
+      --text-primary: #09090B;
+      --text-secondary: #52525B;
+      --text-muted: #71717A;
+      --border-subtle: #E4E4E7;
+      --border-strong: #D4D2D8;
+      --primary: #1D4ED8;
+      --primary-hover: #1E40AF;
+      --primary-subtle: #EFF6FF;
+      --accent: #059669;
+      --accent-warm: #D97706;
+      --success: #059669;
+      --chart-1: #1D4ED8;
+      --chart-2: #059669;
+      --chart-3: #7C3AED;
+      --chart-4: #D97706;
+      --chart-5: #0891B2;
+      --chart-6: #DC2626;
+      --font-display: 'Space Grotesk', sans-serif;
+      --font-body: 'Public Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --shadow-card: 0 2px 10px -1px rgba(9, 9, 11, 0.05);
+    }
+
+    /* OPTION 5: THE EXECUTIVE MONOLITH (Midnight Navy & Sovereign Gold) */
+    html[data-option="5"][data-theme="dark"] {
+      --bg-canvas: #090C15;
+      --bg-surface: #121826;
+      --bg-elevated: #1C2438;
+      --bg-sunken: #05070C;
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --primary: #F59E0B;
+      --primary-hover: #D97706;
+      --primary-subtle: rgba(245, 158, 11, 0.15);
+      --accent: #38BDF8;
+      --accent-warm: #F59E0B;
+      --success: #10B981;
+      --chart-1: #F59E0B;
+      --chart-2: #38BDF8;
+      --chart-3: #10B981;
+      --chart-4: #EC4899;
+      --chart-5: #8B5CF6;
+      --chart-6: #64748B;
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-card: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+    }
+    html[data-option="5"][data-theme="light"] {
+      --bg-canvas: #FDFDFD;
+      --bg-surface: #FFFFFF;
+      --bg-elevated: #F6F6F9;
+      --bg-sunken: #ECECEF;
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #64748B;
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      --primary: #1E3A8A;
+      --primary-hover: #172554;
+      --primary-subtle: #EEF2FF;
+      --accent: #0284C7;
+      --accent-warm: #B45309;
+      --success: #15803D;
+      --chart-1: #1E3A8A;
+      --chart-2: #B45309;
+      --chart-3: #0284C7;
+      --chart-4: #15803D;
+      --chart-5: #7C3AED;
+      --chart-6: #94A3B8;
+      --font-display: 'Plus Jakarta Sans', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --shadow-card: 0 2px 10px -1px rgba(15, 23, 42, 0.05);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      transition: background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      line-height: 1.5;
+      padding-bottom: 90px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* MASTER TOOLBAR */
+    .master-toolbar {
+      position: sticky;
+      top: 16px;
+      z-index: 999;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 9999px;
+      padding: 10px 18px;
+      margin: 16px auto 32px auto;
+      max-width: 1180px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 16px 40px -4px rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(14px);
+    }
+    .toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-right: 4px;
+    }
+    .pill-btn {
+      padding: 6px 14px;
+      border-radius: 9999px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .pill-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--primary);
+    }
+    .pill-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 2px 10px var(--primary-subtle);
+    }
+    .theme-btn {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .theme-btn:hover {
+      border-color: var(--primary);
+    }
+
+    /* DIRECTION HERO */
+    .direction-hero {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-card);
+    }
+    .direction-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: var(--primary-subtle);
+      color: var(--primary);
+      border: 1px solid var(--primary);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .direction-title {
+      font-family: var(--font-display);
+      font-size: 38px;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      margin-bottom: 8px;
+      line-height: 1.15;
+    }
+    .direction-thesis {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 860px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .meta-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .meta-tag-item {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .meta-tag-item strong {
+      color: var(--text-primary);
+    }
+
+    /* SECTIONS */
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      margin-bottom: 6px;
+    }
+    .section-sub {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    /* TYPOGRAPHY SPECIMEN SECTION */
+    .typo-specimen-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-bottom: 40px;
+    }
+    .typo-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-card);
+    }
+    .typo-role {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .typo-font-name {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--text-primary);
+    }
+    .typo-sample {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .typo-rationale {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* PALETTE & CHART RAMPS SECTION */
+    .palette-stage {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-card);
+    }
+    .swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .swatch-card {
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: var(--bg-elevated);
+    }
+    .swatch-box {
+      height: 48px;
+      width: 100%;
+    }
+    .swatch-info {
+      padding: 8px;
+      font-size: 11px;
+    }
+    .swatch-name {
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    .swatch-hex {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    /* 6-SERIES CHART VISUALIZER */
+    .chart-visualizer {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+    .chart-ramp-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .chart-bars-mock {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      height: 130px;
+      padding-top: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .bar-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .bar-fill {
+      width: 100%;
+      border-radius: 3px 3px 0 0;
+      transition: height 0.3s ease;
+    }
+    .bar-lbl {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* LIVE COMPONENT PREVIEW */
+    .component-stage {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-bottom: 40px;
+      box-shadow: var(--shadow-card);
+    }
+    .app-header-mock {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+    }
+    .app-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .app-brand-name {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+
+    /* TELEMETRY RAIL */
+    .telemetry-rail {
+      background: var(--bg-sunken);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 8px 14px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+    .telemetry-steps {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .telemetry-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-secondary);
+    }
+    .telemetry-step.done {
+      color: var(--success);
+      font-weight: 600;
+    }
+    .telemetry-step.active {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    /* KPI GRID */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 18px;
+    }
+    .kpi-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .kpi-num {
+      font-family: var(--font-mono);
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      font-feature-settings: "tnum" 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* DATA TABLE SPECIMEN */
+    .data-table-container {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    .data-table th {
+      background: var(--bg-sunken);
+      padding: 10px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .data-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+    .data-table .num-cell {
+      text-align: right;
+      font-family: var(--font-mono);
+      font-feature-settings: "tnum" 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* QUERY DOCK */
+    .query-dock-mock {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-card);
+    }
+    .query-input-fake {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+    }
+    .query-dock-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 12px;
+    }
+    .run-cta {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .run-cta:hover {
+      background: var(--primary-hover);
+    }
+
+    @media (max-width: 900px) {
+      .typo-specimen-grid { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .swatch-grid { grid-template-columns: repeat(3, 1fr); }
+      .master-toolbar { flex-direction: column; gap: 10px; border-radius: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MASTER TOOLBAR -->
+  <div class="master-toolbar">
+    <div class="toolbar-group">
+      <span class="toolbar-label">Design Matrix:</span>
+      <button class="pill-btn active" id="btnOpt1" onclick="setOption('1')">1. The Editorial Parchment (Claude-Inspired)</button>
+      <button class="pill-btn" id="btnOpt2" onclick="setOption('2')">2. Obsidian Quant (Indigo/Cyan)</button>
+      <button class="pill-btn" id="btnOpt3" onclick="setOption('3')">3. Nordic Terminal (Teal/Birch)</button>
+      <button class="pill-btn" id="btnOpt4" onclick="setOption('4')">4. Cyber Kinetic (Cobalt/Lime)</button>
+      <button class="pill-btn" id="btnOpt5" onclick="setOption('5')">5. Executive Sovereign (Navy/Gold)</button>
+    </div>
+    <div class="toolbar-group">
+      <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">
+        <span id="themeIcon">☀️</span>
+        <span id="themeText">Light Mode</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- DIRECTION SUMMARY -->
+    <section class="direction-hero">
+      <div class="direction-badge" id="directionBadge">Option 1 · Authoritative Design System (Claude-Inspired)</div>
+      <h1 class="direction-title" id="directionTitle">The Editorial Parchment</h1>
+      <p class="direction-thesis" id="directionThesis">
+        Humanist warmth meets columnar quantitative rigor. Warm ivory surfaces, olive-tinted dark ground, terracotta coral accents, literary serif headlines, clean humanist body text, and tabular monospace figures for DuckDB telemetry.
+      </p>
+
+      <div class="meta-tags">
+        <div class="meta-tag-item">Display Font: <strong id="tagDisplayFont">Instrument Serif (400 with Italic)</strong></div>
+        <div class="meta-tag-item">Body / UI Font: <strong id="tagBodyFont">Public Sans (Humanist 400/500)</strong></div>
+        <div class="meta-tag-item">Data / Numbers: <strong id="tagMonoFont">JetBrains Mono (Tabular Nums)</strong></div>
+        <div class="meta-tag-item">Primary Brand: <strong id="tagPrimaryColor">Terracotta Coral (#D97757 / #C26243)</strong></div>
+        <div class="meta-tag-item">Columnar Stream: <strong id="tagAccentColor">Analytical Blue (#6A9BCC / #5080AF)</strong></div>
+      </div>
+    </section>
+
+    <!-- TYPOGRAPHY DEEP-DIVE SPECIMENS -->
+    <div>
+      <h2 class="section-title">Typography & Font Pairing Architecture</h2>
+      <p class="section-sub">
+        TableTell enforces strict typographic differentiation: literary serif headlines for editorial clarity, humanist sans-serif for fatigue-free UI reading, and monospace figures with tabular-nums for vertical decimal alignment.
+      </p>
+
+      <div class="typo-specimen-grid">
+
+        <!-- DISPLAY FONT CARD -->
+        <div class="typo-card">
+          <div class="typo-role">Display & Brand Voice</div>
+          <div class="typo-font-name" id="dispFontTitle">Instrument Serif</div>
+          <div class="typo-sample" style="font-family: var(--font-display);">
+            <div style="font-size: 28px; font-weight: 400; letter-spacing: -0.015em; line-height: 1.2; margin-bottom: 4px;">
+              Autonomous Storytelling
+            </div>
+            <div style="font-size: 15px; font-style: italic; color: var(--text-secondary);">
+              Deterministic DuckDB columnar processing & self-healing execution.
+            </div>
+          </div>
+          <div class="typo-rationale" id="dispFontRationale">
+            A refined, literary modern serif with editorial elegance and historical dignity. Evokes authoritative research publications without feeling dated.
+          </div>
+        </div>
+
+        <!-- BODY / UI FONT CARD -->
+        <div class="typo-card">
+          <div class="typo-role">UI & Analytical Reading</div>
+          <div class="typo-font-name" id="bodyFontTitle">Public Sans</div>
+          <div class="typo-sample" style="font-family: var(--font-body);">
+            <div style="font-size: 13px; font-weight: 500; line-height: 1.5; color: var(--text-primary); margin-bottom: 6px;">
+              Query executed across 541,909 records in 12.4ms with zero syntax errors.
+            </div>
+            <div style="font-size: 12px; color: var(--text-muted);">
+              Calculated variance: +18.4% MoM growth rate across 14 categories.
+            </div>
+          </div>
+          <div class="typo-rationale" id="bodyFontRationale">
+            Engineered for dense government dashboards and statistical portals. Generous proportions and humanist neutral balance prevent optical fatigue during prolonged analytical workflows.
+          </div>
+        </div>
+
+        <!-- MONOSPACE / TABULAR DATA FONT CARD -->
+        <div class="typo-card">
+          <div class="typo-role">Tabular Figures, SQL & Code</div>
+          <div class="typo-font-name" id="monoFontTitle">JetBrains Mono</div>
+          <div class="typo-sample" style="font-family: var(--font-mono); font-feature-settings: 'tnum' 1; font-variant-numeric: tabular-nums;">
+            <div style="font-size: 13px; color: var(--accent); margin-bottom: 4px;">
+              SELECT country, SUM(revenue)
+            </div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">
+              $1,429,850.00  |  12.4ms  |  +14.2%
+            </div>
+          </div>
+          <div class="typo-rationale" id="monoFontRationale">
+            Tabular numerals with constant pitch (tabular-nums) ensure DuckDB execution metrics (ms, MB) and financial aggregates align with mathematical precision.
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- COLOR PALETTE & 6-SERIES CHART VISUALIZER -->
+    <div class="palette-stage">
+      <h2 class="section-title">Color System & 6-Series Categorical Chart Ramp</h2>
+      <p class="section-sub">
+        Every palette includes calibrated UI foundations (Canvas, Surface, Elevated) alongside a 6-color distinct chart palette engineered to maintain a 3:1+ contrast ratio against card backgrounds.
+      </p>
+
+      <!-- UI Foundation Swatches -->
+      <div class="swatch-grid">
+        <div class="swatch-card">
+          <div class="swatch-box" style="background: var(--bg-canvas);"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Canvas Root</div>
+            <div class="swatch-hex" id="hexCanvas">--</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-box" style="background: var(--bg-surface);"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Card Surface</div>
+            <div class="swatch-hex" id="hexSurface">--</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-box" style="background: var(--primary);"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Primary Brand</div>
+            <div class="swatch-hex" id="hexPrimary">--</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-box" style="background: var(--accent);"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Data Stream</div>
+            <div class="swatch-hex" id="hexAccent">--</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-box" style="background: var(--accent-warm);"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">DuckDB Gold</div>
+            <div class="swatch-hex" id="hexWarm">--</div>
+          </div>
+        </div>
+        <div class="swatch-card">
+          <div class="swatch-box" style="background: var(--success);"></div>
+          <div class="swatch-info">
+            <div class="swatch-name">Health / Success</div>
+            <div class="swatch-hex" id="hexSuccess">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart Ramp Simulator -->
+      <div class="chart-visualizer">
+        <div class="chart-ramp-title">
+          <span>Categorical Plotly Visualization Ramp (6 Dimensions)</span>
+          <span style="color: var(--primary); font-family: var(--font-mono);">WCAG Calibrated Ramps</span>
+        </div>
+        <div class="chart-bars-mock">
+          <div class="bar-col">
+            <div class="bar-fill" style="height: 90%; background: var(--chart-1);"></div>
+            <div class="bar-lbl">#1 Primary</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-fill" style="height: 75%; background: var(--chart-2);"></div>
+            <div class="bar-lbl">#2 Vector</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-fill" style="height: 60%; background: var(--chart-3);"></div>
+            <div class="bar-lbl">#3 Health</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-fill" style="height: 48%; background: var(--chart-4);"></div>
+            <div class="bar-lbl">#4 Volume</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-fill" style="height: 38%; background: var(--chart-5);"></div>
+            <div class="bar-lbl">#5 Segment</div>
+          </div>
+          <div class="bar-col">
+            <div class="bar-fill" style="height: 25%; background: var(--chart-6);"></div>
+            <div class="bar-lbl">#6 Cohort</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- LIVE COMPONENT SIMULATOR -->
+    <div class="component-stage">
+      <h2 class="section-title">Live Component Experience Under Selected System</h2>
+      <p class="section-sub">
+        Test how the chosen typography and color hierarchy render across navigation, telemetry, KPIs, and prompt dock.
+      </p>
+
+      <!-- App Header Mock -->
+      <div class="app-header-mock">
+        <div class="app-brand">
+          <!-- Concept 1: The Editorial DAG Monogram -->
+          <svg width="34" height="34" viewBox="0 0 100 100" fill="none">
+            <rect x="14" y="16" width="20" height="10" rx="2.5" fill="var(--accent)" />
+            <rect x="40" y="16" width="20" height="10" rx="2.5" fill="var(--primary)" />
+            <rect x="66" y="16" width="20" height="10" rx="2.5" fill="var(--success)" />
+            <path d="M50 26 V44" stroke="var(--primary)" stroke-width="6.5" stroke-linecap="round" />
+            <path d="M50 44 C50 60 26 62 26 76" stroke="var(--accent)" stroke-width="6" stroke-linecap="round" />
+            <circle cx="26" cy="76" r="6" fill="var(--accent)" />
+            <path d="M50 44 C50 60 74 62 74 76" stroke="var(--primary)" stroke-width="6" stroke-linecap="round" />
+            <circle cx="74" cy="76" r="6" fill="var(--primary)" />
+            <circle cx="50" cy="44" r="5" fill="var(--accent-warm)" />
+          </svg>
+          <div>
+            <div class="app-brand-name">TableTell</div>
+            <div style="font-size: 11px; color: var(--text-muted);">Autonomous AI Data Analyst</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 9999px; background: var(--primary-subtle); color: var(--primary);">
+            ● DuckDB Columnar Parquet Engine
+          </span>
+        </div>
+      </div>
+
+      <!-- Agent Telemetry Rail -->
+      <div class="telemetry-rail">
+        <div class="telemetry-steps">
+          <span class="telemetry-step done">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Plan (0.4ms)
+          </span>
+          <span style="color: var(--text-muted);">→</span>
+          <span class="telemetry-step done">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            DuckDB SQL (8.2ms)
+          </span>
+          <span style="color: var(--text-muted);">→</span>
+          <span class="telemetry-step done">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Self-Healed (0 err)
+          </span>
+          <span style="color: var(--text-muted);">→</span>
+          <span class="telemetry-step active">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            Plotly Render (3.8ms)
+          </span>
+        </div>
+        <div style="color: var(--text-muted); font-size: 11px;">
+          Execution: <span style="color: var(--text-primary); font-weight: 700;">12.4ms total</span>
+        </div>
+      </div>
+
+      <!-- KPI Grid Mock -->
+      <div class="kpi-row">
+        <div class="kpi-box">
+          <div class="kpi-title">
+            <span>Total Records</span>
+            <span style="color: var(--accent);">Parquet</span>
+          </div>
+          <div class="kpi-num">541,909</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-title">
+            <span>Column Vectors</span>
+            <span style="color: var(--text-muted);">DuckDB</span>
+          </div>
+          <div class="kpi-num">8</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-title">
+            <span>Cache Hit Rate</span>
+            <span style="color: var(--success);">Sub-second</span>
+          </div>
+          <div class="kpi-num" style="color: var(--success);">99.4%</div>
+        </div>
+        <div class="kpi-box">
+          <div class="kpi-title">
+            <span>Health Score</span>
+            <span style="color: var(--success);">Verified</span>
+          </div>
+          <div class="kpi-num" style="color: var(--success);">98 / 100</div>
+        </div>
+      </div>
+
+      <!-- Tabular Data Grid Specimen -->
+      <div class="data-table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Country</th>
+              <th>Category</th>
+              <th style="text-align: right;">Transactions</th>
+              <th style="text-align: right;">Gross Revenue</th>
+              <th style="text-align: right;">Variance (MoM)</th>
+              <th>Engine Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>United States</strong></td>
+              <td>Enterprise Analytics</td>
+              <td class="num-cell">148,220</td>
+              <td class="num-cell">$682,400.00</td>
+              <td class="num-cell" style="color: var(--success);">+14.8%</td>
+              <td><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--primary-subtle); color: var(--primary); font-weight: 600;">Vector Scan</span></td>
+            </tr>
+            <tr>
+              <td><strong>United Kingdom</strong></td>
+              <td>Financial Intelligence</td>
+              <td class="num-cell">94,310</td>
+              <td class="num-cell">$412,950.00</td>
+              <td class="num-cell" style="color: var(--success);">+8.2%</td>
+              <td><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--primary-subtle); color: var(--primary); font-weight: 600;">Vector Scan</span></td>
+            </tr>
+            <tr>
+              <td><strong>Germany</strong></td>
+              <td>Supply Operations</td>
+              <td class="num-cell">78,415</td>
+              <td class="num-cell">$334,500.00</td>
+              <td class="num-cell" style="color: var(--text-muted);">-1.4%</td>
+              <td><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--primary-subtle); color: var(--primary); font-weight: 600;">Vector Scan</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Query Dock Mock -->
+      <div class="query-dock-mock">
+        <div class="query-input-fake">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <span>Ask anything (e.g. "Calculate customer lifetime value by acquisition channel")...</span>
+        </div>
+        <div class="query-dock-footer">
+          <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <span style="color: var(--primary); font-family: var(--font-mono);">[DAG]</span> LangGraph State Machine · Deterministic DuckDB
+          </div>
+          <button class="run-cta">Run Query ➔</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    const optionsData = {
+      '1': {
+        badge: 'Option 1 · Authoritative Design System (Claude-Inspired)',
+        title: 'The Editorial Parchment',
+        thesis: 'Humanist warmth meets columnar quantitative rigor. Warm ivory surfaces, olive-tinted dark ground, terracotta coral accents, literary serif headlines, clean humanist body text, and tabular monospace figures for DuckDB telemetry.',
+        displayFont: 'Instrument Serif (400 with Italic)',
+        bodyFont: 'Public Sans (Humanist 400/500)',
+        monoFont: 'JetBrains Mono (Tabular Nums)',
+        primaryColor: 'Terracotta Coral (#D97757 / #C26243)',
+        accentColor: 'Analytical Blue (#6A9BCC / #5080AF)',
+        dispTitle: 'Instrument Serif',
+        dispRationale: 'A refined, literary modern serif with editorial elegance and historical dignity. Evokes authoritative research publications without feeling dated.',
+        bodyTitle: 'Public Sans',
+        bodyRationale: 'Engineered for dense government dashboards and statistical portals. Generous proportions and humanist neutral balance prevent optical fatigue during prolonged analytical workflows.',
+        monoTitle: 'JetBrains Mono',
+        monoRationale: 'Tabular numerals with constant pitch (tabular-nums) ensure DuckDB execution metrics (ms, MB) and financial aggregates align with mathematical precision.'
+      },
+      '2': {
+        badge: 'Option 2 · Deterministic Precision',
+        title: 'The Obsidian Foundry',
+        thesis: 'Maximum data density, razor-sharp mathematical discipline, sub-second columnar computing. Inspired by Bloomberg Terminal meets modern Linear/Raycast.',
+        displayFont: 'Plus Jakarta Sans (Bold 800)',
+        bodyFont: 'Inter (Clean 400/500)',
+        monoFont: 'JetBrains Mono (Tabular Nums)',
+        primaryColor: 'Neural Indigo (#6366F1 / #4F46E5)',
+        accentColor: 'Analytical Cyan (#06B6D4 / #0891B2)',
+        dispTitle: 'Plus Jakarta Sans',
+        dispRationale: 'Geometric neo-grotesk with wide proportions and sharp terminal cuts. Authoritative on hero sections and KPI titles without feeling heavy.',
+        bodyTitle: 'Inter',
+        bodyRationale: 'The industry standard for dense interface legibility. Tall x-height and neutral character shapes prevent optical fatigue during multi-hour data exploration.',
+        monoTitle: 'JetBrains Mono',
+        monoRationale: 'Engineered specifically for developers and tabular data. Constant numeral widths ensure that decimal points and financial figures align strictly in columns.'
+      },
+      '3': {
+        badge: 'Option 3 · Cognitive Calm & Editorial',
+        title: 'The Nordic Terminal',
+        thesis: 'Reduced cognitive load for 8-hour analytical deep dives. Replaces harsh saturated contrasts with muted petrol teal, deep sage, and warm paper tones.',
+        displayFont: 'Plus Jakarta Sans (SemiBold)',
+        bodyFont: 'Public Sans (Clean)',
+        monoFont: 'Fira Code',
+        primaryColor: 'Nordic Teal (#2DD4BF / #0F766E)',
+        accentColor: 'Glacier Ice (#38BDF8 / #0284C7)',
+        dispTitle: 'Plus Jakarta Sans',
+        dispRationale: 'Maintains geometric precision with softer terminals that harmonize with calm muted teal backgrounds.',
+        bodyTitle: 'Public Sans',
+        bodyRationale: 'Originally engineered for complex government dashboards and statistical portals. Impeccable clarity at 12px table row density.',
+        monoTitle: 'Fira Code',
+        monoRationale: 'Clean ligature-free tabular monospace that renders mathematical formulas and DuckDB SQL queries with warmth.'
+      },
+      '4': {
+        badge: 'Option 4 · Autonomous Agentic Hive',
+        title: 'The Cyber-Kinetic Hive',
+        thesis: 'Celebrates the autonomous machine-learning engine and self-healing LangGraph loops. High contrast, technical, bold cobalt and signal lime.',
+        displayFont: 'Space Grotesk (700)',
+        bodyFont: 'Public Sans',
+        monoFont: 'JetBrains Mono',
+        primaryColor: 'Hyper Cobalt (#3B82F6 / #1D4ED8)',
+        accentColor: 'Signal Lime (#84CC16 / #059669)',
+        dispTitle: 'Space Grotesk',
+        dispRationale: 'Sharp, tech-forward proportions with angled cuts that convey autonomous intelligence and algorithmic speed.',
+        bodyTitle: 'Public Sans',
+        bodyRationale: 'Balances the aggressive personality of Space Grotesk with neutral, highly legible body and data table text.',
+        monoTitle: 'JetBrains Mono',
+        monoRationale: 'Provides high-contrast monospace rendering for execution state traces, error recovery logs, and SQL code sandboxes.'
+      },
+      '5': {
+        badge: 'Option 5 · Executive Intelligence',
+        title: 'The Executive Sovereign',
+        thesis: 'Designed for C-suite decision-makers, hedge funds, and strategic presentations. Deep obsidian-navy with burnished gold and sapphire accents.',
+        displayFont: 'Plus Jakarta Sans (Bold)',
+        bodyFont: 'Inter',
+        monoFont: 'IBM Plex Mono',
+        primaryColor: 'Sovereign Gold (#F59E0B / #1E3A8A)',
+        accentColor: 'Sapphire (#38BDF8 / #0284C7)',
+        dispTitle: 'Plus Jakarta Sans',
+        dispRationale: 'A polished, executive-ready sans-serif conveying financial authority and strategic clarity.',
+        bodyTitle: 'Inter',
+        bodyRationale: 'Strict neutrality that ensures executive briefs, markdown bullet points, and data summaries read effortlessly.',
+        monoTitle: 'IBM Plex Mono',
+        monoRationale: 'Classic IBM computational heritage. Crisp tabular lining figures that give financial statements and ARR metrics a Wall Street caliber feel.'
+      }
+    };
+
+    function setOption(opt) {
+      document.documentElement.setAttribute('data-option', opt);
+      
+      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      const activeBtn = document.getElementById('btnOpt' + opt);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const data = optionsData[opt];
+      document.getElementById('directionBadge').textContent = data.badge;
+      document.getElementById('directionTitle').textContent = data.title;
+      document.getElementById('directionThesis').textContent = data.thesis;
+      document.getElementById('tagDisplayFont').textContent = data.displayFont;
+      document.getElementById('tagBodyFont').textContent = data.bodyFont;
+      document.getElementById('tagMonoFont').textContent = data.monoFont;
+      document.getElementById('tagPrimaryColor').textContent = data.primaryColor;
+      document.getElementById('tagAccentColor').textContent = data.accentColor;
+
+      document.getElementById('dispFontTitle').textContent = data.dispTitle;
+      document.getElementById('dispFontRationale').textContent = data.dispRationale;
+      document.getElementById('bodyFontTitle').textContent = data.bodyTitle;
+      document.getElementById('bodyFontRationale').textContent = data.bodyRationale;
+      document.getElementById('monoFontTitle').textContent = data.monoTitle;
+      document.getElementById('monoFontRationale').textContent = data.monoRationale;
+
+      updateSwatches();
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+
+      const btnIcon = document.getElementById('themeIcon');
+      const btnText = document.getElementById('themeText');
+      if (next === 'light') {
+        btnIcon.textContent = '🌙';
+        btnText.textContent = 'Dark Mode';
+      } else {
+        btnIcon.textContent = '☀️';
+        btnText.textContent = 'Light Mode';
+      }
+      updateSwatches();
+    }
+
+    function updateSwatches() {
+      const cs = getComputedStyle(document.documentElement);
+      document.getElementById('hexCanvas').textContent = cs.getPropertyValue('--bg-canvas').trim();
+      document.getElementById('hexSurface').textContent = cs.getPropertyValue('--bg-surface').trim();
+      document.getElementById('hexPrimary').textContent = cs.getPropertyValue('--primary').trim();
+      document.getElementById('hexAccent').textContent = cs.getPropertyValue('--accent').trim();
+      document.getElementById('hexWarm').textContent = cs.getPropertyValue('--accent-warm').trim();
+      document.getElementById('hexSuccess').textContent = cs.getPropertyValue('--success').trim();
+    }
+
+    // Initialize default option (1 = The Editorial Parchment)
+    setOption('1');
+  </script>
+</body>
+</html>
