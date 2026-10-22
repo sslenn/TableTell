@@ -106,6 +106,12 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   const logoOptions: { id: LogoVariant; title: string; category: string; subtitle: string }[] = [
     {
+      id: 'tabletell-badge',
+      title: 'TableTell Badge',
+      category: 'Official Brand',
+      subtitle: 'Official dark squircle badge with table header and 3-column metric pillars'
+    },
+    {
       id: 'speech-grid',
       title: 'Speech Grid',
       category: 'Conversational',
@@ -197,9 +203,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
       {/* Left Navigation Sidebar */}
       <aside
-        className={`${
-          sidebarCollapsed ? 'w-16' : 'w-64'
-        } shrink-0 flex flex-col justify-between border-r border-[var(--tt-border-subtle)] p-4 transition-all duration-300 relative bg-[var(--tt-bg-surface)] z-20`}
+        className={`${sidebarCollapsed ? 'w-16' : 'w-64'
+          } shrink-0 flex flex-col justify-between border-r border-[var(--tt-border-subtle)] p-4 transition-all duration-300 relative bg-[var(--tt-bg-surface)] z-20`}
       >
         <div className="flex flex-col gap-5">
           {/* Brand Lockup */}
@@ -208,7 +213,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               className="flex items-center gap-3 cursor-pointer"
               onClick={() => setActiveTab('studio')}
             >
-              <BrandLogo size={sidebarCollapsed ? 30 : 34} variant={logoVariant || 'growth-chevron'} />
+              <BrandLogo size={sidebarCollapsed ? 30 : 34} variant={logoVariant || 'tabletell-badge'} />
               {!sidebarCollapsed && (
                 <div>
                   <div
@@ -282,27 +287,24 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                     <button
                       type="button"
                       onClick={() => setFilterType('all')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
-                        filterType === 'all' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
-                      }`}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${filterType === 'all' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                        }`}
                     >
                       All ({datasets.length})
                     </button>
                     <button
                       type="button"
                       onClick={() => setFilterType('clean')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
-                        filterType === 'clean' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
-                      }`}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${filterType === 'clean' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                        }`}
                     >
                       Cleaned
                     </button>
                     <button
                       type="button"
                       onClick={() => setFilterType('raw')}
-                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
-                        filterType === 'raw' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
-                      }`}
+                      className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${filterType === 'raw' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                        }`}
                     >
                       Raw
                     </button>
@@ -327,9 +329,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                               setDatasetDropdownOpen(false);
                               toast.info('Active Workspace Changed', `Switched to ${d.dataset_id}`);
                             }}
-                            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs group ${
-                              isSelected ? 'bg-[#0D9488]/15 text-[#0D9488]' : 'hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
-                            }`}
+                            className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs group ${isSelected ? 'bg-[#0D9488]/15 text-[#0D9488]' : 'hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
+                              }`}
                           >
                             <div className="flex flex-col truncate pr-2">
                               <span className="truncate font-semibold">{d.dataset_id}</span>
@@ -339,9 +340,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                             </div>
                             <div className="flex items-center gap-1.5 shrink-0">
                               <span
-                                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                                  isClean ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
-                                }`}
+                                className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${isClean ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
+                                  }`}
                               >
                                 {isClean ? 'Clean' : 'Raw'}
                               </span>
@@ -363,7 +363,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               title={`Active: ${datasetId} (Click to expand)`}
               className="flex items-center justify-center p-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
             >
-              <Zap className="w-4 h-4 text-[#0D9488]" />
+              <Database className="w-4 h-4 text-[#0D9488]" />
             </button>
           )}
 
@@ -382,13 +382,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
-                  className={`flex items-center ${
-                    sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
-                  } rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${
-                    isActive
+                  className={`flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
+                    } rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${isActive
                       ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
                       : 'text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)]'
-                  }`}
+                    }`}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
                   <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0D9488]' : 'text-[var(--tt-text-muted)]'}`} />
@@ -526,27 +524,24 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                       <button
                         type="button"
                         onClick={() => setFilterType('all')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
-                          filterType === 'all' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
-                        }`}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${filterType === 'all' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                          }`}
                       >
                         All ({datasets.length})
                       </button>
                       <button
                         type="button"
                         onClick={() => setFilterType('clean')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
-                          filterType === 'clean' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
-                        }`}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${filterType === 'clean' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                          }`}
                       >
                         Cleaned
                       </button>
                       <button
                         type="button"
                         onClick={() => setFilterType('raw')}
-                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${
-                          filterType === 'raw' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
-                        }`}
+                        className={`px-2 py-0.5 rounded text-[10px] font-medium cursor-pointer transition-colors ${filterType === 'raw' ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold' : 'text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+                          }`}
                       >
                         Raw
                       </button>
@@ -571,9 +566,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                                 setHeaderDatasetOpen(false);
                                 toast.info('Active Dataset Switched', `Now querying ${d.dataset_id}`);
                               }}
-                              className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs ${
-                                isSelected ? 'bg-[#0D9488]/15 text-[#0D9488] font-semibold' : 'hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
-                              }`}
+                              className={`flex items-center justify-between p-2 rounded-lg text-left transition-colors cursor-pointer text-xs ${isSelected ? 'bg-[#0D9488]/15 text-[#0D9488] font-semibold' : 'hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
+                                }`}
                             >
                               <div className="flex flex-col truncate pr-2">
                                 <span className="truncate font-semibold">{d.dataset_id}</span>
@@ -583,9 +577,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                               </div>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <span
-                                  className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${
-                                    isClean ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
-                                  }`}
+                                  className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${isClean ? 'bg-emerald-500/15 text-emerald-500' : 'bg-amber-500/15 text-amber-500'
+                                    }`}
                                 >
                                   {isClean ? 'Clean' : 'Raw'}
                                 </span>
@@ -638,9 +631,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                           setLogoDropdownOpen(false);
                           toast.info(`Logo set to ${opt.title}`);
                         }}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg text-left transition-all cursor-pointer border ${
-                          isSelected ? 'bg-[#0D9488]/15 border-[#0D9488]/40 text-[#0D9488]' : 'border-transparent hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
-                        }`}
+                        className={`flex items-start gap-2.5 p-2 rounded-lg text-left transition-all cursor-pointer border ${isSelected ? 'bg-[#0D9488]/15 border-[#0D9488]/40 text-[#0D9488]' : 'border-transparent hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
+                          }`}
                       >
                         <BrandLogo size={24} variant={opt.id} className="mt-0.5 shrink-0" />
                         <div className="flex-1 min-w-0">
@@ -701,9 +693,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 </div>
 
                 <ChevronDown
-                  className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${
-                    userDropdownOpen ? 'rotate-180' : ''
-                  }`}
+                  className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${userDropdownOpen ? 'rotate-180' : ''
+                    }`}
                 />
               </button>
 
