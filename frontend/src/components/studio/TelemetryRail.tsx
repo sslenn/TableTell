@@ -1,6 +1,7 @@
 import React from 'react';
-import { Database, Cpu, CheckCircle2, RefreshCw, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Database, Cpu, CheckCircle2, RefreshCw, AlertTriangle, BarChart3, Table } from 'lucide-react';
 import type { StreamStatusStep } from '../../types/api';
+import { useAppStore } from '../../store/useAppStore';
 
 interface TelemetryRailProps {
   isStreaming: boolean;
@@ -8,6 +9,8 @@ interface TelemetryRailProps {
   statusMessage: string;
   selfHealMessage?: string | null;
   repairedSql?: string | null;
+  onToggleSchema?: () => void;
+  isSchemaOpen?: boolean;
 }
 
 export const TelemetryRail: React.FC<TelemetryRailProps> = ({
@@ -15,23 +18,99 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
   currentStep,
   statusMessage,
   selfHealMessage,
-  repairedSql
+  repairedSql,
+  onToggleSchema,
+  isSchemaOpen
 }) => {
+  const { datasetId, datasets, activeColumns } = useAppStore();
+  const activeDataset = datasets.find((d) => d.dataset_id === datasetId);
+
   if (!isStreaming && !selfHealMessage && !statusMessage) {
     return (
       <div
-        className="flex items-center justify-between px-3 py-1.5 rounded-lg border text-xs"
+        className="flex items-center justify-between px-3.5 py-2 rounded-xl border text-xs mb-2 transition-all shadow-[var(--tt-shadow-card)]"
         style={{
           backgroundColor: 'var(--tt-bg-surface)',
           borderColor: 'var(--tt-border-subtle)',
-          color: 'var(--tt-text-muted)'
+          color: 'var(--tt-text-secondary)'
         }}
       >
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#34D399]" />
-          <span className="font-medium">DuckDB · LangGraph Active</span>
+        {/* Left: Active Dataset & Metrics */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-1.5 font-semibold shrink-0" style={{ color: 'var(--tt-text-primary)' }}>
+            <Database className="w-3.5 h-3.5 text-[#0D9488]" />
+            <span className="font-mono truncate max-w-[160px] sm:max-w-[220px]" title={datasetId}>
+              {datasetId || 'No dataset selected'}
+            </span>
+          </div>
+
+          {activeDataset && (
+            <>
+              <span className="text-[var(--tt-border-strong)] opacity-40">•</span>
+              <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--tt-text-muted)] shrink-0">
+                <span>{activeDataset.total_rows.toLocaleString()} rows</span>
+                <span>•</span>
+                <span>{activeDataset.total_cols || activeColumns.length} cols</span>
+
+                {activeDataset.data_health_score !== undefined && (
+                  <span
+                    className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide"
+                    style={{
+                      backgroundColor:
+                        activeDataset.data_health_score >= 80
+                          ? 'rgba(16, 185, 129, 0.12)'
+                          : activeDataset.data_health_score >= 50
+                          ? 'rgba(245, 158, 11, 0.12)'
+                          : 'rgba(239, 68, 68, 0.12)',
+                      color:
+                        activeDataset.data_health_score >= 80
+                          ? '#10B981'
+                          : activeDataset.data_health_score >= 50
+                          ? '#F59E0B'
+                          : '#EF4444'
+                    }}
+                    title={`Data health score: ${Math.round(activeDataset.data_health_score)}%`}
+                  >
+                    {Math.round(activeDataset.data_health_score)}% Health
+                  </span>
+                )}
+              </div>
+            </>
+          )}
+
+          {!activeDataset && activeColumns.length > 0 && (
+            <>
+              <span className="text-[var(--tt-border-strong)] opacity-40">•</span>
+              <span className="text-[11px] font-mono text-[var(--tt-text-muted)]">
+                {activeColumns.length} columns active
+              </span>
+            </>
+          )}
         </div>
-        <span className="text-[11px] font-mono tabular-nums">Sub-second latency</span>
+
+        {/* Right: Actions & DuckDB Lake Status */}
+        <div className="flex items-center gap-3 shrink-0">
+          {onToggleSchema && (
+            <button
+              type="button"
+              onClick={onToggleSchema}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+                isSchemaOpen
+                  ? 'border-[#0D9488] text-[#0D9488] bg-[#0D9488]/10'
+                  : 'border-[var(--tt-border-subtle)] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)]'
+              }`}
+              title="Inspect Schema & Column Statistics"
+            >
+              <Table className="w-3 h-3 text-[#0D9488]" />
+              <span>Schema</span>
+            </button>
+          )}
+
+          <div className="flex items-center gap-1.5 text-[11px] font-medium">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+            <span className="font-mono text-[var(--tt-text-muted)]">DuckDB Ready</span>
+          </div>
+        </div>
       </div>
     );
   }

@@ -19,16 +19,18 @@ export function getNordicPlotlyLayout(isDark: boolean) {
       family: 'Public Sans, sans-serif',
       size: 12
     },
-    margin: { t: 40, r: 24, b: 40, l: 48 },
+    margin: { t: 45, r: 25, b: 55, l: 60 },
     xaxis: {
       gridcolor: gridColor,
       zerolinecolor: gridColor,
-      tickfont: { family: 'JetBrains Mono, monospace', size: 11, color: fontColor }
+      tickfont: { family: 'JetBrains Mono, monospace', size: 11, color: fontColor },
+      automargin: true
     },
     yaxis: {
       gridcolor: gridColor,
       zerolinecolor: gridColor,
-      tickfont: { family: 'JetBrains Mono, monospace', size: 11, color: fontColor }
+      tickfont: { family: 'JetBrains Mono, monospace', size: 11, color: fontColor },
+      automargin: true
     },
     legend: {
       font: { color: fontColor, family: 'Public Sans, sans-serif' },

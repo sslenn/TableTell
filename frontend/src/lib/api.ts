@@ -85,7 +85,7 @@ export async function fetchDatasetVersions(datasetId: string): Promise<Record<st
   return data.data || [];
 }
 
-export async function fetchDatasetPreview(datasetId: string, limit = 10): Promise<Record<string, unknown>> {
+export async function fetchDatasetPreview(datasetId: string, limit = 50): Promise<Record<string, unknown>> {
   const res = await fetch(`${BASE_URL}/datasets/${datasetId}/preview?limit=${limit}`);
   if (!res.ok) throw new Error(`Preview failed: ${res.statusText}`);
   const data = await res.json();

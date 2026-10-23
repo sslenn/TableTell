@@ -127,7 +127,7 @@ export const DataGrid: React.FC<DataGridProps> = ({ tableResult, className = '' 
     getPaginationRowModel: getPaginationRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     initialState: {
-      pagination: { pageSize: 8 }
+      pagination: { pageSize: 10 }
     }
   });
 
@@ -221,22 +221,39 @@ export const DataGrid: React.FC<DataGridProps> = ({ tableResult, className = '' 
           {/* Page Size Selector */}
           <div className="flex items-center gap-1 text-[11px] font-mono opacity-80">
             <span className="text-[10px] hidden sm:inline" style={{ color: 'var(--tt-text-muted)' }}>Show:</span>
-            {[8, 20, 50].map((size) => (
-              <button
-                key={size}
-                type="button"
-                onClick={() => table.setPageSize(size)}
-                className="px-1.5 py-0.5 rounded text-[10px] border cursor-pointer transition-colors"
-                style={{
-                  backgroundColor: pageSize === size ? 'var(--tt-primary-subtle)' : 'transparent',
-                  borderColor: pageSize === size ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
-                  color: pageSize === size ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
-                  fontWeight: pageSize === size ? 700 : 400
-                }}
-              >
-                {size}
-              </button>
-            ))}
+            {[10, 25, 50, 100].map((size) => {
+              const isSelected = pageSize === size && pageSize < data.length;
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => table.setPageSize(size)}
+                  className="px-1.5 py-0.5 rounded text-[10px] border cursor-pointer transition-colors"
+                  style={{
+                    backgroundColor: isSelected ? 'var(--tt-primary-subtle)' : 'transparent',
+                    borderColor: isSelected ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
+                    color: isSelected ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
+                    fontWeight: isSelected ? 700 : 400
+                  }}
+                >
+                  {size}
+                </button>
+              );
+            })}
+            <button
+              type="button"
+              onClick={() => table.setPageSize(Math.max(data.length, 1))}
+              className="px-1.5 py-0.5 rounded text-[10px] border cursor-pointer transition-colors"
+              title="Show all records on one scrollable page"
+              style={{
+                backgroundColor: pageSize >= data.length && data.length > 0 ? 'var(--tt-primary-subtle)' : 'transparent',
+                borderColor: pageSize >= data.length && data.length > 0 ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
+                color: pageSize >= data.length && data.length > 0 ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
+                fontWeight: pageSize >= data.length && data.length > 0 ? 700 : 400
+              }}
+            >
+              All
+            </button>
           </div>
 
           <button

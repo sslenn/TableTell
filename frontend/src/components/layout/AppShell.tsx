@@ -20,6 +20,7 @@ import { useAppStore, type AppTab } from '../../store/useAppStore';
 import { BrandLogo, type LogoVariant } from '../common/BrandLogo';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { ToastContainer } from '../common/ToastContainer';
+import { TableTellAssistant } from '../assistant/TableTellAssistant';
 import { fetchDatasets } from '../../lib/api';
 import { toast } from '../../store/useToastStore';
 
@@ -106,9 +107,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const logoOptions: { id: LogoVariant; title: string; category: string; subtitle: string }[] = [
     {
       id: 'tabletell-badge',
-      title: 'TableTell Badge',
+      title: 'TableTell Cyber-Orb',
       category: 'Official Brand',
-      subtitle: 'Official dark squircle badge with table header and 3-column metric pillars'
+      subtitle: 'Official glowing holographic cyber-orb bot'
     },
     {
       id: 'speech-grid',
@@ -200,39 +201,34 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       {/* Toast Notification Container */}
       <ToastContainer />
 
+      {/* Global Draggable AI Copilot */}
+      <TableTellAssistant />
+
       {/* Left Navigation Sidebar */}
       <aside
         className={`${sidebarCollapsed ? 'w-16' : 'w-64'
           } shrink-0 flex flex-col justify-between border-r border-[var(--tt-border-subtle)] p-4 transition-all duration-300 relative bg-[var(--tt-bg-surface)] z-20`}
       >
         <div className="flex flex-col gap-5">
-          {/* Brand Lockup */}
+          {/* Brand Lockup (Icon with No Name) */}
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             <div
-              className="flex items-center gap-3 cursor-pointer"
+              className="flex items-center cursor-pointer group"
               onClick={() => setActiveTab('studio')}
+              title="TableTell"
             >
-              <BrandLogo size={sidebarCollapsed ? 30 : 34} variant={logoVariant || 'tabletell-badge'} />
-              {!sidebarCollapsed && (
-                <div>
-                  <div
-                    className="font-extrabold text-[17px] tracking-tight text-[var(--tt-text-primary)] leading-tight"
-                    style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
-                  >
-                    TableTell
-                  </div>
-                  <div className="text-[11px] font-medium text-[var(--tt-text-muted)]">
-                    Autonomous Data Analyst
-                  </div>
-                </div>
-              )}
+              <BrandLogo
+                size={sidebarCollapsed ? 32 : 38}
+                variant={logoVariant || 'tabletell-badge'}
+                className="transition-transform duration-300 group-hover:scale-105"
+              />
             </div>
 
             {!sidebarCollapsed && (
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1 rounded-md border border-[var(--tt-border-subtle)] text-xs cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all"
+                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all"
                 title="Collapse sidebar (Ctrl+B)"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />

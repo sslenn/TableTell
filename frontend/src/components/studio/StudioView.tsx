@@ -233,6 +233,8 @@ export const StudioView: React.FC = () => {
           statusMessage={statusMessage}
           selfHealMessage={selfHealMessage}
           repairedSql={repairedSql}
+          onToggleSchema={() => setIsSchemaOpen(!isSchemaOpen)}
+          isSchemaOpen={isSchemaOpen}
         />
 
         {/* Error Notice */}

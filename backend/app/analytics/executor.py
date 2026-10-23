@@ -35,7 +35,7 @@ class QueryExecutor:
         dataset_id: str,
         sql_query: str,
         version: Optional[int] = None,
-        max_rows: int = 500,
+        max_rows: int = 1000,
     ) -> Dict[str, Any]:
         """
         Validates and executes analytical SQL against the target dataset version.

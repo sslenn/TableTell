@@ -27,59 +27,24 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
   variant = 'tabletell-badge'
 }) => {
   switch (variant) {
-    // 0. Official TableTell Squircle Badge
+    // 0. Official TableTell Autonomous Orb Avatar
     case 'tabletell-badge':
       return (
-        <svg
-          width={size}
-          height={size}
-          viewBox="0 0 100 100"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className={`shrink-0 ${className}`}
+        <div
+          className={`relative shrink-0 rounded-full select-none flex items-center justify-center ${className}`}
+          style={{ width: `${size}px`, height: `${size}px` }}
         >
-          <defs>
-            <linearGradient id="tt_badge_bg" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#1E2536" />
-              <stop offset="100%" stopColor="#141926" />
-            </linearGradient>
-            <linearGradient id="tt_pill_top" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#5E667A" />
-              <stop offset="100%" stopColor="#4F5668" />
-            </linearGradient>
-            <linearGradient id="tt_bar_left" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#70BBE8" />
-              <stop offset="100%" stopColor="#589ECE" />
-            </linearGradient>
-            <linearGradient id="tt_bar_mid" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#58C9AC" />
-              <stop offset="100%" stopColor="#40B397" />
-            </linearGradient>
-            <linearGradient id="tt_bar_right" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stopColor="#64A6D4" />
-              <stop offset="100%" stopColor="#5090BD" />
-            </linearGradient>
-          </defs>
-          {/* Squircle Base with App-Icon Curvature */}
-          <rect
-            x="2"
-            y="2"
-            width="96"
-            height="96"
-            rx="24"
-            fill="url(#tt_badge_bg)"
-            stroke="#283246"
-            strokeWidth="1.5"
+          <img
+            src="/tabletell-avatar.png"
+            alt="TableTell"
+            width={size}
+            height={size}
+            className="w-full h-full object-contain rounded-full"
+            style={{
+              filter: 'drop-shadow(0 0 10px rgba(45, 212, 191, 0.45))'
+            }}
           />
-          {/* Top Table Header Pill */}
-          <rect x="11" y="18" width="78" height="13" rx="6.5" fill="url(#tt_pill_top)" />
-          {/* Left Column Bar (Sky Blue) */}
-          <rect x="14" y="45" width="20" height="37" rx="10" fill="url(#tt_bar_left)" />
-          {/* Center Column Bar (Mint Green, Tallest) */}
-          <rect x="40" y="37" width="20" height="45" rx="10" fill="url(#tt_bar_mid)" />
-          {/* Right Column Bar (Sky Blue, Compact) */}
-          <rect x="66" y="52" width="20" height="30" rx="10" fill="url(#tt_bar_right)" />
-        </svg>
+        </div>
       );
 
     // 1. Table + Tell: Speech Grid
@@ -538,6 +503,23 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       );
 
     default:
-      return null;
+      return (
+        <div
+          className={`relative shrink-0 rounded-full select-none flex items-center justify-center ${className}`}
+          style={{ width: `${size}px`, height: `${size}px` }}
+        >
+          <img
+            src="/tabletell-avatar.png"
+            alt="TableTell"
+            width={size}
+            height={size}
+            className="w-full h-full object-contain rounded-full"
+            style={{
+              filter: 'drop-shadow(0 0 10px rgba(45, 212, 191, 0.45))'
+            }}
+          />
+        </div>
+      );
   }
 };
+

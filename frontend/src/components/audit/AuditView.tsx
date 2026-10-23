@@ -25,8 +25,7 @@ import {
   Activity,
   ArrowRight,
   Download,
-  Sliders,
-  FileSpreadsheet
+  Sliders
 } from 'lucide-react';
 
 export const AuditView: React.FC = () => {

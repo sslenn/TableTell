@@ -11,6 +11,108 @@ interface ChartViewerProps {
   title?: string;
 }
 
+function buildResolvedPlotlyLayout(
+  specLayout: Partial<Plotly.Layout> | undefined,
+  specData: Plotly.Data[] | undefined,
+  isDark: boolean
+): Partial<Plotly.Layout> {
+  const baseLayout = (specLayout as any) || {};
+  const nordicLayout = getNordicPlotlyLayout(isDark) as any;
+  const labelColor = isDark ? '#94A3B8' : '#64748B';
+
+  // 1. Explicit axis titles from base layout
+  let xTitle =
+    typeof baseLayout.xaxis?.title === 'string'
+      ? baseLayout.xaxis.title
+      : baseLayout.xaxis?.title?.text || '';
+
+  let yTitle =
+    typeof baseLayout.yaxis?.title === 'string'
+      ? baseLayout.yaxis.title
+      : baseLayout.yaxis?.title?.text || '';
+
+  // 2. Intelligent inference from chart title if explicit axis titles aren't present
+  const chartTitle =
+    typeof baseLayout.title === 'string'
+      ? baseLayout.title
+      : baseLayout.title?.text || '';
+
+  if (chartTitle && (!xTitle || !yTitle)) {
+    // Pattern 1: "<Metric/Y> by <Dimension/X>" e.g. "Total Records by Gender"
+    const byMatch = chartTitle.match(/^(.*?)\s+by\s+(.*?)$/i);
+    if (byMatch) {
+      if (!yTitle) yTitle = byMatch[1].trim();
+      if (!xTitle) xTitle = byMatch[2].trim();
+    } else {
+      // Pattern 2: "Trend: <Metric/Y> over <Temporal/X>"
+      const overMatch = chartTitle.match(/^(?:trend:\s*)?(.*?)\s+over\s+(.*?)$/i);
+      if (overMatch) {
+        if (!yTitle) yTitle = overMatch[1].trim();
+        if (!xTitle) xTitle = overMatch[2].trim();
+      } else {
+        // Pattern 3: "<Y> vs <X>"
+        const vsMatch = chartTitle.match(/^(.*?)\s+(?:vs|versus)\s+(.*?)$/i);
+        if (vsMatch) {
+          if (!yTitle) yTitle = vsMatch[1].trim();
+          if (!xTitle) xTitle = vsMatch[2].trim();
+        }
+      }
+    }
+  }
+
+  // 3. Fallback from trace name
+  if (!yTitle && specData && specData.length > 0) {
+    const firstTrace = specData[0] as any;
+    if (firstTrace?.name && firstTrace.name !== 'trace 0') {
+      yTitle = firstTrace.name;
+    }
+  }
+
+  const axisTitleFont = {
+    family: 'Plus Jakarta Sans, sans-serif',
+    size: 12,
+    color: labelColor
+  };
+
+  return {
+    ...baseLayout,
+    ...nordicLayout,
+    autosize: true,
+    margin: {
+      ...nordicLayout.margin,
+      ...(baseLayout.margin || {}),
+      b: Math.max(55, baseLayout.margin?.b || 55),
+      l: Math.max(60, baseLayout.margin?.l || 60)
+    },
+    xaxis: {
+      ...nordicLayout.xaxis,
+      ...(baseLayout.xaxis || {}),
+      automargin: true,
+      title: xTitle
+        ? {
+            text: xTitle,
+            font: axisTitleFont,
+            standoff: 14,
+            ...(typeof baseLayout.xaxis?.title === 'object' ? baseLayout.xaxis.title : {})
+          }
+        : undefined
+    },
+    yaxis: {
+      ...nordicLayout.yaxis,
+      ...(baseLayout.yaxis || {}),
+      automargin: true,
+      title: yTitle
+        ? {
+            text: yTitle,
+            font: axisTitleFont,
+            standoff: 14,
+            ...(typeof baseLayout.yaxis?.title === 'object' ? baseLayout.yaxis.title : {})
+          }
+        : undefined
+    }
+  };
+}
+
 export const ChartViewer: React.FC<ChartViewerProps> = ({ spec, className = '', title }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const modalContainerRef = useRef<HTMLDivElement>(null);
@@ -23,14 +125,11 @@ export const ChartViewer: React.FC<ChartViewerProps> = ({ spec, className = '', 
     if (!containerRef.current || !spec) return;
 
     const data = (spec.data as Plotly.Data[]) || [];
-    const baseLayout = (spec.layout as Partial<Plotly.Layout>) || {};
-    const nordicLayout = getNordicPlotlyLayout(isDark);
-
-    const mergedLayout = {
-      ...baseLayout,
-      ...nordicLayout,
-      autosize: true
-    };
+    const mergedLayout = buildResolvedPlotlyLayout(
+      spec.layout as Partial<Plotly.Layout>,
+      data,
+      isDark
+    );
 
     const config: Partial<Plotly.Config> = {
       responsive: true,
@@ -57,14 +156,11 @@ export const ChartViewer: React.FC<ChartViewerProps> = ({ spec, className = '', 
     if (!isFullscreen || !modalContainerRef.current || !spec) return;
 
     const data = (spec.data as Plotly.Data[]) || [];
-    const baseLayout = (spec.layout as Partial<Plotly.Layout>) || {};
-    const nordicLayout = getNordicPlotlyLayout(isDark);
-
-    const mergedLayout = {
-      ...baseLayout,
-      ...nordicLayout,
-      autosize: true
-    };
+    const mergedLayout = buildResolvedPlotlyLayout(
+      spec.layout as Partial<Plotly.Layout>,
+      data,
+      isDark
+    );
 
     Plotly.react(modalContainerRef.current, data, mergedLayout, {
       responsive: true,

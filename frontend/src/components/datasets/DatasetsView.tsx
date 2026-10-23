@@ -42,10 +42,12 @@ export const DatasetsView: React.FC = () => {
   // Preview Modal state
   const [previewDatasetId, setPreviewDatasetId] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewLimit, setPreviewLimit] = useState<number>(50);
   const [previewData, setPreviewData] = useState<{
     columns: string[];
     rows: Record<string, unknown>[];
     row_count: number;
+    duration_ms?: number;
   } | null>(null);
 
   // Export Modal state
@@ -117,20 +119,21 @@ export const DatasetsView: React.FC = () => {
     toast.info('Workspace Switched', `Active dataset: ${id}`);
   };
 
-  const handleInspectPreview = async (id: string) => {
+  const handleInspectPreview = async (id: string, limit: number = 50) => {
     setPreviewDatasetId(id);
+    setPreviewLimit(limit);
     setPreviewLoading(true);
-    setPreviewData(null);
 
     try {
-      const res = await fetchDatasetPreview(id, 10);
+      const res = await fetchDatasetPreview(id, limit);
       setPreviewData({
         columns: (res.columns as string[]) || [],
         rows: (res.rows as Record<string, unknown>[]) || [],
-        row_count: (res.row_count as number) || 0
+        row_count: (res.row_count as number) || 0,
+        duration_ms: (res.duration_ms as number) || undefined
       });
     } catch (err) {
-      toast.error('Preview Failed', 'Could not fetch sample rows');
+      toast.error('Preview Failed', 'Could not fetch records');
     } finally {
       setPreviewLoading(false);
     }
@@ -365,7 +368,7 @@ export const DatasetsView: React.FC = () => {
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => handleQuickExport(cleanResult.cleaned_dataset_id, cleanResult.cleaned_rows)}
+                onClick={() => handleQuickExport(cleanResult.cleaned_dataset_id || cleanResult.dataset_id, cleanResult.cleaned_rows)}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#10B981] hover:bg-[#059669] text-white transition-colors cursor-pointer shadow-sm"
                 title="Download whole cleaned dataset as CSV"
               >
@@ -375,7 +378,7 @@ export const DatasetsView: React.FC = () => {
               <button
                 type="button"
                 onClick={() =>
-                  openExportModal(cleanResult.cleaned_dataset_id, cleanResult.cleaned_rows, undefined, true)
+                  openExportModal(cleanResult.cleaned_dataset_id || cleanResult.dataset_id, cleanResult.cleaned_rows, undefined, true)
                 }
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 transition-colors cursor-pointer"
                 title="Configure CSV export options"
@@ -607,16 +610,71 @@ export const DatasetsView: React.FC = () => {
                 borderColor: 'var(--tt-border-subtle)'
               }}
             >
-              <div className="flex items-center gap-2.5">
-                <TableIcon className="w-4 h-4 text-[#2DD4BF]" />
-                <div>
-                  <div className="text-sm font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
-                    {previewDatasetId}
-                  </div>
-                  <div className="text-[11px] font-mono opacity-70" style={{ color: 'var(--tt-text-muted)' }}>
-                    Sample Preview (First 10 records)
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2.5">
+                  <TableIcon className="w-4 h-4 text-[#2DD4BF]" />
+                  <div>
+                    <div className="text-sm font-bold font-mono" style={{ color: 'var(--tt-text-primary)' }}>
+                      {previewDatasetId}
+                    </div>
+                    <div className="text-[11px] font-mono opacity-70" style={{ color: 'var(--tt-text-muted)' }}>
+                      {(() => {
+                        const targetDs = datasets.find((d) => d.dataset_id === previewDatasetId);
+                        const total = targetDs?.total_rows || previewData?.row_count || 0;
+                        const loaded = previewData?.rows?.length || 0;
+                        if (!previewData && previewLoading) return 'Loading records...';
+                        if (loaded >= total && total > 0) return `All ${total.toLocaleString()} records loaded`;
+                        return `Showing ${loaded.toLocaleString()} of ${total.toLocaleString()} records`;
+                      })()}
+                    </div>
                   </div>
                 </div>
+
+                {/* Row Limit Selector */}
+                {previewDatasetId && (
+                  <div className="flex items-center gap-1 text-[11px] font-mono bg-[var(--tt-bg-surface)] p-1 rounded-lg border border-[var(--tt-border-subtle)]">
+                    <span className="text-[10px] px-1 text-[var(--tt-text-muted)]">Fetch:</span>
+                    {[50, 100, 500].map((lim) => (
+                      <button
+                        key={lim}
+                        type="button"
+                        onClick={() => handleInspectPreview(previewDatasetId, lim)}
+                        disabled={previewLoading}
+                        className="px-2 py-0.5 rounded text-[10px] font-medium border cursor-pointer transition-all disabled:opacity-50"
+                        style={{
+                          backgroundColor: previewLimit === lim ? 'var(--tt-primary-subtle)' : 'transparent',
+                          borderColor: previewLimit === lim ? 'var(--tt-primary)' : 'transparent',
+                          color: previewLimit === lim ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
+                          fontWeight: previewLimit === lim ? 700 : 500
+                        }}
+                      >
+                        {lim}
+                      </button>
+                    ))}
+                    {(() => {
+                      const targetDs = datasets.find((d) => d.dataset_id === previewDatasetId);
+                      const total = targetDs?.total_rows || 1000;
+                      const isAll = previewLimit >= total;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => handleInspectPreview(previewDatasetId, Math.max(total, 1000))}
+                          disabled={previewLoading}
+                          className="px-2 py-0.5 rounded text-[10px] font-medium border cursor-pointer transition-all disabled:opacity-50"
+                          title={`Load all ${total.toLocaleString()} records`}
+                          style={{
+                            backgroundColor: isAll ? 'var(--tt-primary-subtle)' : 'transparent',
+                            borderColor: isAll ? 'var(--tt-primary)' : 'transparent',
+                            color: isAll ? 'var(--tt-primary)' : 'var(--tt-text-muted)',
+                            fontWeight: isAll ? 700 : 500
+                          }}
+                        >
+                          All ({total.toLocaleString()})
+                        </button>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">

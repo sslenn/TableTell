@@ -154,6 +154,7 @@ export interface CleaningPlan {
 
 export interface CleaningResult {
   dataset_id: string;
+  cleaned_dataset_id?: string;
   original_rows: number;
   cleaned_rows: number;
   removed_duplicates: number;

@@ -41,10 +41,10 @@ async def get_dataset(dataset_id: str):
 @router.get("/{dataset_id}/preview", response_model=Dict[str, Any])
 async def preview_dataset(
     dataset_id: str,
-    limit: int = Query(10, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=5000),
     version: Optional[int] = Query(None)
 ):
-    """Returns top rows of a dataset for tabular preview."""
+    """Returns rows of a dataset for tabular preview (defaults to 50, supports up to 5000)."""
     try:
         sql = f'SELECT * FROM "{dataset_id}" LIMIT {limit}'
         res = query_executor.execute_query(dataset_id, sql, version=version, max_rows=limit)
