@@ -115,6 +115,9 @@ def build_plotly_spec(
 
 def _get_base_layout(title: str, x_label: str = "", y_label: str = "") -> Dict[str, Any]:
     """Generates consistent Nordic Terminal Plotly layout."""
+    clean_x = x_label.replace("_", " ").title() if x_label else None
+    clean_y = y_label.replace("_", " ").title() if y_label else None
+
     return {
         "template": "plotly_dark",
         "paper_bgcolor": "rgba(0,0,0,0)",
@@ -129,11 +132,23 @@ def _get_base_layout(title: str, x_label: str = "", y_label: str = "") -> Dict[s
         },
         "xaxis": {
             "gridcolor": "rgba(45, 212, 191, 0.12)",
-            "title": {"text": x_label.replace("_", " ").title()} if x_label else None
+            "zerolinecolor": "rgba(45, 212, 191, 0.15)",
+            "title": {
+                "text": clean_x,
+                "font": {"size": 12, "color": "#94A3B8"},
+                "standoff": 12
+            } if clean_x else None,
+            "automargin": True
         },
         "yaxis": {
             "gridcolor": "rgba(45, 212, 191, 0.12)",
-            "title": {"text": y_label.replace("_", " ").title()} if y_label else None
+            "zerolinecolor": "rgba(45, 212, 191, 0.15)",
+            "title": {
+                "text": clean_y,
+                "font": {"size": 12, "color": "#94A3B8"},
+                "standoff": 12
+            } if clean_y else None,
+            "automargin": True
         },
-        "margin": {"l": 45, "r": 20, "t": 50, "b": 45}
+        "margin": {"l": 55, "r": 25, "t": 50, "b": 55}
     }

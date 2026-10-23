@@ -9,7 +9,7 @@ RULES FOR DUCKDB SQL:
 1. TARGET TABLE: Always query from the table named '{dataset_id}'.
 2. COLUMN NAMES: Strictly use exact column names from the provided schema. Wrap column names in double quotes if needed.
 3. AGGREGATIONS: Use standard SQL aggregations (SUM, AVG, COUNT, MIN, MAX, GROUP BY, ORDER BY, LIMIT).
-4. LIMIT: Always append a reasonable LIMIT (e.g. LIMIT 50) unless doing a global single-row aggregation.
+4. LIMIT: Do NOT artificially restrict GROUP BY categorical queries with small limits unless the user explicitly requested a top N (e.g. 'top 5'). When aggregating by category, allow returning all groups. If the user asks for 'all rows', 'all records', or raw data, allow up to LIMIT 1000.
 5. NO MARKDOWN: Output ONLY the executable SQL query inside a ```sql ``` block. No conversational fluff outside.
 """
 

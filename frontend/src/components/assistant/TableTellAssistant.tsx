@@ -28,11 +28,39 @@ export const TableTellAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { position, handlePointerDown, isDragging } = useDraggable({
-    defaultWidth: 380,
-    defaultHeight: 520,
-    storageKey: 'tabletell_assistant_pos'
+  const collapsedSize = 68;
+  const chatWidth = 380;
+  const chatHeight = 520;
+
+  const {
+    position,
+    setPosition,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerUp,
+    handleSafeClick,
+    isDragging
+  } = useDraggable({
+    width: isOpen ? chatWidth : collapsedSize,
+    height: isOpen ? chatHeight : collapsedSize,
+    defaultWidth: chatWidth,
+    defaultHeight: chatHeight,
+    storageKey: 'tabletell_copilot_orb_pos',
+    margin: 12
   });
+
+  // When opening, ensure the 380x520 window fits cleanly within the screen
+  useEffect(() => {
+    if (isOpen) {
+      const margin = 12;
+      const maxX = Math.max(margin, window.innerWidth - chatWidth - margin);
+      const maxY = Math.max(margin, window.innerHeight - chatHeight - margin);
+      setPosition((prev) => ({
+        x: Math.min(Math.max(margin, prev.x), maxX),
+        y: Math.min(Math.max(margin, prev.y), maxY)
+      }));
+    }
+  }, [isOpen, setPosition]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -40,6 +68,18 @@ export const TableTellAssistant: React.FC = () => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
+
+  // Close on Escape key
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Load message history on mount
   useEffect(() => {
@@ -146,41 +186,39 @@ export const TableTellAssistant: React.FC = () => {
 
   return (
     <>
-      {/* 1. COLLAPSED FLOATING PILL */}
+      {/* 1. COLLAPSED FLOATING CYBER-ORB BOT (UNWRAPPED, NO NAME, DRAGGABLE TO EVERY CORNER) */}
       {!isOpen && (
         <div
-          className="fixed z-50 transition-transform duration-200 hover:scale-105 select-none"
+          className="fixed z-50 select-none group touch-none"
           style={{
             left: `${position.x}px`,
             top: `${position.y}px`,
-            cursor: isDragging ? 'grabbing' : 'pointer'
+            width: `${collapsedSize}px`,
+            height: `${collapsedSize}px`,
+            cursor: isDragging ? 'grabbing' : 'grab'
           }}
           onPointerDown={handlePointerDown}
-          onClick={() => {
-            if (!isDragging) setIsOpen(true);
-          }}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onClick={() => handleSafeClick(() => setIsOpen(true))}
+          title="TableTell Copilot (Click to open, drag to any corner)"
         >
-          <div
-            className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-full border shadow-2xl backdrop-blur-md transition-all group"
-            style={{
-              backgroundColor: 'var(--tt-bg-surface)',
-              borderColor: 'var(--tt-primary)',
-              boxShadow: '0 8px 32px rgba(45, 212, 191, 0.25)'
-            }}
-          >
-            <div className="relative flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-[#2DD4BF] animate-pulse" />
-              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-[#34D399] ring-2 ring-[var(--tt-bg-surface)]" />
-            </div>
-            <div className="flex flex-col text-left">
-              <span className="text-xs font-bold font-mono text-[var(--tt-text-primary)] leading-tight">
-                TableTell Copilot
-              </span>
-              <span className="text-[10px] font-mono text-[#2DD4BF] leading-none">
-                Data Tutor & Guide
-              </span>
-            </div>
-            <GripHorizontal className="w-3.5 h-3.5 opacity-40 group-hover:opacity-80 transition-opacity ml-1" />
+          <div className="relative w-full h-full flex items-center justify-center transition-transform duration-200 group-hover:scale-105 active:scale-95">
+            {/* Ambient Multi-Ring Orbital Glow (matching cyber-orb rings from second picture) */}
+            <div className="absolute -inset-2 rounded-full border border-teal-400/25 pointer-events-none animate-pulse" />
+            <div className="absolute -inset-1 rounded-full border border-teal-300/35 pointer-events-none" />
+            <div className="absolute inset-0 rounded-full bg-teal-400/20 blur-xl group-hover:bg-teal-400/40 transition-all duration-300 pointer-events-none" />
+
+            {/* Glowing Cyber-Orb Bot Avatar Directly */}
+            <img
+              src="/tabletell-avatar.png"
+              alt="TableTell Copilot"
+              className="relative w-full h-full object-contain rounded-full select-none pointer-events-none drop-shadow-[0_0_18px_rgba(45,212,191,0.65)]"
+              draggable={false}
+            />
+
+            {/* Online Green Beacon */}
+            <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-canvas)] shadow-[0_0_8px_#10B981] pointer-events-none animate-pulse" />
           </div>
         </div>
       )}
@@ -201,16 +239,22 @@ export const TableTellAssistant: React.FC = () => {
         >
           {/* Header Bar with Drag Handle */}
           <div
-            className="flex items-center justify-between px-3.5 py-2.5 border-b cursor-grab active:cursor-grabbing transition-colors"
+            className="flex items-center justify-between px-3.5 py-2.5 border-b cursor-grab active:cursor-grabbing transition-colors touch-none"
             style={{
               backgroundColor: 'var(--tt-bg-elevated)',
               borderColor: 'var(--tt-border-subtle)'
             }}
             onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
           >
             <div className="flex items-center gap-2">
               <GripHorizontal className="w-4 h-4 text-[var(--tt-text-muted)]" />
-              <Sparkles className="w-4 h-4 text-[#2DD4BF]" />
+              <img
+                src="/tabletell-avatar.png"
+                alt="TableTell"
+                className="w-4 h-4 rounded-full object-contain"
+              />
               <div className="flex items-center gap-1.5">
                 <span className="text-xs font-bold font-mono text-[var(--tt-text-primary)]">
                   TableTell Copilot
@@ -219,7 +263,10 @@ export const TableTellAssistant: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div
+              className="flex items-center gap-1"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <button
                 type="button"
                 onClick={handleClearHistory}
