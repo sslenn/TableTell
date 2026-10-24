@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, Cpu, CheckCircle2, RefreshCw, AlertTriangle, BarChart3, Table } from 'lucide-react';
+import { Database, Cpu, CheckCircle2, RefreshCw, AlertTriangle, BarChart3, Table, Square } from 'lucide-react';
 import type { StreamStatusStep } from '../../types/api';
 import { useAppStore } from '../../store/useAppStore';
 
@@ -9,6 +9,7 @@ interface TelemetryRailProps {
   statusMessage: string;
   selfHealMessage?: string | null;
   repairedSql?: string | null;
+  onCancelQuery?: () => void;
   onToggleSchema?: () => void;
   isSchemaOpen?: boolean;
 }
@@ -19,6 +20,7 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
   statusMessage,
   selfHealMessage,
   repairedSql,
+  onCancelQuery,
   onToggleSchema,
   isSchemaOpen
 }) => {
@@ -141,15 +143,28 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           </span>
         </div>
         {isStreaming && (
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold tracking-wider uppercase"
-            style={{
-              backgroundColor: 'var(--tt-primary-subtle)',
-              color: 'var(--tt-primary)'
-            }}
-          >
-            ACTIVE
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[10px] px-2 py-0.5 rounded-full font-mono font-bold tracking-wider uppercase"
+              style={{
+                backgroundColor: 'var(--tt-primary-subtle)',
+                color: 'var(--tt-primary)'
+              }}
+            >
+              ACTIVE
+            </span>
+            {onCancelQuery && (
+              <button
+                type="button"
+                onClick={onCancelQuery}
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-all cursor-pointer shadow-sm active:scale-95"
+                title="Cancel ongoing query execution"
+              >
+                <Square className="w-2.5 h-2.5 fill-current" />
+                <span>Cancel</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 

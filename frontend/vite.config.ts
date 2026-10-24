@@ -18,5 +18,28 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 4000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('plotly.js-dist-min')) {
+            return 'vendor-plotly';
+          }
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'vendor-react';
+            }
+            if (id.includes('react-markdown') || id.includes('remark-gfm')) {
+              return 'vendor-markdown';
+            }
+            if (id.includes('lucide-react') || id.includes('zustand') || id.includes('@tanstack')) {
+              return 'vendor-ui';
+            }
+          }
+        }
+      }
+    }
   }
 })

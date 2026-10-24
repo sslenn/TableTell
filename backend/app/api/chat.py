@@ -4,11 +4,14 @@ API endpoints for LangGraph Agent Chat (Synchronous and SSE Streaming).
 
 import json
 import asyncio
+import logging
 from fastapi import APIRouter, HTTPException, Request
 from sse_starlette.sse import EventSourceResponse
 from app.agent.graph import tabletell_agent
 from app.services.quality_service import quality_service
 from app.schemas.analytics import ChatRequest
+
+logger = logging.getLogger("tabletell.chat")
 
 router = APIRouter(prefix="/chat", tags=["Agent Chat & Analysis"])
 
@@ -69,6 +72,7 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
     """
     Server-Sent Events (SSE) streaming endpoint.
     Emits real-time progression events (planning -> executing -> self-healing -> complete).
+    Supports client-side query cancellation and connection abort.
     """
     try:
         schema_digest = quality_service.get_schema_digest(req.dataset_id, version=req.version)
@@ -94,6 +98,10 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
     }
 
     async def event_generator():
+        if await request.is_disconnected():
+            logger.info("Client already disconnected before stream init; skipping.")
+            return
+
         yield {
             "event": "status",
             "data": json.dumps({"step": "planning", "message": "Analyzing schema & generating DuckDB SQL..."})
@@ -103,7 +111,15 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
         try:
             final_state = initial_state
             for step_state in tabletell_agent.stream(initial_state):
+                if await request.is_disconnected():
+                    logger.info("Client aborted connection during LangGraph agent execution; halting.")
+                    return
+
                 for node_name, node_output in step_state.items():
+                    if await request.is_disconnected():
+                        logger.info("Client aborted connection during node yield; halting.")
+                        return
+
                     if node_name == "generate_sql":
                         yield {
                             "event": "sql",
@@ -124,7 +140,16 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
                             "data": json.dumps({"step": "executing", "message": "Running query on DuckDB engine..."})
                         }
                     final_state = {**final_state, **node_output}
+
+                if await request.is_disconnected():
+                    logger.info("Client aborted connection; skipping subsequent steps.")
+                    return
+
                 await asyncio.sleep(0.03)
+
+            if await request.is_disconnected():
+                logger.info("Client aborted connection before final payload; exiting.")
+                return
 
             exec_res = final_state.get("execution_result") or {}
             payload = {
@@ -149,10 +174,14 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
                 "event": "complete",
                 "data": json.dumps(payload, default=str)
             }
+        except asyncio.CancelledError:
+            logger.info("SSE streaming connection cancelled by client.")
+            return
         except Exception as e:
-            yield {
-                "event": "error",
-                "data": json.dumps({"error": str(e)}, default=str)
-            }
+            if not await request.is_disconnected():
+                yield {
+                    "event": "error",
+                    "data": json.dumps({"error": str(e)}, default=str)
+                }
 
     return EventSourceResponse(event_generator())

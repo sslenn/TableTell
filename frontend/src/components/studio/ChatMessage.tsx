@@ -18,6 +18,7 @@ import { ChartViewer } from './ChartViewer';
 import { DataGrid } from './DataGrid';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { SqlHighlighter } from '../common/SqlHighlighter';
+import { ErrorBoundary } from '../common/ErrorBoundary';
 import { useAppStore } from '../../store/useAppStore';
 import { toast } from '../../store/useToastStore';
 
@@ -330,7 +331,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
             <div className="p-3">
               {activeView === 'chart' && hasChart && (
                 <div className="w-full">
-                  <ChartViewer spec={message.plotly_spec!} />
+                  <ErrorBoundary
+                    compact
+                    fallbackTitle="Chart could not be rendered"
+                    fallbackMessage="The visualization spec produced unexpected coordinates. You can review the raw SQL or Table tab."
+                  >
+                    <ChartViewer spec={message.plotly_spec!} />
+                  </ErrorBoundary>
                 </div>
               )}
 
@@ -343,7 +350,13 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               {activeView === 'split' && canSplit && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 w-full">
                   <div className="w-full">
-                    <ChartViewer spec={message.plotly_spec!} />
+                    <ErrorBoundary
+                      compact
+                      fallbackTitle="Chart could not be rendered"
+                      fallbackMessage="The visualization spec produced unexpected coordinates. You can review the raw SQL or Table tab."
+                    >
+                      <ChartViewer spec={message.plotly_spec!} />
+                    </ErrorBoundary>
                   </div>
                   <div className="w-full">
                     <DataGrid tableResult={message.table!} />
