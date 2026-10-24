@@ -237,6 +237,100 @@ class MetadataRepository:
         self.record_audit("dataset", dataset_id, "delete_dataset", {"deleted": True})
         return True
 
+    def rename_dataset(
+        self,
+        old_dataset_id: str,
+        new_dataset_id: str,
+        new_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Renames a dataset and updates all foreign key references in dataset_versions,
+        cleaning_plans, analytical_runs, and audit_logs in SQLite.
+        """
+        old = self.get_dataset(old_dataset_id)
+        if not old:
+            raise ValueError(f"Dataset '{old_dataset_id}' not found")
+
+        now = datetime.now(timezone.utc).isoformat()
+        with self._get_connection() as conn:
+            existing = conn.execute("SELECT id FROM datasets WHERE id = ?", (new_dataset_id,)).fetchone()
+            if existing:
+                raise ValueError(f"A dataset with id '{new_dataset_id}' already exists")
+
+            conn.execute("PRAGMA foreign_keys=OFF;")
+            try:
+                # 1. Update datasets table
+                old_raw_path = old.get("raw_storage_path") or ""
+                new_raw_path = old_raw_path
+                if old_raw_path:
+                    new_raw_path = old_raw_path.replace(f"/{old_dataset_id}.", f"/{new_dataset_id}.").replace(f"\\{old_dataset_id}.", f"\\{new_dataset_id}.")
+
+                display_name = new_name or new_dataset_id.replace("_", " ").title()
+                orig_filename = old.get("original_filename") or f"{old_dataset_id}.parquet"
+                new_orig_filename = orig_filename
+                if orig_filename.startswith(old_dataset_id):
+                    new_orig_filename = orig_filename.replace(old_dataset_id, new_dataset_id, 1)
+
+                conn.execute(
+                    """
+                    UPDATE datasets
+                    SET id = ?, name = ?, original_filename = ?, raw_storage_path = ?, updated_at = ?
+                    WHERE id = ?
+                    """,
+                    (new_dataset_id, display_name, new_orig_filename, new_raw_path, now, old_dataset_id)
+                )
+
+                # 2. Update dataset_versions table
+                versions = conn.execute(
+                    "SELECT id, version, storage_path FROM dataset_versions WHERE dataset_id = ?",
+                    (old_dataset_id,)
+                ).fetchall()
+
+                for v in versions:
+                    old_ver_id = v["id"]
+                    ver_num = v["version"]
+                    new_ver_id = f"{new_dataset_id}_v{ver_num}"
+                    old_sp = v["storage_path"] or ""
+                    new_sp = old_sp.replace(f"{old_dataset_id}_v{ver_num}", f"{new_dataset_id}_v{ver_num}").replace(f"{old_dataset_id}.parquet", f"{new_dataset_id}.parquet")
+
+                    conn.execute(
+                        """
+                        UPDATE dataset_versions
+                        SET id = ?, dataset_id = ?, storage_path = ?
+                        WHERE id = ?
+                        """,
+                        (new_ver_id, new_dataset_id, new_sp, old_ver_id)
+                    )
+
+                # 3. Update cleaning_plans table
+                conn.execute(
+                    "UPDATE cleaning_plans SET dataset_id = ? WHERE dataset_id = ?",
+                    (new_dataset_id, old_dataset_id)
+                )
+
+                # 4. Update analytical_runs table
+                conn.execute(
+                    "UPDATE analytical_runs SET dataset_id = ? WHERE dataset_id = ?",
+                    (new_dataset_id, old_dataset_id)
+                )
+
+                # 5. Update audit_logs table
+                conn.execute(
+                    "UPDATE audit_logs SET entity_id = ? WHERE entity_type = 'dataset' AND entity_id = ?",
+                    (new_dataset_id, old_dataset_id)
+                )
+
+                # Verify foreign key integrity
+                fk_violations = conn.execute("PRAGMA foreign_key_check;").fetchall()
+                if fk_violations:
+                    raise sqlite3.IntegrityError(f"Foreign key check failed after renaming dataset: {fk_violations}")
+
+            finally:
+                conn.execute("PRAGMA foreign_keys=ON;")
+
+        self.record_audit("dataset", new_dataset_id, "rename_dataset", {"old_id": old_dataset_id, "new_id": new_dataset_id})
+        return self.get_dataset(new_dataset_id)
+
 
     # -------------------------------------------------------------------------
     # Dataset Version Operations

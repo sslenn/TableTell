@@ -116,6 +116,71 @@ class ParquetStore:
 
         return deleted
 
+    def rename_dataset_files(self, old_dataset_id: str, new_dataset_id: str) -> List[str]:
+        """
+        Safely renames physical files associated with old_dataset_id to new_dataset_id in the data lake:
+        - Raw uploads in data_lake/raw/{old_id}.* -> {new_id}.*
+        - Processed version parquets in data_lake/processed/{old_id}_v*.parquet -> {new_id}_v*.parquet
+        - Direct lake parquets/files in data_lake/{old_id}.* -> {new_id}.*
+        """
+        old_safe = self.sanitize_id(old_dataset_id)
+        new_safe = self.sanitize_id(new_dataset_id)
+
+        # Pre-check collisions
+        for p in self.raw_dir.glob(f"{old_safe}.*"):
+            if p.is_file():
+                ext = p.suffix
+                if (self.raw_dir / f"{new_safe}{ext}").exists():
+                    raise FileExistsError(f"Target raw file already exists: {new_safe}{ext}")
+
+        for p in self.processed_dir.glob(f"{old_safe}_v*.parquet"):
+            if p.is_file():
+                new_filename = p.name.replace(f"{old_safe}_v", f"{new_safe}_v", 1)
+                if (self.processed_dir / new_filename).exists():
+                    raise FileExistsError(f"Target processed parquet already exists: {new_filename}")
+
+        for p in self.base_dir.glob(f"{old_safe}.*"):
+            if p.is_file() and p.suffix.lower() in (".parquet", ".csv", ".xlsx", ".json"):
+                new_filename = f"{new_safe}{p.suffix}"
+                if (self.base_dir / new_filename).exists():
+                    raise FileExistsError(f"Target data lake file already exists: {new_filename}")
+
+        renamed_pairs = []
+        try:
+            # 1. Raw uploads
+            for p in list(self.raw_dir.glob(f"{old_safe}.*")):
+                if p.is_file():
+                    ext = p.suffix
+                    target = self.raw_dir / f"{new_safe}{ext}"
+                    p.rename(target)
+                    renamed_pairs.append((target, p))
+
+            # 2. Processed version files
+            for p in list(self.processed_dir.glob(f"{old_safe}_v*.parquet")):
+                if p.is_file():
+                    new_filename = p.name.replace(f"{old_safe}_v", f"{new_safe}_v", 1)
+                    target = self.processed_dir / new_filename
+                    p.rename(target)
+                    renamed_pairs.append((target, p))
+
+            # 3. Direct base lake files
+            for p in list(self.base_dir.glob(f"{old_safe}.*")):
+                if p.is_file() and p.suffix.lower() in (".parquet", ".csv", ".xlsx", ".json"):
+                    target = self.base_dir / f"{new_safe}{p.suffix}"
+                    p.rename(target)
+                    renamed_pairs.append((target, p))
+
+            return [str(t) for t, _ in renamed_pairs]
+        except Exception as e:
+            # Rollback any files that were already moved
+            for target, original in renamed_pairs:
+                try:
+                    if target.exists():
+                        target.rename(original)
+                except Exception:
+                    pass
+            raise IOError(f"Failed to rename storage files for dataset '{old_dataset_id}' to '{new_dataset_id}': {str(e)}")
+
     def _ensure_safe_path(self, path: Path):
         try:
             path.resolve().relative_to(self.base_dir.resolve())

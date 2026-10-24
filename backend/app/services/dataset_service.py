@@ -145,6 +145,67 @@ class DatasetService:
             "message": f"Dataset '{dataset_id}' and all associated files deleted successfully"
         }
 
+    def rename_dataset(self, old_dataset_id: str, new_name: str) -> Dict[str, Any]:
+        """
+        Renames an existing dataset across physical files, SQLite metadata, and DuckDB views.
+        """
+        if not new_name or not new_name.strip():
+            raise ValueError("New dataset name cannot be empty")
+
+        old_id = old_dataset_id.strip()
+        d = metadata_repo.get_dataset(old_id)
+        if not d:
+            raise DatasetNotFoundError(old_id)
+
+        # Sanitize new_name into a valid dataset identifier
+        raw = new_name.strip()
+        base_raw = raw.rsplit(".", 1)[0] if "." in raw else raw
+        safe_new_id = re.sub(r"[^a-zA-Z0-9_]", "_", base_raw).strip("_").lower()
+        if not safe_new_id:
+            raise ValueError(f"Invalid dataset name '{new_name}'. Must contain alphanumeric characters.")
+
+        if safe_new_id == old_id:
+            return {
+                "status": "success",
+                "old_dataset_id": old_id,
+                "new_dataset_id": old_id,
+                "message": f"Dataset name is unchanged ('{old_id}')",
+                "dataset": d
+            }
+
+        # Check for ID collision
+        existing = metadata_repo.get_dataset(safe_new_id)
+        if existing:
+            raise ValueError(f"A dataset with name '{safe_new_id}' already exists")
+
+        # 1. Rename physical files in data lake
+        renamed_files = parquet_store.rename_dataset_files(old_id, safe_new_id)
+
+        # 2. Update SQLite metadata
+        updated_meta = metadata_repo.rename_dataset(
+            old_dataset_id=old_id,
+            new_dataset_id=safe_new_id,
+            new_name=raw.replace("_", " ").title()
+        )
+
+        # 3. Synchronize DuckDB registered views
+        try:
+            from app.analytics.executor import query_executor
+            query_executor.conn.execute(f'DROP VIEW IF EXISTS "{old_id}"')
+            new_parquet_path = parquet_store.resolve_dataset_path(safe_new_id)
+            query_executor.register_dataset_view(safe_new_id, new_parquet_path)
+        except Exception:
+            pass
+
+        return {
+            "status": "success",
+            "old_dataset_id": old_id,
+            "new_dataset_id": safe_new_id,
+            "renamed_files_count": len(renamed_files),
+            "message": f"Dataset '{old_id}' successfully renamed to '{safe_new_id}'",
+            "dataset": updated_meta
+        }
+
     def upload_dataset(
         self,
         file_content: bytes,

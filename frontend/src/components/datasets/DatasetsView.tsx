@@ -18,10 +18,11 @@ import {
   Download,
   Sliders,
   Trash2,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from 'lucide-react';
 import { useAppStore } from '../../store/useAppStore';
-import { fetchDatasets, uploadDataset, cleanDataset, fetchDatasetPreview, downloadDatasetExport, deleteDataset } from '../../lib/api';
+import { fetchDatasets, uploadDataset, cleanDataset, fetchDatasetPreview, downloadDatasetExport, deleteDataset, renameDataset } from '../../lib/api';
 import type { CleaningResult } from '../../types/dataset';
 import { toast } from '../../store/useToastStore';
 import { DataGrid } from '../studio/DataGrid';
@@ -60,6 +61,12 @@ export const DatasetsView: React.FC = () => {
   // Delete Confirmation Modal state
   const [datasetToDelete, setDatasetToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Rename Dataset Modal state
+  const [datasetToRename, setDatasetToRename] = useState<string | null>(null);
+  const [newDatasetName, setNewDatasetName] = useState('');
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
 
   const loadData = React.useCallback(() => {
     fetchDatasets()
@@ -191,6 +198,79 @@ export const DatasetsView: React.FC = () => {
       toast.error('Deletion Error', msg);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleOpenRenameModal = (id: string) => {
+    setDatasetToRename(id);
+    setNewDatasetName(id);
+    setRenameError(null);
+  };
+
+  const handleRenameDataset = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!datasetToRename) return;
+
+    const trimmed = newDatasetName.trim();
+    if (!trimmed) {
+      setRenameError('Dataset name cannot be empty');
+      return;
+    }
+
+    const sanitized = trimmed
+      .replace(/[^a-zA-Z0-9_]/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toLowerCase();
+
+    if (!sanitized) {
+      setRenameError('Name must contain alphanumeric characters');
+      return;
+    }
+
+    if (sanitized === datasetToRename) {
+      setDatasetToRename(null);
+      return;
+    }
+
+    if (
+      datasets.some(
+        (d) =>
+          d.dataset_id.toLowerCase() === sanitized.toLowerCase() &&
+          d.dataset_id !== datasetToRename
+      )
+    ) {
+      setRenameError(`A dataset named '${sanitized}' already exists`);
+      return;
+    }
+
+    setIsRenaming(true);
+    setRenameError(null);
+
+    try {
+      const res = await renameDataset(datasetToRename, trimmed);
+      toast.success(
+        'Dataset Renamed',
+        `Renamed '${datasetToRename}' to '${res.new_dataset_id}'`
+      );
+
+      // If active workspace dataset was renamed, update it
+      if (datasetId === datasetToRename) {
+        setDatasetId(res.new_dataset_id);
+      }
+
+      // If currently previewing, update preview ID
+      if (previewDatasetId === datasetToRename) {
+        setPreviewDatasetId(res.new_dataset_id);
+      }
+
+      loadData();
+      setDatasetToRename(null);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to rename dataset';
+      setRenameError(msg);
+      toast.error('Rename Failed', msg);
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -494,6 +574,19 @@ export const DatasetsView: React.FC = () => {
                       >
                         Health: {d.data_health_score}/100
                       </div>
+
+                      {/* Rename Dataset Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenRenameModal(d.dataset_id);
+                        }}
+                        className="p-1 rounded-md text-[var(--tt-text-muted)] hover:text-[#0D9488] hover:bg-[#0D9488]/10 transition-colors cursor-pointer"
+                        title={`Rename dataset '${d.dataset_id}'`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
 
                       {/* Delete Dataset Button */}
                       <button
@@ -814,6 +907,128 @@ export const DatasetsView: React.FC = () => {
                 <span>{isDeleting ? 'Deleting...' : 'Delete Dataset'}</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename Dataset Modal */}
+      {datasetToRename && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
+          <div
+            className="w-full max-w-md bg-[var(--tt-bg-surface)] border border-[var(--tt-border-strong)] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#0D9488]/15 border border-[#0D9488]/30 flex items-center justify-center text-[#0D9488] shrink-0">
+                  <Pencil className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[var(--tt-text-primary)]">
+                    Rename Dataset
+                  </h3>
+                  <p className="text-xs text-[var(--tt-text-muted)] mt-0.5">
+                    Update identifier across catalog and DuckDB engine
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDatasetToRename(null)}
+                disabled={isRenaming}
+                className="p-1.5 rounded-lg text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleRenameDataset}>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-[11px] font-semibold text-[var(--tt-text-muted)] uppercase tracking-wider block mb-1.5">
+                    Current Name
+                  </label>
+                  <div className="px-3.5 py-2 rounded-xl bg-[var(--tt-bg-canvas)] border border-[var(--tt-border-subtle)] text-xs font-mono font-medium text-[var(--tt-text-secondary)] truncate">
+                    {datasetToRename}
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="rename-dataset-input"
+                    className="text-[11px] font-semibold text-[var(--tt-text-muted)] uppercase tracking-wider block mb-1.5"
+                  >
+                    New Name
+                  </label>
+                  <input
+                    id="rename-dataset-input"
+                    type="text"
+                    value={newDatasetName}
+                    onChange={(e) => {
+                      setNewDatasetName(e.target.value);
+                      if (renameError) setRenameError(null);
+                    }}
+                    placeholder="e.g. ecommerce_orders_cleaned"
+                    autoFocus
+                    disabled={isRenaming}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--tt-bg-canvas)] border border-[var(--tt-border-strong)] focus:border-[#0D9488] focus:ring-1 focus:ring-[#0D9488] text-sm font-mono text-[var(--tt-text-primary)] outline-none transition-all shadow-inner"
+                  />
+
+                  {/* Live sanitized identifier preview */}
+                  {newDatasetName.trim() && (
+                    <div className="mt-2 flex items-center gap-1.5 text-[11px] font-mono text-[var(--tt-text-muted)]">
+                      <span>DuckDB Table:</span>
+                      <span className="text-[#0D9488] font-semibold">
+                        "{newDatasetName.trim().replace(/[^a-zA-Z0-9_]/g, '_').replace(/^_+|_+$/g, '').toLowerCase()}"
+                      </span>
+                    </div>
+                  )}
+
+                  {renameError && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-red-400">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{renameError}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 rounded-xl bg-[var(--tt-bg-canvas)] border border-[var(--tt-border-subtle)] text-[11px] text-[var(--tt-text-muted)] space-y-1">
+                  <div className="flex items-center gap-1.5 text-[#0D9488] font-semibold">
+                    <Database className="w-3.5 h-3.5" />
+                    <span>DuckDB Table & Lake Sync</span>
+                  </div>
+                  <p className="leading-relaxed">
+                    Physical Parquet files, metadata records, versions, and active DuckDB SQL views will be safely updated to the new name.
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setDatasetToRename(null)}
+                  disabled={isRenaming}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isRenaming ||
+                    !newDatasetName.trim() ||
+                    newDatasetName.trim().toLowerCase() === datasetToRename.toLowerCase()
+                  }
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-[#0D9488] hover:bg-[#0F766E] text-white transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                >
+                  <Pencil className={`w-3.5 h-3.5 ${isRenaming ? 'animate-spin' : ''}`} />
+                  <span>{isRenaming ? 'Renaming...' : 'Save & Rename'}</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
