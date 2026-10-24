@@ -1,0 +1,23 @@
+[Unit]
+Description=TableTell Autonomous AI Data Analyst Engine
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/tabletell/backend
+Environment="PATH=/var/www/tabletell/backend/.venv/bin:/usr/local/bin:/usr/bin"
+EnvironmentFile=/var/www/tabletell/backend/.env
+ExecStart=/var/www/tabletell/backend/.venv/bin/python run.py
+Restart=always
+RestartSec=3
+LimitNOFILE=65536
+
+# Security hardening
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/www/tabletell/backend/data_lake
+
+[Install]
+WantedBy=multi-user.target

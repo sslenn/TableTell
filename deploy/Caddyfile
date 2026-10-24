@@ -1,0 +1,20 @@
+# ==============================================================================
+# Caddy Configuration for TableTell on VPS (Automatic HTTPS via Let's Encrypt)
+# Place in /etc/caddy/Caddyfile and run `sudo systemctl reload caddy`
+# ==============================================================================
+
+your-domain.com {
+    # Automatic TLS certificate acquisition
+    encode gzip zstd
+
+    # Allow dataset uploads up to 100MB
+    request_body {
+        max_size 100MB
+    }
+
+    # Proxy traffic to TableTell container or systemd service
+    reverse_proxy 127.0.0.1:8000 {
+        # flush_interval -1 disables buffering for real-time SSE query streaming
+        flush_interval -1
+    }
+}

@@ -20,12 +20,6 @@ async def get_system_audit_logs(limit: int = Query(100, ge=1, le=500)):
     return {"status": "success", "logs": logs}
 
 
-@router.get("/health", response_model=Dict[str, Any])
-async def health_check():
-    """System health check endpoint."""
-    return {"status": "healthy", "engine": "duckdb", "storage": "parquet"}
-
-
 # =====================================================================
 # Backward Compatibility Dataset Aliases
 # =====================================================================
