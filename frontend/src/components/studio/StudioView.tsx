@@ -36,7 +36,8 @@ export const StudioView: React.FC = () => {
     repairedSql,
     selfHealMessage,
     error,
-    startStream
+    startStream,
+    cancelStream
   } = useChatStream();
 
   const [isSchemaOpen, setIsSchemaOpen] = useState(false);
@@ -233,6 +234,7 @@ export const StudioView: React.FC = () => {
           statusMessage={statusMessage}
           selfHealMessage={selfHealMessage}
           repairedSql={repairedSql}
+          onCancelQuery={cancelStream}
           onToggleSchema={() => setIsSchemaOpen(!isSchemaOpen)}
           isSchemaOpen={isSchemaOpen}
         />
@@ -356,6 +358,7 @@ export const StudioView: React.FC = () => {
           <CommandDock
             isStreaming={isStreaming}
             onSubmitQuery={handleRunQuery}
+            onCancelQuery={cancelStream}
             onResetChat={clearMessages}
             onToggleSchema={() => setIsSchemaOpen(!isSchemaOpen)}
             isSchemaOpen={isSchemaOpen}

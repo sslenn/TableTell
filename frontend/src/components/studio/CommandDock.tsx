@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Send,
+  Square,
   Mic,
   MicOff,
   RotateCcw,
   Zap,
   Columns3,
-  Sparkles,
   AlertCircle,
   TrendingUp,
   BarChart2,
@@ -20,6 +20,7 @@ import { toast } from '../../store/useToastStore';
 interface CommandDockProps {
   isStreaming: boolean;
   onSubmitQuery: (query: string) => void;
+  onCancelQuery?: () => void;
   onResetChat: () => void;
   onToggleSchema?: () => void;
   isSchemaOpen?: boolean;
@@ -28,6 +29,7 @@ interface CommandDockProps {
 export const CommandDock: React.FC<CommandDockProps> = ({
   isStreaming,
   onSubmitQuery,
+  onCancelQuery,
   onResetChat,
   onToggleSchema,
   isSchemaOpen
@@ -37,6 +39,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
   const [speechError, setSpeechError] = useState<string | null>(null);
   const [showConfirmReset, setShowConfirmReset] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastSubmittedQuery = useRef<string>('');
 
   const {
     datasetId,
@@ -67,7 +70,9 @@ export const CommandDock: React.FC<CommandDockProps> = ({
   const handleSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!query.trim() || isStreaming) return;
-    onSubmitQuery(query.trim());
+    const trimmed = query.trim();
+    lastSubmittedQuery.current = trimmed;
+    onSubmitQuery(trimmed);
     setQuery('');
   };
 
@@ -340,28 +345,39 @@ export const CommandDock: React.FC<CommandDockProps> = ({
               {isListening ? <MicOff className="w-4 h-4 text-[#F87171]" /> : <Mic className="w-4 h-4" />}
             </button>
 
-            <button
-              type="submit"
-              disabled={!query.trim() || isStreaming}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer disabled:opacity-40 hover:opacity-95 shadow-md"
-              style={{
-                backgroundColor: 'var(--tt-primary)',
-                color: '#0A1214',
-                boxShadow: '0 2px 12px var(--tt-primary-subtle)'
-              }}
-            >
-              {isStreaming ? (
-                <>
-                  <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                  <span>Running...</span>
-                </>
-              ) : (
-                <>
-                  <span>Run</span>
-                  <Send className="w-3.5 h-3.5" />
-                </>
-              )}
-            </button>
+            {isStreaming ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (onCancelQuery) {
+                    onCancelQuery();
+                    if (!query && lastSubmittedQuery.current) {
+                      setQuery(lastSubmittedQuery.current);
+                    }
+                    toast.info('Query Stopped', 'Analysis stream was cancelled');
+                  }
+                }}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer bg-red-500/15 text-red-500 hover:bg-red-500/25 border border-red-500/30 shadow-md animate-in fade-in active:scale-95"
+                title="Stop ongoing analysis"
+              >
+                <Square className="w-3.5 h-3.5 fill-current" />
+                <span>Stop</span>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={!query.trim()}
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer disabled:opacity-40 hover:opacity-95 shadow-md active:scale-95"
+                style={{
+                  backgroundColor: 'var(--tt-primary)',
+                  color: '#0A1214',
+                  boxShadow: '0 2px 12px var(--tt-primary-subtle)'
+                }}
+              >
+                <span>Run</span>
+                <Send className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
         </div>
       </form>

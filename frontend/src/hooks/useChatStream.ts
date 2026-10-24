@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import type { ChatRequest, StreamEvent, ChatResponsePayload, StreamStatusStep } from '../types/api';
 
@@ -14,6 +14,7 @@ export interface UseChatStreamReturn {
     req: ChatRequest,
     onComplete: (payload: ChatResponsePayload) => void
   ) => Promise<void>;
+  cancelStream: () => void;
   resetStream: () => void;
 }
 
@@ -26,7 +27,23 @@ export function useChatStream(): UseChatStreamReturn {
   const [selfHealMessage, setSelfHealMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cancel any active stream on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+
   const resetStream = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
     setIsStreaming(false);
     setCurrentStep(null);
     setStatusMessage('');
@@ -36,8 +53,26 @@ export function useChatStream(): UseChatStreamReturn {
     setError(null);
   }, []);
 
+  const cancelStream = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    setIsStreaming(false);
+    setCurrentStep(null);
+    setStatusMessage('Analysis stopped by user.');
+  }, []);
+
   const startStream = useCallback(
     async (req: ChatRequest, onComplete: (payload: ChatResponsePayload) => void) => {
+      // Abort any existing stream before starting a new one
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       resetStream();
       setIsStreaming(true);
       setCurrentStep('planning');
@@ -48,6 +83,7 @@ export function useChatStream(): UseChatStreamReturn {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(req),
+          signal: controller.signal,
           openWhenHidden: true,
           onmessage(msg) {
             if (!msg.data) return;
@@ -72,25 +108,41 @@ export function useChatStream(): UseChatStreamReturn {
                 setCurrentStep('complete');
                 setStatusMessage('Analysis complete.');
                 setIsStreaming(false);
+                abortControllerRef.current = null;
                 onComplete(parsed);
               } else if (eventType === 'error') {
                 setError(parsed.error);
                 setIsStreaming(false);
+                abortControllerRef.current = null;
               }
             } catch (err) {
               console.error('Failed to parse SSE event data', err);
             }
           },
+          onclose() {
+            setIsStreaming(false);
+            abortControllerRef.current = null;
+          },
           onerror(err) {
+            if (controller.signal.aborted) {
+              // Expected user abort; do not retry, do not set error state
+              throw err;
+            }
             console.error('SSE connection error:', err);
             setError(err instanceof Error ? err.message : 'Streaming connection failed.');
             setIsStreaming(false);
+            abortControllerRef.current = null;
             throw err;
           }
         });
       } catch (err) {
+        if (controller.signal.aborted) {
+          // Normal abort triggered by user cancel
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Failed to execute query stream.');
         setIsStreaming(false);
+        abortControllerRef.current = null;
       }
     },
     [resetStream]
@@ -105,6 +157,7 @@ export function useChatStream(): UseChatStreamReturn {
     selfHealMessage,
     error,
     startStream,
+    cancelStream,
     resetStream
   };
 }
