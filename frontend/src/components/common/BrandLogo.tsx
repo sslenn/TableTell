@@ -21,31 +21,47 @@ interface BrandLogoProps {
   variant?: LogoVariant;
 }
 
+export const WaveformTableLogo: React.FC<{ size?: number; className?: string }> = ({ size = 32, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={`shrink-0 ${className}`}
+  >
+    <defs>
+      <linearGradient id="tt_wf_bg" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#1E293B" />
+        <stop offset="1" stopColor="#0F172A" />
+      </linearGradient>
+      <linearGradient id="tt_wf_cyan" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#06B6D4" />
+        <stop offset="1" stopColor="#38BDF8" />
+      </linearGradient>
+      <linearGradient id="tt_wf_emerald" x1="0" y1="0" x2="0" y2="100" gradientUnits="userSpaceOnUse">
+        <stop stopColor="#10B981" />
+        <stop offset="1" stopColor="#06B6D4" />
+      </linearGradient>
+    </defs>
+    <rect x="6" y="6" width="88" height="88" rx="22" fill="url(#tt_wf_bg)" stroke="rgba(255,255,255,0.16)" strokeWidth="3" />
+    <rect x="18" y="22" width="64" height="9" rx="4.5" fill="rgba(255,255,255,0.25)" />
+    <rect x="22" y="42" width="14" height="34" rx="7" fill="url(#tt_wf_cyan)" />
+    <rect x="43" y="34" width="14" height="42" rx="7" fill="url(#tt_wf_emerald)" />
+    <rect x="64" y="48" width="14" height="28" rx="7" fill="url(#tt_wf_cyan)" opacity="0.8" />
+  </svg>
+);
+
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 32,
   className = '',
-  variant = 'tabletell-badge'
+  variant = 'waveform-table'
 }) => {
   switch (variant) {
-    // 0. Official TableTell Autonomous Orb Avatar
+    // Official Permanent TableTell Brand Logo (Waveform Table)
     case 'tabletell-badge':
-      return (
-        <div
-          className={`relative shrink-0 rounded-full select-none flex items-center justify-center ${className}`}
-          style={{ width: `${size}px`, height: `${size}px` }}
-        >
-          <img
-            src="/tabletell-avatar.png"
-            alt="TableTell"
-            width={size}
-            height={size}
-            className="w-full h-full object-contain rounded-full"
-            style={{
-              filter: 'drop-shadow(0 0 10px rgba(45, 212, 191, 0.45))'
-            }}
-          />
-        </div>
-      );
+    case 'waveform-table':
+      return <WaveformTableLogo size={size} className={className} />;
 
     // 1. Table + Tell: Speech Grid
     case 'speech-grid':
@@ -503,23 +519,7 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       );
 
     default:
-      return (
-        <div
-          className={`relative shrink-0 rounded-full select-none flex items-center justify-center ${className}`}
-          style={{ width: `${size}px`, height: `${size}px` }}
-        >
-          <img
-            src="/tabletell-avatar.png"
-            alt="TableTell"
-            width={size}
-            height={size}
-            className="w-full h-full object-contain rounded-full"
-            style={{
-              filter: 'drop-shadow(0 0 10px rgba(45, 212, 191, 0.45))'
-            }}
-          />
-        </div>
-      );
+      return <WaveformTableLogo size={size} className={className} />;
   }
 };
 

@@ -12,12 +12,11 @@ import {
   PanelLeftOpen,
   PlusCircle,
   ChevronRight,
-  Sparkles,
   User,
   Home
 } from 'lucide-react';
 import { useAppStore, type AppTab } from '../../store/useAppStore';
-import { BrandLogo, type LogoVariant } from '../common/BrandLogo';
+import { BrandLogo } from '../common/BrandLogo';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { ToastContainer } from '../common/ToastContainer';
 import { TableTellAssistant } from '../assistant/TableTellAssistant';
@@ -38,20 +37,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     setDatasets,
     sidebarCollapsed,
     toggleSidebar,
-    clearMessages,
-    logoVariant,
-    setLogoVariant
+    clearMessages
   } = useAppStore();
 
   const [datasetDropdownOpen, setDatasetDropdownOpen] = useState(false);
   const [headerDatasetOpen, setHeaderDatasetOpen] = useState(false);
-  const [logoDropdownOpen, setLogoDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [datasetSearch, setDatasetSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'clean' | 'raw'>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const headerDatasetRef = useRef<HTMLDivElement>(null);
-  const logoDropdownRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns on outside click
@@ -62,9 +57,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       }
       if (headerDatasetRef.current && !headerDatasetRef.current.contains(event.target as Node)) {
         setHeaderDatasetOpen(false);
-      }
-      if (logoDropdownRef.current && !logoDropdownRef.current.contains(event.target as Node)) {
-        setLogoDropdownOpen(false);
       }
       if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
         setUserDropdownOpen(false);
@@ -104,86 +96,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     { id: 'telemetry', label: 'Pipeline & Trace', icon: GitBranch }
   ];
 
-  const logoOptions: { id: LogoVariant; title: string; category: string; subtitle: string }[] = [
-    {
-      id: 'tabletell-badge',
-      title: 'TableTell Cyber-Orb',
-      category: 'Official Brand',
-      subtitle: 'Official glowing holographic cyber-orb bot'
-    },
-    {
-      id: 'speech-grid',
-      title: 'Speech Grid',
-      category: 'Conversational',
-      subtitle: 'Table columns inside a speech bubble ("Chat with your data")'
-    },
-    {
-      id: 'agent-loop',
-      title: 'Agent Loop',
-      category: 'Autonomous AI',
-      subtitle: 'Self-healing LangGraph infinity loop with state node checkpoints'
-    },
-    {
-      id: 'synapse-matrix',
-      title: 'Synapse Matrix',
-      category: 'Neural Reasoning',
-      subtitle: '3x3 structured table connected by glowing AI synapse pathways'
-    },
-    {
-      id: 'story-quill',
-      title: 'Story Quill',
-      category: 'Narrative',
-      subtitle: 'Ascending columnar data bars forming an executive narrative quill'
-    },
-    {
-      id: 'columnar-t',
-      title: 'Columnar T',
-      category: 'Monogram',
-      subtitle: 'Clean geometric "T" combining table header & DuckDB column pillars'
-    },
-    {
-      id: 'insight-spark',
-      title: 'Insight Spark',
-      category: 'Intelligence',
-      subtitle: 'Structured table grid cells morphing into an AI intelligence spark'
-    },
-    {
-      id: 'radar-beacon',
-      title: 'Radar Beacon',
-      category: 'Telemetry',
-      subtitle: 'Telemetry scanner identifying anomalies & coordinate signals in real time'
-    },
-    {
-      id: 'aperture-focus',
-      title: 'Aperture Focus',
-      category: 'Precision',
-      subtitle: 'Multi-blade optical iris focusing in on the single core metric truth'
-    },
-    {
-      id: 'waveform-table',
-      title: 'Waveform Table',
-      category: 'Storytelling',
-      subtitle: 'High-contrast Obsidian badge with analytical storytelling wavebars'
-    },
-    {
-      id: 'prism-table',
-      title: 'Prism Table',
-      category: '3D OLAP',
-      subtitle: 'Isometric dimensional data cube with etched matrix coordinate lines'
-    },
-    {
-      id: 'nested-tt',
-      title: 'Nested TT',
-      category: 'Monogram',
-      subtitle: 'Precision dual-T monogram capturing the TableTell identity'
-    },
-    {
-      id: 'growth-chevron',
-      title: 'Growth Chevron',
-      category: 'Performance',
-      subtitle: 'Ascending columnar vectors symbolizing speed & business growth'
-    }
-  ];
+
 
   const filteredDatasets = React.useMemo(() => {
     return datasets.filter((d) => {
@@ -210,25 +123,38 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           } shrink-0 flex flex-col justify-between border-r border-[var(--tt-border-subtle)] p-4 transition-all duration-300 relative bg-[var(--tt-bg-surface)] z-20`}
       >
         <div className="flex flex-col gap-5">
-          {/* Brand Lockup (Icon with No Name) */}
+          {/* Brand Lockup */}
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
             <div
-              className="flex items-center cursor-pointer group"
+              className="flex items-center gap-3 cursor-pointer group min-w-0"
               onClick={() => setActiveTab('studio')}
-              title="TableTell"
+              title="TableTell — Data Analyst Assistant"
             >
               <BrandLogo
-                size={sidebarCollapsed ? 32 : 38}
-                variant={logoVariant || 'tabletell-badge'}
-                className="transition-transform duration-300 group-hover:scale-105"
+                size={sidebarCollapsed ? 32 : 36}
+                variant="waveform-table"
+                className="transition-transform duration-300 group-hover:scale-105 shrink-0"
               />
+              {!sidebarCollapsed && (
+                <div className="flex flex-col min-w-0">
+                  <div
+                    className="font-extrabold text-[16px] tracking-tight text-[var(--tt-text-primary)] leading-tight select-none"
+                    style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
+                  >
+                    TableTell
+                  </div>
+                  <div className="text-[11px] font-medium text-[var(--tt-text-muted)] tracking-tight truncate leading-normal select-none">
+                    Data Analyst Assistant
+                  </div>
+                </div>
+              )}
             </div>
 
             {!sidebarCollapsed && (
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all"
+                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all shrink-0 ml-1"
                 title="Collapse sidebar (Ctrl+B)"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
@@ -592,62 +518,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
           {/* Right: Actions, Connected Badge, and User Avatar */}
           <div className="flex items-center gap-3">
-            {/* Logo Variant Selector Dropdown */}
-            <div className="relative" ref={logoDropdownRef}>
-              <button
-                type="button"
-                id="logo-variant-selector-btn"
-                onClick={() => setLogoDropdownOpen(!logoDropdownOpen)}
-                className="flex items-center gap-1.5 h-8 px-2.5 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
-                title="Switch Brand Logo Style"
-              >
-                <BrandLogo size={16} variant={logoVariant} />
-                <span className="hidden md:inline text-[11px]">Logo Concept</span>
-                <ChevronDown className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${logoDropdownOpen ? 'rotate-180' : ''}`} />
-              </button>
 
-              {logoDropdownOpen && (
-                <div
-                  id="logo-variant-dropdown-panel"
-                  className="absolute right-0 top-full mt-1.5 w-80 max-h-[420px] overflow-y-auto rounded-xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-2 z-50 flex flex-col gap-1.5"
-                >
-                  <div className="sticky top-0 pb-1.5 pt-0.5 px-2 text-[10px] font-bold uppercase tracking-wider flex items-center justify-between border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-[var(--tt-text-muted)] z-10">
-                    <span>12 Brand Concepts</span>
-                    <Sparkles className="w-3 h-3 text-[#0D9488]" />
-                  </div>
-                  {logoOptions.map((opt) => {
-                    const isSelected = logoVariant === opt.id;
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => {
-                          setLogoVariant(opt.id);
-                          setLogoDropdownOpen(false);
-                          toast.info(`Logo set to ${opt.title}`);
-                        }}
-                        className={`flex items-start gap-2.5 p-2 rounded-lg text-left transition-all cursor-pointer border ${isSelected ? 'bg-[#0D9488]/15 border-[#0D9488]/40 text-[#0D9488]' : 'border-transparent hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)]'
-                          }`}
-                      >
-                        <BrandLogo size={24} variant={opt.id} className="mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="text-xs font-semibold">{opt.title}</span>
-                            <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-[var(--tt-bg-canvas)] text-[var(--tt-text-muted)]">
-                              {opt.category}
-                            </span>
-                          </div>
-                          <p className="text-[10px] text-[var(--tt-text-muted)] leading-tight line-clamp-1 mt-0.5">
-                            {opt.subtitle}
-                          </p>
-                        </div>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-[#0D9488] shrink-0 mt-0.5" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
 
             {/* Quick Action: New Query (Studio) */}
             {activeTab === 'studio' && (

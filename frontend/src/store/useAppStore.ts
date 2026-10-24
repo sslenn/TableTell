@@ -40,7 +40,7 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       theme: 'light',
-      logoVariant: 'tabletell-badge',
+      logoVariant: 'waveform-table',
       datasetId: 'ecommerce_sales',
       activeTab: 'studio',
       messages: [],

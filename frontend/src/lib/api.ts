@@ -176,4 +176,21 @@ export async function deleteDataset(datasetId: string): Promise<{ status: string
   return await res.json();
 }
 
+export async function renameDataset(
+  datasetId: string,
+  newName: string
+): Promise<{ status: string; old_dataset_id: string; new_dataset_id: string; message: string }> {
+  const res = await fetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}/rename`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ new_name: newName })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to rename dataset: ${res.statusText}`);
+  }
+  return await res.json();
+}
+
+
 

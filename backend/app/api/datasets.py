@@ -4,6 +4,7 @@ API endpoints for Dataset Catalog, Schema, Preview, Profiling, and Versions.
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import Response, FileResponse
+from pydantic import BaseModel, Field
 import pandas as pd
 from typing import List, Dict, Any, Optional
 from app.services.dataset_service import dataset_service
@@ -175,5 +176,27 @@ async def delete_dataset(dataset_id: str):
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete dataset: {str(e)}")
+
+
+class RenameDatasetRequest(BaseModel):
+    new_name: str = Field(..., min_length=1, max_length=120, description="New dataset name or identifier")
+
+
+@router.post("/{dataset_id}/rename", response_model=Dict[str, Any])
+@router.patch("/{dataset_id}/rename", response_model=Dict[str, Any])
+async def rename_dataset(dataset_id: str, payload: RenameDatasetRequest):
+    """
+    Renames an uploaded or existing dataset, updating lake files, DuckDB engine, and catalog metadata.
+    """
+    try:
+        res = dataset_service.rename_dataset(dataset_id, payload.new_name)
+        return res
+    except DatasetNotFoundError:
+        raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to rename dataset: {str(e)}")
+
 
 
