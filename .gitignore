@@ -76,3 +76,8 @@ Thumbs.db
 
 # Ensure source library folder is NEVER ignored
 !frontend/src/lib/
+
+
+# Architecture & Internal Documentation (Private / Local only)
+docs/ARCHITECTURE.html
+ARCHITECTURE.html

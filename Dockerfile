@@ -10,6 +10,10 @@ RUN npm install
 
 # Build static bundle to /app/frontend/dist
 COPY frontend/ ./
+
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+
 RUN npm run build
 
 # ==============================================================================

@@ -14,6 +14,7 @@
   <a href="https://duckdb.org/"><img src="https://img.shields.io/badge/DuckDB-1.1+-FFF000?style=for-the-badge&logo=duckdb&logoColor=black" alt="DuckDB" /></a>
   <a href="https://fastapi.tiangolo.com/"><img src="https://img.shields.io/badge/FastAPI-0.115+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
   <a href="https://langchain-ai.github.io/langgraph/"><img src="https://img.shields.io/badge/LangGraph-0.2+-FF6F00?style=for-the-badge" alt="LangGraph" /></a>
+  <a href="https://clerk.com/"><img src="https://img.shields.io/badge/Clerk-Auth-6C47FF?style=for-the-badge&logo=clerk&logoColor=white" alt="Clerk Auth" /></a>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-19.2+-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0+-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-8.3+-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" /></a>
@@ -27,11 +28,13 @@
 
 Traditional LLM analytics suffer from two major flaws: **mathematical hallucination** and **black-box data manipulation**.
 
-TableTell eliminates both by coupling an **agentic LangGraph state machine** with a **deterministic in-process DuckDB columnar engine**:
+TableTell eliminates both by coupling an **agentic LangGraph state machine** with a **deterministic in-process DuckDB columnar engine** and **enterprise-grade session security**:
+
 1. **Zero Math Hallucination**: The LLM writes read-only SQL, but **100% of arithmetic, aggregations, and statistics execute directly in DuckDB's C++ vectorized engine**.
-2. **Immutable Lakehouse Lineage**: Uploaded raw files are permanently stored in `data_lake/raw/`. Cleaning transformations never mutate source files—each cleaning cycle creates an audited, immutable Parquet version (`v1` $\rightarrow$ `v2` $\rightarrow$ `v3`).
-3. **Autonomous Self-Healing**: If a query hits a DuckDB syntax or binder error, the LangGraph agent intercepts the traceback, dynamically repairs the SQL, and re-executes automatically.
+2. **Immutable Lakehouse Lineage**: Uploaded raw files are permanently preserved in `data_lake/raw/`. Cleaning transformations never mutate source files—each cleaning cycle creates an audited, immutable Parquet version (`v1` $\rightarrow$ `v2` $\rightarrow$ `v3`).
+3. **Autonomous Self-Healing**: If a query encounters a DuckDB syntax or binder error, the LangGraph agent intercepts the traceback, dynamically repairs the SQL, and re-executes automatically.
 4. **Real-Time Streaming & Instant Cancellation**: Progression milestones stream over Server-Sent Events (SSE). Queries can be cancelled instantly with zero zombie compute via client-side `AbortController` and backend disconnect detection.
+5. **Enterprise Identity & Session Governance**: Seamless **Clerk Authentication** with cryptographic JWKS JWT verification, role-aware access control across all protected API routes, and an offline local developer mode.
 
 ---
 
@@ -41,6 +44,12 @@ TableTell eliminates both by coupling an **agentic LangGraph state machine** wit
                                 User Prompt / CSV Upload
                                            │
                                            ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        Clerk Identity & Security Gateway                        │
+│  @clerk/clerk-react  •  PyJWKClient (JWKS)  •  Bearer JWT  •  /api/auth/config  │
+└──────────────────────────────────────┬──────────────────────────────────────────┘
+                                       │
+                                       ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           FastAPI API Service Layer                             │
 │  /datasets  •  /datasets/{id}/rename  •  /clean  •  /chat/stream  •  /health   │
@@ -81,41 +90,52 @@ TableTell eliminates both by coupling an **agentic LangGraph state machine** wit
 ## 🛠 Tech Stack
 
 ### Frontend Architecture
-- **Framework**: [React 19](https://react.dev/) + [TypeScript 6](https://www.typescriptlang.org/)
-- **Bundler & Tooling**: [Vite 8](https://vitejs.dev/) with automated manual vendor code-splitting (`vendor-plotly`, `vendor-react`, `vendor-markdown`, `vendor-ui`) dropping initial bundle size by **98%** (86.4 kB initial load).
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) with custom dark Nordic telemetry tokens and responsive glassmorphism.
+- **Framework**: [React 19.2+](https://react.dev/) + [TypeScript 6.0+](https://www.typescriptlang.org/)
+- **Compiler**: React 19 Compiler (`babel-plugin-react-compiler`) for automatic memoization and optimal re-rendering.
+- **Authentication**: [Clerk](https://clerk.com/) (`@clerk/clerk-react`, `@clerk/themes`) with custom dark telemetry glassmorphism and automatic runtime key discovery.
+- **Bundler & Tooling**: [Vite 8.3+](https://vitejs.dev/) with automated manual vendor code-splitting (`vendor-plotly`, `vendor-react`, `vendor-markdown`, `vendor-ui`) dropping initial bundle size by **98%** (86.4 kB initial load).
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/) with `@tailwindcss/vite` and dark Nordic telemetry design tokens.
 - **State Management**: [Zustand 5](https://github.com/pmndrs/zustand) with atomic selector hooks.
-- **Visualizations**: [Plotly.js](https://plotly.com/javascript/) with custom responsive dark telemetry themes.
-- **Streaming Client**: `@microsoft/fetch-event-source` wrapped in custom `useChatStream` with `AbortController` cancellation.
-- **Component Resilience**: React `ErrorBoundary` and theme-aware Suspense loading skeletons on all views and chart widgets.
+- **Data Grids**: [TanStack Table v8](https://tanstack.com/table) (`@tanstack/react-table`) for high-performance dataset exploration and column filtering.
+- **Visualizations**: [Plotly.js](https://plotly.com/javascript/) (`plotly.js-dist-min`) with custom responsive dark telemetry themes.
+- **Streaming Client**: `@microsoft/fetch-event-source` wrapped in custom `useChatStream` with authenticated Bearer headers and instant `AbortController` cancellation.
+- **Icons & UI**: [Lucide React](https://lucide.dev/) + custom notification and modal toasts.
+- **Component Resilience**: React `ErrorBoundary` and theme-aware Suspense loading skeletons across all views.
 
 ### Backend Architecture
-- **API Runtime**: [FastAPI](https://fastapi.tiangolo.com/) with [Uvicorn](https://www.uvicorn.org/) ASGI server.
+- **API Runtime**: [FastAPI 0.115+](https://fastapi.tiangolo.com/) with [Uvicorn](https://www.uvicorn.org/) ASGI server.
+- **Security & JWT Verification**: Clerk Bearer Token authentication via `pyjwt[crypto]` and cached `PyJWKClient` (JWKS), with automatic local developer fallback when keys are omitted.
 - **Analytics Database**: [DuckDB 1.1+](https://duckdb.org/) with in-memory execution catalogs and Parquet file scanning.
-- **Agent Orchestrator**: [LangGraph](https://langchain-ai.github.io/langgraph/) state machines with conditional edge self-healing cycles.
+- **Agent Orchestrator**: [LangGraph 0.2+](https://langchain-ai.github.io/langgraph/) state machines with conditional edge self-healing cycles.
 - **LLM Synthesis**: [Google Gemini](https://ai.google.dev/) (`gemini-2.5-flash`) via `google-genai` and `langchain-google-genai`.
 - **Metadata & Audit**: SQLite repository with strict foreign key constraints and transactional migration safety.
-- **Data Lake Storage**: [PyArrow](https://arrow.apache.org/docs/python/) & [Pandas](https://pandas.pydata.org/) for atomic Parquet conversion.
+- **Data Lake Storage**: [PyArrow 18+](https://arrow.apache.org/docs/python/) & [Pandas 2.2+](https://pandas.pydata.org/) for atomic Parquet conversion.
 
 ### Production & Infrastructure
-- **Containerization**: Multi-stage production [`Dockerfile`](./Dockerfile) serving Vite static distribution and FastAPI runtime.
-- **Orchestration**: [`docker-compose.yml`](./docker-compose.yml) with host-mounted persistent storage volumes.
+- **Containerization**: Multi-stage production [`Dockerfile`](./Dockerfile) (Node 22 build stage + Python 3.13-slim runtime) serving Vite static distribution and FastAPI.
+- **Orchestration**: [`docker-compose.yml`](./docker-compose.yml) with host-mounted persistent storage volumes for the immutable data lake.
 - **Reverse Proxy**: Preconfigured [`deploy/Caddyfile`](./deploy/Caddyfile) (automatic SSL) and [`deploy/nginx/tabletell.conf`](./deploy/nginx/tabletell.conf) with **zero-buffer SSE streaming optimizations** (`proxy_buffering off;`).
 
 ---
 
 ## ✨ Key Features
 
+- **Enterprise Authentication & Session Security**:
+  - Clerk OAuth & Email Sign-In with customized dark glassmorphism styling.
+  - Server-side JWKS cryptographic token verification across all analytical endpoints.
+  - Runtime public auth bootstrap (`/api/auth/config`) enabling dynamic key injection in containerized deployments.
+  - Seamless offline developer fallback when Clerk keys are not set.
 - **Data Catalog & Synchronization**: Upload CSV/Excel/Parquet files. Rename datasets on the fly with atomic synchronization across local Parquet files, SQLite lineage, and registered DuckDB catalog views.
 - **5-Dimensional Data Health Scoring**: Deterministic quality evaluation across Completeness, Validity, Consistency, Uniqueness, and Anomaly frequency (scored 0–100%).
 - **Interactive Studio**:
   - Contextual schema-adaptive suggested prompts.
   - Interactive Plotly visualizations (KPI cards, bar charts, time-series line plots, scatter plots).
+  - High-performance TanStack Table preview with sortable columns and null indicators.
   - Built-in Schema Inspector with live column distributions, null ratios, and data types.
   - Speech-to-text voice input transcription.
   - Dynamic **Run $\rightarrow$ Stop** button toggle with prompt recovery on cancel.
-- **Production Observability**: Real-time `/api/health` system diagnostics endpoint monitoring SQLite integrity, DuckDB engine connectivity, and data lake disk usage.
-- **System Audit Trail**: Complete log of all data transformations, approvals, run durations, and model provenance.
+- **Production Observability**: Real-time `/api/health` system diagnostics endpoint monitoring SQLite integrity, DuckDB engine connectivity, auth status, and data lake disk usage.
+- **System Audit Trail**: Complete log of all data transformations, approvals, run durations, user attribution, and model provenance.
 
 ---
 
@@ -127,9 +147,9 @@ TableTell/
 │   ├── app/
 │   │   ├── agent/                 # LangGraph state machine, nodes, prompts
 │   │   ├── analytics/             # SQL generator, validator, executor, Plotly synthesizer
-│   │   ├── api/                   # FastAPI endpoints (datasets, chat, clean, health, audit)
+│   │   ├── api/                   # FastAPI endpoints (datasets, chat, clean, health, auth)
 │   │   ├── cleaning/              # Modular data transformers, planner, rules
-│   │   ├── core/                  # Settings, exceptions, DuckDB connection pool
+│   │   ├── core/                  # Settings, Clerk auth verification, DuckDB pool
 │   │   ├── ingestion/             # File parsing, schema inference, format detection
 │   │   ├── profiling/             # Vectorized DuckDB profiling & distribution stats
 │   │   ├── quality/               # 5-dimension health engine & audit rules
@@ -145,15 +165,23 @@ TableTell/
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── components/            # Studio, Datasets, Audit, Telemetry, Common UI
-│   │   ├── hooks/                 # useChatStream (SSE + AbortController)
-│   │   ├── lib/                   # API client, Plotly theme
+│   │   ├── components/
+│   │   │   ├── assistant/         # Assistant chat interfaces & query suggestions
+│   │   │   ├── audit/             # Lineage & audit trail viewer
+│   │   │   ├── auth/              # ClerkAuthProvider, SignInPage, UserButton
+│   │   │   ├── common/            # Error boundary, toast notifications, modals
+│   │   │   ├── datasets/          # Dataset manager, TanStack Table preview, upload modal
+│   │   │   ├── layout/            # AppShell, navigation header, status indicators
+│   │   │   ├── studio/            # Interactive analytical canvas, Plotly charts
+│   │   │   └── telemetry/         # System health monitor & engine diagnostics
+│   │   ├── hooks/                 # useChatStream (SSE + AbortController + Bearer JWT)
+│   │   ├── lib/                   # Authenticated API client (authFetch), Plotly theme
 │   │   ├── store/                 # Zustand app store, toast notifications
-│   │   ├── types/                 # TypeScript interfaces
+│   │   ├── types/                 # TypeScript interfaces & API contracts
 │   │   ├── App.tsx                # Lazy-loaded views with Suspense skeletons
-│   │   └── main.tsx
+│   │   └── main.tsx               # Entrypoint wrapped with ClerkAuthProvider
 │   ├── package.json
-│   └── vite.config.ts             # Manual vendor chunking & Tailwind CSS v4
+│   └── vite.config.ts             # React Compiler, vendor chunking & Tailwind CSS v4
 │
 ├── deploy/
 │   ├── nginx/tabletell.conf       # Nginx server block with SSE proxy_buffering off
@@ -175,6 +203,7 @@ TableTell/
 - **Python 3.13+**
 - **Node.js 20+**
 - **Google Gemini API Key** (from [Google AI Studio](https://aistudio.google.com/))
+- **Clerk Account** (Optional for local offline dev; from [Clerk Dashboard](https://dashboard.clerk.com/))
 
 ### Local Development Setup
 
@@ -192,16 +221,24 @@ pip install -r requirements.txt
 
 # Configure environment
 cp .env.example .env
-# Add your GEMINI_API_KEY in .env
+# Set your GEMINI_API_KEY (and optionally CLERK keys) in backend/.env
 
 python run.py
 ```
 *Backend API and Swagger docs live at `http://localhost:8000/docs`.*
 
+> [!NOTE]
+> If Clerk keys are omitted in development, TableTell automatically operates in **Local Analyst Mode**, allowing complete testing of ingestion, cleaning, and SQL synthesis without requiring external auth.
+
 #### 2. Frontend Setup
 ```bash
 cd frontend
 npm install
+
+# (Optional) Configure Clerk publishable key for local development
+cp .env.example .env
+# Set VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+
 npm run dev
 ```
 *Frontend workspace live at `http://localhost:5173`.*
@@ -210,7 +247,7 @@ npm run dev
 
 ## 🐳 Production Deployment (VPS / Docker)
 
-TableTell includes a turnkey production deployment configuration for VPS hosting (DigitalOcean, Hetzner, AWS EC2, Linode).
+TableTell includes a turnkey production deployment configuration for VPS hosting (DigitalOcean, Hetzner, AWS EC2, Coolify).
 
 ```bash
 # 1. Clone repository on your VPS
@@ -219,7 +256,7 @@ cd /opt/tabletell
 
 # 2. Configure production secrets
 cp deploy/.env.production.example .env
-nano .env   # Set your GEMINI_API_KEY
+nano .env   # Set your GEMINI_API_KEY and CLERK credentials
 
 # 3. Start container with persistent data volume
 docker compose up -d --build
@@ -234,18 +271,12 @@ For complete instructions on configuring **Nginx**, **Caddy with automatic SSL**
 
 ## 🧪 Testing & Verification
 
-TableTell maintains a rigorous test suite of **49 automated unit tests** covering ingestion, profiling, cleaning, SQL safety, dataset renaming, chat streaming, and system health checks:
+TableTell maintains a rigorous test suite covering ingestion, profiling, cleaning, SQL safety, dataset renaming, chat streaming, and system health checks:
 
 ```bash
-# Run complete test suite
+# Run backend test suite
 cd backend
 python -m unittest discover tests/unit
-```
-
-Output:
-```text
-Ran 49 tests in 13.289s
-OK
 ```
 
 Validate frontend TypeScript types and build bundle:

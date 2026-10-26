@@ -29,7 +29,12 @@ class Settings(BaseSettings):
     
     # Gemini / AI Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    DEFAULT_MODEL: str = "gemini-2.5-flash"
+    DEFAULT_MODEL: str = "gemini-3.5-flash"
+    
+    # Clerk Authentication Configuration
+    CLERK_SECRET_KEY: str = os.getenv("CLERK_SECRET_KEY", "")
+    CLERK_PUBLISHABLE_KEY: str = os.getenv("CLERK_PUBLISHABLE_KEY", "") or os.getenv("VITE_CLERK_PUBLISHABLE_KEY", "")
+    CLERK_JWKS_URL: str = os.getenv("CLERK_JWKS_URL", "")
     
     # CORS Origins (allow React Vite dev, Next.js, and Streamlit)
     CORS_ORIGINS: list[str] = [
@@ -41,7 +46,11 @@ class Settings(BaseSettings):
     ]
 
     class Config:
-        env_file = ".env"
+        env_file = [
+            str(Path(__file__).resolve().parent.parent.parent / ".env"),
+            str(Path(__file__).resolve().parent.parent.parent / "backend" / ".env"),
+            ".env"
+        ]
         extra = "allow"
 
 settings = Settings()

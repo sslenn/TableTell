@@ -55,11 +55,29 @@ export const WaveformTableLogo: React.FC<{ size?: number; className?: string }> 
 export const BrandLogo: React.FC<BrandLogoProps> = ({
   size = 32,
   className = '',
-  variant = 'waveform-table'
+  variant = 'tabletell-badge'
 }) => {
   switch (variant) {
-    // Official Permanent TableTell Brand Logo (Waveform Table)
+    // Official Permanent TableTell Brand Logo (Orb Avatar Badge)
     case 'tabletell-badge':
+      return (
+        <div
+          className={`relative shrink-0 rounded-full select-none flex items-center justify-center ${className}`}
+          style={{ width: `${size}px`, height: `${size}px` }}
+        >
+          <img
+            src="/tabletell-logo.png"
+            alt="TableTell"
+            width={size}
+            height={size}
+            className="w-full h-full object-contain rounded-full"
+            style={{
+              filter: 'drop-shadow(0 0 10px rgba(45, 212, 191, 0.45))'
+            }}
+          />
+        </div>
+      );
+
     case 'waveform-table':
       return <WaveformTableLogo size={size} className={className} />;
 
@@ -519,7 +537,23 @@ export const BrandLogo: React.FC<BrandLogoProps> = ({
       );
 
     default:
-      return <WaveformTableLogo size={size} className={className} />;
+      return (
+        <div
+          className={`relative shrink-0 rounded-full select-none flex items-center justify-center ${className}`}
+          style={{ width: `${size}px`, height: `${size}px` }}
+        >
+          <img
+            src="/tabletell-logo.png"
+            alt="TableTell"
+            width={size}
+            height={size}
+            className="w-full h-full object-contain rounded-full"
+            style={{
+              filter: 'drop-shadow(0 0 10px rgba(45, 212, 191, 0.45))'
+            }}
+          />
+        </div>
+      );
   }
 };
 

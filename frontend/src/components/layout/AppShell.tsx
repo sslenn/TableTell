@@ -1,4 +1,6 @@
+import { useAuthConfig } from '../auth/ClerkAuthProvider';
 import React, { useEffect, useState, useRef } from 'react';
+import { UserButton } from '@clerk/react';
 import {
   MessageSquare,
   Database,
@@ -28,6 +30,7 @@ interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
+  const { isAuthEnabled } = useAuthConfig();
   const {
     activeTab,
     setActiveTab,
@@ -132,7 +135,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             >
               <BrandLogo
                 size={sidebarCollapsed ? 32 : 36}
-                variant="waveform-table"
+                variant="tabletell-badge"
                 className="transition-transform duration-300 group-hover:scale-105 shrink-0"
               />
               {!sidebarCollapsed && (
@@ -534,111 +537,127 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             )}
 
             {/* Logged-In User Profile & Account Menu */}
-            <div className="relative" ref={userDropdownRef}>
-              <button
-                type="button"
-                id="user-profile-menu-btn"
-                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                className="flex items-center gap-2 h-8 pl-1.5 pr-2.5 py-0.5 rounded-full border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all group select-none"
-                title="User Profile & Session (Active Analyst)"
-              >
-                {/* Avatar with Online Indicator */}
-                <div className="relative">
-                  <div className="w-6 h-6 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-[11px] flex items-center justify-center group-hover:scale-105 transition-transform">
-                    TT
-                  </div>
-                  <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-surface)]" />
-                </div>
-
-                {/* User Name & Status */}
-                <div className="hidden sm:flex items-center gap-1.5 text-left">
-                  <span className="text-xs font-bold leading-tight text-[var(--tt-text-primary)]">
-                    Analyst
-                  </span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                </div>
-
-                <ChevronDown
-                  className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${userDropdownOpen ? 'rotate-180' : ''
-                    }`}
+            {isAuthEnabled ? (
+              <div className="flex items-center pl-1">
+                <UserButton
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: 'w-8 h-8 ring-2 ring-[#0D9488]/40 hover:scale-105 transition-transform shadow-[var(--tt-shadow-card)]',
+                      userButtonPopoverCard: 'bg-[#112022] border border-[#2DD4BF]/25 shadow-2xl rounded-2xl text-[#F0FDFA]',
+                      userButtonPopoverActionButton: 'text-[#F0FDFA] hover:bg-[#182F32] hover:text-[#2DD4BF]',
+                      userButtonPopoverActionButtonText: 'text-xs text-[#F0FDFA]',
+                      userButtonPopoverFooter: 'hidden',
+                    }
+                  }}
                 />
-              </button>
-
-              {/* User Profile Popover */}
-              {userDropdownOpen && (
-                <div
-                  id="user-profile-dropdown-panel"
-                  className="absolute right-0 top-full mt-1.5 w-68 rounded-2xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-3 z-50 flex flex-col gap-2.5 animate-in fade-in select-none"
+              </div>
+            ) : (
+              <div className="relative" ref={userDropdownRef}>
+                <button
+                  type="button"
+                  id="user-profile-menu-btn"
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className="flex items-center gap-2 h-8 pl-1.5 pr-2.5 py-0.5 rounded-full border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all group select-none"
+                  title="User Profile & Session (Active Analyst)"
                 >
-                  {/* User Profile Header */}
-                  <div className="flex items-center gap-3 pb-2.5 border-b border-[var(--tt-border-subtle)]">
-                    <div className="w-10 h-10 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-sm flex items-center justify-center shrink-0">
+                  {/* Avatar with Online Indicator */}
+                  <div className="relative">
+                    <div className="w-6 h-6 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-[11px] flex items-center justify-center group-hover:scale-105 transition-transform">
                       TT
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-[var(--tt-text-primary)] truncate">Data Analyst</span>
-                        <span className="bg-emerald-500/15 text-emerald-500 text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border border-emerald-500/30">
-                          Admin
+                    <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-surface)]" />
+                  </div>
+
+                  {/* User Name & Status */}
+                  <div className="hidden sm:flex items-center gap-1.5 text-left">
+                    <span className="text-xs font-bold leading-tight text-[var(--tt-text-primary)]">
+                      Analyst
+                    </span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  </div>
+
+                  <ChevronDown
+                    className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${userDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                  />
+                </button>
+
+                {/* User Profile Popover */}
+                {userDropdownOpen && (
+                  <div
+                    id="user-profile-dropdown-panel"
+                    className="absolute right-0 top-full mt-1.5 w-68 rounded-2xl border border-[var(--tt-border-strong)] bg-[var(--tt-bg-surface)] shadow-[var(--tt-shadow-floating)] p-3 z-50 flex flex-col gap-2.5 animate-in fade-in select-none"
+                  >
+                    {/* User Profile Header */}
+                    <div className="flex items-center gap-3 pb-2.5 border-b border-[var(--tt-border-subtle)]">
+                      <div className="w-10 h-10 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-sm flex items-center justify-center shrink-0">
+                        TT
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-[var(--tt-text-primary)] truncate">Data Analyst</span>
+                          <span className="bg-emerald-500/15 text-emerald-500 text-[9px] font-bold uppercase px-1.5 py-0.2 rounded border border-emerald-500/30">
+                            Admin
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[var(--tt-text-muted)] truncate font-mono">
+                          analyst@tabletell.local
                         </span>
                       </div>
-                      <span className="text-[11px] text-[var(--tt-text-muted)] truncate font-mono">
-                        analyst@tabletell.local
-                      </span>
                     </div>
-                  </div>
 
-                  {/* Active Workspace & Engine Details */}
-                  <div className="flex flex-col gap-1 text-[11px] text-[var(--tt-text-secondary)] font-mono">
-                    <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
-                      <span className="text-[var(--tt-text-muted)]">Engine:</span>
-                      <span className="font-semibold text-[#0D9488]">DuckDB Vectorized</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
-                      <span className="text-[var(--tt-text-muted)]">Active Table:</span>
-                      <span className="font-semibold text-[var(--tt-text-primary)] truncate max-w-[120px]">{datasetId}</span>
-                    </div>
-                    <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
-                      <span className="text-[var(--tt-text-muted)]">Auth State:</span>
-                      <span className="flex items-center gap-1 text-emerald-500 font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                        Persistent Session
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Quick Session Actions */}
-                  <div className="pt-1.5 border-t border-[var(--tt-border-subtle)] flex flex-col gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        toast.info('Active Account', 'You are logged in with Administrative privileges');
-                      }}
-                      className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)] transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <User className="w-3.5 h-3.5 text-[var(--tt-text-muted)]" />
-                        <span>Analyst Profile</span>
+                    {/* Active Workspace & Engine Details */}
+                    <div className="flex flex-col gap-1 text-[11px] text-[var(--tt-text-secondary)] font-mono">
+                      <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
+                        <span className="text-[var(--tt-text-muted)]">Engine:</span>
+                        <span className="font-semibold text-[#0D9488]">DuckDB Vectorized</span>
                       </div>
-                      <span className="text-[10px] text-[var(--tt-text-muted)]">Verified</span>
-                    </button>
+                      <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
+                        <span className="text-[var(--tt-text-muted)]">Active Table:</span>
+                        <span className="font-semibold text-[var(--tt-text-primary)] truncate max-w-[120px]">{datasetId}</span>
+                      </div>
+                      <div className="flex items-center justify-between py-1 px-2 rounded-lg bg-[var(--tt-bg-canvas)]">
+                        <span className="text-[var(--tt-text-muted)]">Auth State:</span>
+                        <span className="flex items-center gap-1 text-emerald-500 font-semibold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                          Persistent Session
+                        </span>
+                      </div>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserDropdownOpen(false);
-                        toast.success('Session Active', 'Authentication state remains intact');
-                      }}
-                      className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Logged In (Session Intact)</span>
-                    </button>
+                    {/* Quick Session Actions */}
+                    <div className="pt-1.5 border-t border-[var(--tt-border-subtle)] flex flex-col gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          toast.info('Active Account', 'You are logged in with Administrative privileges');
+                        }}
+                        className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)] transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-[var(--tt-text-muted)]" />
+                          <span>Analyst Profile</span>
+                        </div>
+                        <span className="text-[10px] text-[var(--tt-text-muted)]">Verified</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          toast.success('Session Active', 'Authentication state remains intact');
+                        }}
+                        className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Logged In (Session Intact)</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            )}
           </div>
         </header>
 

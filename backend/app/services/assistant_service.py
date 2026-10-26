@@ -1,6 +1,7 @@
 """
 AI Assistant Service for TableTell.
 Acts as a data science tutor, data engineering mentor, and TableTell platform navigator.
+Enriched with live context (active tab, selected dataset, health score, active columns).
 Powered by Google Gemini Flash with graceful offline guidance fallback.
 """
 
@@ -34,6 +35,16 @@ YOUR MISSION & DOMAINS:
    - Teach statistical concepts clearly: IQR outliers, quartiles (Q1, Q2/Median, Q3), skewness (left/right/tail), kurtosis, normal vs. multimodal distributions.
    - Explain variable types: Nominal (labels/IDs), Ordinal (ordered ranks/tiers), Discrete (counts), Continuous Interval (dates/temperature) vs. Ratio (prices/revenue).
    - Clarify data engineering trade-offs: why imputation with median is safer than mean for skewed data, why trailing whitespace breaks SQL joins, and why Parquet is faster than CSV.
+
+3. LIVE CONTEXT AWARENESS & DATASET COACHING:
+   - When the user asks "What can I ask?" or "Suggest questions for this dataset", inspect the CURRENT SESSION CONTEXT below:
+     * Examine the available column names and data types.
+     * Propose 3 to 4 concrete, high-value business inquiries (e.g. Cohort retention, Pareto 80/20 revenue concentration, monthly trend velocity, margin analysis).
+     * Give an exact copy-pasteable prompt phrase that works great in the Studio.
+   - When the user asks about their Health Score:
+     * Reference their current health score from the context.
+     * Explain which dimensions to investigate in the Audit tab and whether to run 'Auto-Clean'.
+   - When the user asks about the active UI tab, provide tips relevant to what they are viewing right now.
 
 TONE & FORMATTING GUIDELINES:
 - Friendly, articulate, concise, and structured.
@@ -111,13 +122,43 @@ class AssistantService:
         conv = self.get_or_create_conversation(conversation_id)
         metadata_repo.clear_assistant_history(conv["id"])
 
-    def ask_assistant(self, query: str, conversation_id: Optional[str] = None) -> Dict[str, Any]:
+    def _format_context_prompt(self, context: Optional[Dict[str, Any]]) -> str:
+        """Formats session context into a structured system block for the model."""
+        if not context:
+            return ""
+
+        lines = ["CURRENT SESSION CONTEXT:"]
+        if context.get("current_tab"):
+            lines.append(f"- Active Tab/Screen: '{context['current_tab']}'")
+        if context.get("dataset_id"):
+            ds_name = context.get("dataset_name") or context.get("dataset_id")
+            rows = f" ({context['total_rows']:,} rows)" if context.get("total_rows") is not None else ""
+            lines.append(f"- Active Dataset: `{ds_name}`{rows}")
+        if context.get("health_score") is not None:
+            score = round(float(context["health_score"]), 1)
+            lines.append(f"- Dataset Quality Health Score: {score}/100")
+        if context.get("columns"):
+            cols = ", ".join(f"`{c}`" for c in context["columns"][:25])
+            lines.append(f"- Available Columns: {cols}")
+        if context.get("audit_summary"):
+            summary_str = json.dumps(context["audit_summary"], default=str)
+            lines.append(f"- Audit Profile Summary: {summary_str}")
+
+        return "\n".join(lines)
+
+    def ask_assistant(
+        self,
+        query: str,
+        conversation_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """
         Processes a user question:
         1. Saves user query to SQLite
-        2. Calls Gemini Flash with Grounded System Prompt
-        3. Saves assistant answer to SQLite
-        4. Returns answer and conversation metadata
+        2. Injects current UI/dataset context into Gemini Flash prompt
+        3. Calls Gemini Flash with Grounded System Prompt
+        4. Saves assistant answer to SQLite
+        5. Returns answer and conversation metadata
         """
         conv = self.get_or_create_conversation(conversation_id)
         conv_id = conv["id"]
@@ -134,18 +175,29 @@ class AssistantService:
         client = get_gemini_client()
         reply_content = ""
 
+        context_str = self._format_context_prompt(context)
+        history_str = "\n".join(history_context)
+
+        prompt_parts = [ASSISTANT_SYSTEM_PROMPT]
+        if context_str:
+            prompt_parts.append(context_str)
+        if history_str:
+            prompt_parts.append(f"Recent Conversation History:\n{history_str}")
+        prompt_parts.append(f"User: {query}\n\nCopilot:")
+        full_prompt = "\n\n".join(prompt_parts)
+
         if client:
             try:
-                full_prompt = f"{ASSISTANT_SYSTEM_PROMPT}\n\nRecent Conversation History:\n" + "\n".join(history_context) + f"\n\nUser: {query}\n\nCopilot:"
+                target_model = settings.DEFAULT_MODEL or "gemini-3.5-flash"
                 resp = client.models.generate_content(
-                    model=settings.DEFAULT_MODEL or "gemini-2.5-flash",
+                    model=target_model,
                     contents=full_prompt
                 )
                 reply_content = resp.text.strip()
             except Exception as e:
-                reply_content = self._generate_fallback_response(query, error_msg=str(e))
+                reply_content = self._generate_fallback_response(query, context=context, error_msg=str(e))
         else:
-            reply_content = self._generate_fallback_response(query)
+            reply_content = self._generate_fallback_response(query, context=context)
 
         # 3. Save assistant response
         saved_msg = metadata_repo.save_assistant_message(conv_id, role="assistant", content=reply_content)
@@ -158,7 +210,12 @@ class AssistantService:
             "created_at": saved_msg["created_at"]
         }
 
-    async def stream_assistant(self, query: str, conversation_id: Optional[str] = None) -> AsyncGenerator[Dict[str, Any], None]:
+    async def stream_assistant(
+        self,
+        query: str,
+        conversation_id: Optional[str] = None,
+        context: Optional[Dict[str, Any]] = None
+    ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Server-Sent Events streaming generator for real-time word-by-word token delivery.
         """
@@ -175,15 +232,24 @@ class AssistantService:
         }
         await asyncio.sleep(0.05)
 
+        context_str = self._format_context_prompt(context)
+
         if client:
             try:
                 recent_msgs = metadata_repo.list_assistant_messages(conv_id, limit=6)
                 history_str = "\n".join(f"{m['role'].capitalize()}: {m['content']}" for m in recent_msgs[:-1])
-                full_prompt = f"{ASSISTANT_SYSTEM_PROMPT}\n\nHistory:\n{history_str}\n\nUser: {query}\n\nCopilot:"
 
-                # Stream response tokens
+                prompt_parts = [ASSISTANT_SYSTEM_PROMPT]
+                if context_str:
+                    prompt_parts.append(context_str)
+                if history_str:
+                    prompt_parts.append(f"History:\n{history_str}")
+                prompt_parts.append(f"User: {query}\n\nCopilot:")
+                full_prompt = "\n\n".join(prompt_parts)
+
+                target_model = settings.DEFAULT_MODEL or "gemini-3.5-flash"
                 response_stream = client.models.generate_content_stream(
-                    model=settings.DEFAULT_MODEL or "gemini-2.5-flash",
+                    model=target_model,
                     contents=full_prompt
                 )
                 for chunk in response_stream:
@@ -196,13 +262,13 @@ class AssistantService:
                         }
                         await asyncio.sleep(0.01)
             except Exception as e:
-                full_text = self._generate_fallback_response(query, error_msg=str(e))
+                full_text = self._generate_fallback_response(query, context=context, error_msg=str(e))
                 yield {
                     "event": "token",
                     "data": json.dumps({"token": full_text})
                 }
         else:
-            full_text = self._generate_fallback_response(query)
+            full_text = self._generate_fallback_response(query, context=context)
             # Simulate streaming tokens for smooth UX when in offline mode
             words = full_text.split(" ")
             for i, word in enumerate(words):
@@ -223,9 +289,28 @@ class AssistantService:
             })
         }
 
-    def _generate_fallback_response(self, query: str, error_msg: Optional[str] = None) -> str:
+    def _generate_fallback_response(
+        self,
+        query: str,
+        context: Optional[Dict[str, Any]] = None,
+        error_msg: Optional[str] = None
+    ) -> str:
         """Provides instant, high-quality answers from built-in knowledge base if offline or API key missing."""
         q_lower = query.lower()
+
+        # Handle contextual dataset suggestions even in fallback mode
+        if any(term in q_lower for term in ["what can i ask", "suggest", "questions", "analyze"]) and context and context.get("columns"):
+            cols = context["columns"]
+            ds_name = context.get("dataset_name") or context.get("dataset_id") or "this dataset"
+            return (
+                f"### 💡 Recommended Questions for `{ds_name}`\n\n"
+                f"Based on your table structure with columns {', '.join(f'`{c}`' for c in cols[:6])}:\n\n"
+                f"1. **Summary Overview**: *'Show total rows and summary statistics across all numeric fields.'*\n"
+                f"2. **Top Category Breakdown**: *'What are the top 5 records grouped by the primary category?'*\n"
+                f"3. **Trend / Time Analysis**: *'Show monthly or weekly totals over time as a line chart.'*\n"
+                f"4. **Outlier Inspection**: *'Filter and display records with values in the top 5 percentile.'*\n\n"
+                f"> 🚀 Copy and paste any of these into the **Studio** query bar!"
+            )
 
         for key, answer in FALLBACK_KNOWLEDGE_BASE.items():
             if key in q_lower:
@@ -236,7 +321,8 @@ class AssistantService:
         elif any(term in q_lower for term in ["clean", "fix", "repair", "pipeline", "version"]):
             return FALLBACK_KNOWLEDGE_BASE["clean"]
         elif any(term in q_lower for term in ["score", "health", "dimension", "audit"]):
-            return FALLBACK_KNOWLEDGE_BASE["health_score"]
+            score_info = f" Your current dataset score is **{round(context['health_score'], 1)}/100**." if context and context.get("health_score") is not None else ""
+            return FALLBACK_KNOWLEDGE_BASE["health_score"] + score_info
         elif any(term in q_lower for term in ["nominal", "ordinal", "categorical", "variable"]):
             return FALLBACK_KNOWLEDGE_BASE["nominal"]
         elif any(term in q_lower for term in ["parquet", "duckdb", "storage", "csv"]):
@@ -246,6 +332,7 @@ class AssistantService:
         return (
             f"### ⚡ TableTell Copilot\n\n"
             f"I can help you explore and understand your data in TableTell! Here are some common topics I can explain:\n\n"
+            f"- **'What can I ask?'**: Propose questions tailored to your current dataset.\n"
             f"- **'Explain 1.5x IQR'**: How TableTell detects statistical outliers.\n"
             f"- **'How does data cleaning work?'**: How proposals and versioning protect raw data.\n"
             f"- **'What is the Health Score?'**: How the 5 quality dimensions are calculated.\n"
