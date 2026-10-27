@@ -4,7 +4,7 @@ Aggregated API Router for TableTell.
 
 from fastapi import APIRouter, Depends
 from app.core.config import settings
-from app.core.auth import get_current_user
+from app.core.auth import get_current_user, get_optional_user
 from app.api.datasets import router as datasets_router
 from app.api.upload import router as upload_router
 from app.api.cleaning import router as cleaning_router
@@ -36,7 +36,7 @@ api_router.include_router(cleaning_router, dependencies=protected_deps)
 api_router.include_router(analytics_router, dependencies=protected_deps)
 api_router.include_router(chat_router, dependencies=protected_deps)
 api_router.include_router(audit_router, dependencies=protected_deps)
-api_router.include_router(assistant_router, dependencies=protected_deps)
+api_router.include_router(assistant_router, dependencies=[Depends(get_optional_user)])
 
 # Public endpoints (Docker and Coolify healthchecks)
 api_router.include_router(health_router)

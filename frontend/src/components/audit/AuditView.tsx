@@ -3,6 +3,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { fetchAuditReport, cleanDataset, fetchDatasets, downloadDatasetExport } from '../../lib/api';
 import type { DatasetAuditReport } from '../../types/dataset';
 import { DistributionProfiler } from './DistributionProfiler';
+import { CorrelationHeatmap } from './CorrelationHeatmap';
 import { ExportDatasetModal } from '../common/ExportDatasetModal';
 import { toast } from '../../store/useToastStore';
 import {
@@ -38,7 +39,7 @@ export const AuditView: React.FC = () => {
   const [findingsDismissed, setFindingsDismissed] = useState(false);
   const [showCriteriaDetails, setShowCriteriaDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'distributions' | 'columns'>('overview');
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'distributions' | 'columns' | 'correlations'>('overview');
   const [showExportModal, setShowExportModal] = useState(false);
   const [quickExporting, setQuickExporting] = useState(false);
 
@@ -440,6 +441,22 @@ export const AuditView: React.FC = () => {
               <Database className="w-4 h-4" />
               <span>Schema & Null Rates</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveSubTab('correlations')}
+              className={`flex items-center gap-2 pb-3 text-xs font-semibold transition-all cursor-pointer border-b-2 ${
+                activeSubTab === 'correlations'
+                  ? 'border-[#0D9488] text-[#0D9488]'
+                  : 'border-transparent text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]'
+              }`}
+            >
+              <Activity className="w-4 h-4" />
+              <span>Correlations & EDA</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-full font-mono bg-[var(--tt-bg-canvas)] text-[#0D9488] border border-[var(--tt-border-subtle)]">
+                Matrix
+              </span>
+            </button>
           </div>
 
           {/* Tab 1: Quality Overview */}
@@ -768,6 +785,11 @@ export const AuditView: React.FC = () => {
                 </table>
               </div>
             </div>
+          )}
+
+          {/* Tab 4: Vectorized Pearson Correlations & Feature Interactions */}
+          {activeSubTab === 'correlations' && (
+            <CorrelationHeatmap datasetId={datasetId} />
           )}
         </div>
       )}

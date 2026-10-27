@@ -90,13 +90,13 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           )}
         </div>
 
-        {/* Right: Actions & DuckDB Lake Status */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2 shrink-0">
           {onToggleSchema && (
             <button
               type="button"
               onClick={onToggleSchema}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
                 isSchemaOpen
                   ? 'border-[#0D9488] text-[#0D9488] bg-[#0D9488]/10'
                   : 'border-[var(--tt-border-subtle)] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)]'
@@ -107,11 +107,6 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
               <span>Schema</span>
             </button>
           )}
-
-          <div className="flex items-center gap-1.5 text-[11px] font-medium">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
-            <span className="font-mono text-[var(--tt-text-muted)]">DuckDB Ready</span>
-          </div>
         </div>
       </div>
     );

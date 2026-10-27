@@ -322,47 +322,40 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         </div>
 
         {/* Sidebar Footer */}
-        <div className="flex flex-col gap-2 pt-3 border-t border-[var(--tt-border-subtle)]">
+        <div className="pt-3 border-t border-[var(--tt-border-subtle)]">
           {sidebarCollapsed ? (
-            <div className="flex flex-col items-center gap-2">
+            <div className="flex justify-center">
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-md border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)]"
+                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:border-[var(--tt-border-strong)] transition-all"
                 title="Expand sidebar (Ctrl+B)"
               >
                 <PanelLeftOpen className="w-4 h-4 text-[#0D9488]" />
               </button>
-              <ThemeToggle />
             </div>
           ) : (
-            <>
+            <div className="flex items-center justify-between px-2 py-0.5">
               <a
-                href="http://localhost:8000/docs"
+                href="/docs"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between p-2 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[11px] text-[var(--tt-text-secondary)] font-medium transition-colors shadow-[var(--tt-shadow-card)]"
+                className="flex items-center gap-1.5 text-xs text-[var(--tt-text-muted)] hover:text-[#0D9488] dark:hover:text-[#2DD4BF] font-mono transition-colors group"
+                title="Open FastAPI Swagger Interactive Documentation (/docs)"
               >
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                  <span>DuckDB in Memory Lake</span>
-                </div>
-                <ExternalLink className="w-3 h-3 text-[var(--tt-text-muted)]" />
+                <span>API Docs</span>
+                <ExternalLink className="w-3 h-3 opacity-40 group-hover:opacity-100 transition-opacity" />
               </a>
 
-              <div className="flex items-center justify-between px-1">
-                <a
-                  href="http://localhost:8000/docs"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 text-[11px] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] font-medium"
-                >
-                  <span>FastAPI | OpenAPI</span>
-                  <ExternalLink className="w-3 h-3 text-[var(--tt-text-muted)]" />
-                </a>
-                <ThemeToggle />
-              </div>
-            </>
+              <button
+                type="button"
+                onClick={toggleSidebar}
+                className="p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all cursor-pointer"
+                title="Collapse sidebar (Ctrl+B)"
+              >
+                <PanelLeftClose className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
       </aside>
@@ -520,9 +513,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </div>
 
           {/* Right: Actions, Connected Badge, and User Avatar */}
-          <div className="flex items-center gap-3">
-
-
+          <div className="flex items-center gap-2.5">
             {/* Quick Action: New Query (Studio) */}
             {activeTab === 'studio' && (
               <button
@@ -535,6 +526,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 <span>New Query</span>
               </button>
             )}
+
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
 
             {/* Logged-In User Profile & Account Menu */}
             {isAuthEnabled ? (

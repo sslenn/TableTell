@@ -1,5 +1,12 @@
 import type { ChatRequest, ChatResponsePayload } from '../types/api';
-import type { DatasetSummary, DatasetAuditReport, CleaningResult, CleaningPlan } from '../types/dataset';
+import type {
+  DatasetSummary,
+  DatasetAuditReport,
+  CleaningResult,
+  CleaningPlan,
+  CorrelationReport,
+  DriverAnalysisReport
+} from '../types/dataset';
 
 const BASE_URL = '/api';
 
@@ -218,3 +225,38 @@ export async function renameDataset(
 
 
 
+
+
+export async function fetchDatasetCorrelations(datasetId: string, maxColumns = 12): Promise<CorrelationReport> {
+  const res = await authFetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}/correlations?max_columns=${maxColumns}`);
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to fetch correlation matrix: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.data;
+}
+
+export async function fetchDriverAnalysis(
+  datasetId: string,
+  metricCol?: string,
+  dimensionCol?: string,
+  limit = 15
+): Promise<DriverAnalysisReport> {
+  const res = await authFetch(`${BASE_URL}/analytics/drivers`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      dataset_id: datasetId,
+      metric_col: metricCol,
+      dimension_col: dimensionCol,
+      limit
+    })
+  });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.detail || `Failed to analyze drivers: ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.data;
+}

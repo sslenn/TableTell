@@ -46,3 +46,11 @@ class AnalyticalRunDetail(BaseModel):
     summary_markdown: Optional[str] = None
     error: Optional[str] = None
     created_at: str
+
+
+class DriverAnalysisRequest(BaseModel):
+    dataset_id: str
+    metric_col: Optional[str] = None
+    dimension_col: Optional[str] = None
+    version: Optional[int] = None
+    limit: int = 15

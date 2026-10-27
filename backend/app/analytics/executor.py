@@ -4,12 +4,24 @@ Executes validated read-only SQL queries via registered views against Parquet fi
 """
 
 import time
+import math
 from pathlib import Path
 from typing import Dict, Any, Optional
 import duckdb
 from app.analytics.sql_validator import validate_read_only_sql
 from app.storage.parquet_store import parquet_store
 from app.core.exceptions import QueryExecutionError
+
+
+def _format_cell_value(col: str, val: Any) -> Any:
+    if isinstance(val, float):
+        if not math.isfinite(val):
+            return None
+        col_lower = col.lower()
+        if any(kw in col_lower for kw in ["price", "revenue", "cost", "amount", "spend", "sales", "profit", "fee", "salary", "discount", "pricing", "charge", "tax", "total", "subtotal", "val"]):
+            return round(val, 2)
+        return round(val, 4)
+    return val
 
 
 class QueryExecutor:
@@ -65,7 +77,7 @@ class QueryExecutor:
             records = res.fetchmany(max_rows)
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-            rows = [dict(zip(columns, row)) for row in records]
+            rows = [{col: _format_cell_value(col, val) for col, val in zip(columns, row)} for row in records]
 
             return {
                 "success": True,
