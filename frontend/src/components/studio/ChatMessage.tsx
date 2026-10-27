@@ -149,7 +149,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               className="text-xs font-bold tracking-tight"
               style={{ color: 'var(--tt-text-primary)', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
             >
-              TableTell Analytical Insight
+              Executive Decision Briefing
             </span>
 
             {/* Execution Engine Badges */}
@@ -373,6 +373,40 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           </div>
         )}
       </div>
+
+      {/* Senior Analyst Diagnostic Actions Dock */}
+      {!isUser && (
+        <div className="flex flex-wrap items-center gap-2 pl-1 pt-0.5">
+          <span className="text-[11px] font-mono font-semibold text-[#0D9488] flex items-center gap-1">
+            <Zap className="w-3 h-3 text-[#0D9488]" />
+            Diagnostic Drilldown:
+          </span>
+          <button
+            type="button"
+            onClick={() => setSuggestedPrompt("Decompose key growth drivers and calculate Pareto concentration for the top metric in this result")}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-teal-500/30 bg-teal-500/10 hover:bg-teal-500/20 text-[#0D9488] transition-colors cursor-pointer"
+            title="Run automated root-cause driver decomposition"
+          >
+            <span>🔍 Analyze Drivers (Why?)</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSuggestedPrompt("Compute Pareto 80/20 concentration and cumulative share percentage for this metric")}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:border-[#0D9488] text-[var(--tt-text-secondary)] transition-colors cursor-pointer"
+            title="Compute cumulative distribution & 80/20 concentration"
+          >
+            <span>📊 Pareto 80/20</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setSuggestedPrompt("Calculate percentage variance and spread relative to the group mean")}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:border-[#0D9488] text-[var(--tt-text-secondary)] transition-colors cursor-pointer"
+            title="Calculate group variance and delta vs mean"
+          >
+            <span>📈 Variance & Delta</span>
+          </button>
+        </div>
+      )}
 
       {/* Suggested Next Questions / Follow-ups */}
       {followUpPrompts.length > 0 && (

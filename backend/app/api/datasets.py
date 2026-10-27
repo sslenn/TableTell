@@ -200,3 +200,29 @@ async def rename_dataset(dataset_id: str, payload: RenameDatasetRequest):
 
 
 
+
+
+from app.profiling.correlation import correlation_analyzer
+
+
+@router.get("/{dataset_id}/correlations", response_model=Dict[str, Any])
+async def get_dataset_correlations(
+    dataset_id: str,
+    version: Optional[int] = Query(None),
+    max_columns: int = Query(12, ge=2, le=25)
+):
+    """
+    Computes vectorized Pearson correlation matrix, significant pairwise interactions,
+    and multicollinearity risk alerts across numeric features.
+    """
+    try:
+        res = correlation_analyzer.compute_correlation_matrix(
+            dataset_id=dataset_id,
+            version=version,
+            max_columns=max_columns
+        )
+        return {"status": "success", "data": res}
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Correlation analysis failed: {str(e)}")

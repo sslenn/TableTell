@@ -1,10 +1,12 @@
 """
 Prompt-driven and schema-aware SQL generator for DuckDB.
-Supports Gemini AI with schema-aware offline fallback.
+Supports Gemini AI and OpenAI-compatible endpoints with schema-aware offline fallback.
 """
 
 import os
 import re
+import json
+import httpx
 from typing import Dict, Any, List, Optional
 from app.core.config import settings
 
@@ -16,6 +18,110 @@ try:
     HAS_GENAI = True
 except ImportError:
     HAS_GENAI = False
+    class DummyTypes:
+        class GenerateContentConfig:
+            def __init__(self, system_instruction: Optional[str] = None, temperature: Optional[float] = None):
+                self.system_instruction = system_instruction
+                self.temperature = temperature
+    types = DummyTypes()
+
+
+class UniversalResponse:
+    """Wraps text responses to match Google GenAI response interface."""
+    def __init__(self, text: str):
+        self.text = text
+
+
+class UniversalChunk:
+    """Wraps streaming text chunks to match Google GenAI stream interface."""
+    def __init__(self, text: str):
+        self.text = text
+
+
+class UniversalModelService:
+    """
+    OpenAI-compatible and custom Router service adapter (e.g. router.dockified.com / v1).
+    Provides `.generate_content()` and `.generate_content_stream()` matching Google GenAI API.
+    """
+    def __init__(self, api_key: str, endpoint: str):
+        self.api_key = api_key
+        clean_ep = endpoint.rstrip("/")
+        if "/chat/completions" in clean_ep:
+            self.chat_url = clean_ep
+        elif clean_ep.endswith("/v1"):
+            self.chat_url = f"{clean_ep}/chat/completions"
+        else:
+            self.chat_url = f"{clean_ep}/v1/chat/completions"
+
+    def _build_payload(self, model: str, contents: str, config: Any = None, stream: bool = False) -> Dict[str, Any]:
+        messages = []
+        system_instruction = None
+        temperature = 0.1
+
+        if config:
+            if hasattr(config, "system_instruction") and config.system_instruction:
+                system_instruction = str(config.system_instruction)
+            elif isinstance(config, dict) and "system_instruction" in config:
+                system_instruction = str(config["system_instruction"])
+
+            if hasattr(config, "temperature") and config.temperature is not None:
+                temperature = config.temperature
+            elif isinstance(config, dict) and "temperature" in config:
+                temperature = config["temperature"]
+
+        if system_instruction:
+            messages.append({"role": "system", "content": system_instruction})
+        messages.append({"role": "user", "content": contents})
+
+        payload: Dict[str, Any] = {
+            "model": model,
+            "messages": messages,
+            "temperature": temperature
+        }
+        if stream:
+            payload["stream"] = True
+        return payload
+
+    def generate_content(self, model: str, contents: str, config: Any = None) -> UniversalResponse:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = self._build_payload(model, contents, config, stream=False)
+        with httpx.Client(timeout=45.0) as client:
+            resp = client.post(self.chat_url, headers=headers, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            text = data["choices"][0]["message"].get("content", "")
+            return UniversalResponse(text)
+
+    def generate_content_stream(self, model: str, contents: str, config: Any = None):
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        payload = self._build_payload(model, contents, config, stream=True)
+        with httpx.Client(timeout=45.0) as client:
+            with client.stream("POST", self.chat_url, headers=headers, json=payload) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if line.startswith("data: "):
+                        data_str = line[6:].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            d = json.loads(data_str)
+                            token = d["choices"][0]["delta"].get("content", "")
+                            if token:
+                                yield UniversalChunk(token)
+                        except Exception:
+                            continue
+
+
+class UniversalClient:
+    """Universal AI Client holding `.models` service."""
+    def __init__(self, api_key: str, endpoint: str):
+        self.models = UniversalModelService(api_key, endpoint)
 
 
 SYSTEM_PROMPT = """You are TableTell, an expert AI Data Analyst and Business Intelligence Engineer.
@@ -31,12 +137,32 @@ RULES FOR DUCKDB SQL:
 
 
 def get_gemini_client():
-    api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY")
-    if api_key and HAS_GENAI:
+    api_key = (
+        getattr(settings, "AI_API_KEY", None)
+        or getattr(settings, "GEMINI_API_KEY", None)
+        or os.environ.get("AI_API_KEY")
+        or os.environ.get("GEMINI_API_KEY")
+    )
+    endpoint = (
+        getattr(settings, "AI_ENDPOINT", None)
+        or os.environ.get("AI_ENDPOINT", "")
+    )
+
+    if not api_key:
+        return None
+
+    # Router/Proxy or OpenAI-format key
+    if endpoint or api_key.startswith("sk-"):
+        target_endpoint = endpoint or "https://router.dockified.com/v1"
+        return UniversalClient(api_key=api_key, endpoint=target_endpoint)
+
+    # Native Google GenAI SDK fallback
+    if HAS_GENAI:
         try:
             return genai.Client(api_key=api_key)
         except Exception:
             return None
+
     return None
 
 
@@ -73,7 +199,7 @@ def simulate_sql_fallback(
     dtypes: Dict[str, str]
 ) -> str:
     """
-    Schema-aware SQL generator for offline mode (when GEMINI_API_KEY is not configured).
+    Schema-aware SQL generator for offline mode (when AI keys are not configured).
     Dynamically inspects the actual dataset schema and matches query keywords against
     real columns so it never queries non-existent columns.
     """

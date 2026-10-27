@@ -48,3 +48,26 @@ async def get_analytical_run(run_id: str):
     if not run:
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
     return {"status": "success", "data": run}
+
+
+from app.analytics.driver_analyzer import driver_analyzer
+from app.schemas.analytics import DriverAnalysisRequest
+
+
+@router.post("/drivers")
+async def analyze_drivers_endpoint(req: DriverAnalysisRequest):
+    """
+    Executes automated root-cause driver decomposition:
+    variance attribution, volume contribution, and Pareto 80/20 curves.
+    """
+    try:
+        res = driver_analyzer.analyze_drivers(
+            dataset_id=req.dataset_id,
+            metric_col=req.metric_col,
+            dimension_col=req.dimension_col,
+            version=req.version,
+            limit=req.limit
+        )
+        return {"status": "success", "data": res}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Driver analysis failed: {str(e)}")

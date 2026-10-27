@@ -32,17 +32,83 @@ interface DataGridProps {
   className?: string;
 }
 
+const isPricingOrMonetaryColumn = (col: string): boolean => {
+  const c = col.toLowerCase();
+  return /price|pricing|revenue|cost|amount|spend|sales|profit|fee|salary|discount|charge|tax|total|subtotal|balance|earning|income|gains|loss|avg/i.test(c);
+};
+
+const formatCellValue = (val: unknown, colKey: string): { display: React.ReactNode; rawString: string } => {
+  if (val === null || val === undefined) {
+    return { display: <span className="opacity-40">—</span>, rawString: '' };
+  }
+
+  if (typeof val === 'number') {
+    if (!Number.isFinite(val)) {
+      return { display: String(val), rawString: String(val) };
+    }
+
+    const isFinancial = isPricingOrMonetaryColumn(colKey);
+
+    // Strictly limit pricing and monetary columns to 2 decimals
+    if (isFinancial) {
+      const formatted = val.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      return { display: formatted, rawString: val.toFixed(2) };
+    }
+
+    // For any general floating-point number, limit to at most 2 decimals
+    if (!Number.isInteger(val)) {
+      const formatted = val.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+      return { display: formatted, rawString: val.toFixed(2) };
+    }
+
+    // Integers: avoid formatting IDs or Year columns with comma separators
+    if (/year|id$|_id$/i.test(colKey)) {
+      return { display: String(val), rawString: String(val) };
+    }
+
+    return { display: val.toLocaleString('en-US'), rawString: String(val) };
+  }
+
+  // Handle string floats (e.g. "115314.83999999988")
+  if (typeof val === 'string' && /^-?\d+\.\d+$/.test(val.trim())) {
+    const num = parseFloat(val);
+    if (Number.isFinite(num)) {
+      const isFinancial = isPricingOrMonetaryColumn(colKey);
+      if (isFinancial) {
+        const formatted = num.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+        return { display: formatted, rawString: num.toFixed(2) };
+      }
+      const formatted = num.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+      });
+      return { display: formatted, rawString: num.toFixed(2) };
+    }
+  }
+
+  return { display: String(val), rawString: String(val) };
+};
+
 export const DataGrid: React.FC<DataGridProps> = ({ tableResult, className = '' }) => {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [copiedCell, setCopiedCell] = useState<string | null>(null);
 
-  const copyCellValue = (val: unknown, cellId: string) => {
-    if (val === null || val === undefined) return;
-    const str = String(val);
-    navigator.clipboard.writeText(str);
+  const copyCellValue = (val: unknown, cellId: string, rawCopyText?: string) => {
+    const textToCopy = rawCopyText ?? (val !== null && val !== undefined ? String(val) : '');
+    if (!textToCopy) return;
+    navigator.clipboard.writeText(textToCopy);
     setCopiedCell(cellId);
-    toast.info('Cell Value Copied', `"${str.length > 25 ? str.substring(0, 25) + '...' : str}"`);
+    toast.info('Cell Value Copied', `"${textToCopy.length > 25 ? textToCopy.substring(0, 25) + '...' : textToCopy}"`);
     setTimeout(() => setCopiedCell(null), 1500);
   };
 
@@ -97,16 +163,17 @@ export const DataGrid: React.FC<DataGridProps> = ({ tableResult, className = '' 
           const val = info.getValue();
           const cellId = `${info.row.id}_${colKey}`;
           const isCopied = copiedCell === cellId;
+          const { display, rawString } = formatCellValue(val, colKey);
 
           return (
             <div
-              onClick={() => copyCellValue(val, cellId)}
+              onClick={() => copyCellValue(val, cellId, rawString)}
               className={`text-xs px-1 py-0.5 rounded cursor-pointer transition-colors hover:bg-[#2DD4BF]/10 ${
                 isNum ? 'font-mono tabular-nums text-right' : 'text-left'
               } ${isCopied ? 'text-[#34D399] font-bold' : ''}`}
               title="Click to copy cell value"
             >
-              {val !== null && val !== undefined ? String(val) : <span className="opacity-40">—</span>}
+              {display}
             </div>
           );
         }
@@ -135,7 +202,16 @@ export const DataGrid: React.FC<DataGridProps> = ({ tableResult, className = '' 
     if (!tableResult.rows || tableResult.rows.length === 0) return;
     const headers = tableResult.columns.join(',');
     const rows = tableResult.rows.map((r) =>
-      tableResult.columns.map((col) => JSON.stringify(r[col] ?? '')).join(',')
+      tableResult.columns.map((col) => {
+        const val = r[col];
+        if (typeof val === 'number') {
+          if (!Number.isInteger(val)) {
+            return Number(val.toFixed(2));
+          }
+          return val;
+        }
+        return JSON.stringify(val ?? '');
+      }).join(',')
     );
     const csvContent = [headers, ...rows].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });

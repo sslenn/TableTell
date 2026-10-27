@@ -114,3 +114,37 @@ def get_current_user(
             detail=f"Invalid authentication token: {str(e)}",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+
+def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+) -> AuthenticatedUser:
+    """
+    Returns verified authenticated user if credentials are valid,
+    otherwise gracefully returns a guest analyst profile so informational
+    features (like the AI Copilot Assistant) remain fully accessible.
+    """
+    auth_enabled = bool(settings.CLERK_SECRET_KEY.strip() or settings.CLERK_PUBLISHABLE_KEY.strip())
+    if not auth_enabled:
+        return AuthenticatedUser(
+            user_id="local_analyst",
+            email="analyst@tabletell.local",
+            claims={"role": "admin", "dev_mode": True}
+        )
+
+    if not credentials or not credentials.credentials:
+        return AuthenticatedUser(
+            user_id="guest_analyst",
+            email="guest@tabletell.local",
+            claims={"role": "guest", "guest_mode": True}
+        )
+
+    try:
+        return get_current_user(credentials)
+    except Exception:
+        return AuthenticatedUser(
+            user_id="guest_analyst",
+            email="guest@tabletell.local",
+            claims={"role": "guest", "guest_mode": True}
+        )
+

@@ -12,6 +12,7 @@ from app.services.quality_service import quality_service
 from app.analytics.sql_generator import generate_sql, auto_repair_column_binder, get_gemini_client
 from app.analytics.executor import query_executor
 from app.analytics.visualization import build_plotly_spec
+from app.analytics.insights_engine import synthesize_executive_briefing
 from app.schemas.analytics import ChatResponsePayload, TableResult
 from app.core.config import settings
 
@@ -68,7 +69,7 @@ class AnalyticsService:
         chart_spec = build_plotly_spec(rows, columns, user_query) if exec_res.get("success") else None
 
         # 5. Synthesize Executive takeaway summary
-        summary = self._generate_summary(user_query, sql, rows, columns, exec_res.get("error"))
+        summary = self._generate_summary(user_query, sql, rows, columns, dataset_id, exec_res.get("error"))
 
         # 6. Record run in metadata repository
         run_id = f"run_{uuid.uuid4().hex[:12]}"
@@ -114,37 +115,17 @@ class AnalyticsService:
         sql: str,
         rows: list,
         columns: list,
+        dataset_id: str,
         error: Optional[str]
     ) -> str:
-        if error:
-            return f"⚠️ **TableTell was unable to execute the query safely**:\n\n`{error}`\n\n> 💡 **Tip**: Check the dataset schema in the Audit tab to verify available columns."
-
-        if not rows:
-            return "The query executed successfully but returned **0 matching records**."
-
-        client = get_gemini_client()
-        if client and len(rows) > 0:
-            try:
-                sample_data_str = json.dumps(rows[:8], default=str)
-                sum_prompt = f"""User Question: "{query}"
-SQL Query Executed: {sql}
-Result Data: {sample_data_str}
-
-Provide a concise, 2-3 sentence executive business takeaway summarizing the key numbers and insights. Use bold text for key figures."""
-                resp = client.models.generate_content(
-                    model=settings.DEFAULT_MODEL,
-                    contents=sum_prompt
-                )
-                return resp.text.strip()
-            except Exception:
-                pass
-
-        # Deterministic executive takeaway
-        top_row = rows[0]
-        first_col = columns[0] if columns else "dimension"
-        second_col = columns[1] if len(columns) > 1 else None
-        val_str = f" with **{second_col} = {top_row.get(second_col)}**" if second_col else ""
-        return f"Query returned **{len(rows)} records** across {len(columns)} dimensions. Top entry: **{top_row.get(first_col)}**{val_str}."
+        return synthesize_executive_briefing(
+            user_query=query,
+            sql=sql,
+            rows=rows,
+            columns=columns,
+            dataset_id=dataset_id,
+            error=error
+        )
 
 
 analytics_service = AnalyticsService()

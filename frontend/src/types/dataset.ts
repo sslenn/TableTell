@@ -166,3 +166,46 @@ export interface CleaningResult {
   health_score_after?: number;
   changelog?: string[];
 }
+
+
+export interface CorrelationPair {
+  col1: string;
+  col2: string;
+  correlation: number;
+  strength: 'strong_positive' | 'moderate_positive' | 'weak' | 'moderate_negative' | 'strong_negative';
+  insight: string;
+  warning?: string;
+}
+
+export interface CorrelationReport {
+  dataset_id: string;
+  columns: string[];
+  matrix: number[][];
+  significant_pairs: CorrelationPair[];
+  collinearity_warnings: CorrelationPair[];
+  analyst_digest: string[];
+}
+
+export interface DriverContributor {
+  dimension_value: string;
+  metric_value: number;
+  row_count: number;
+  pct_of_total: number;
+  cumulative_pct: number;
+  delta_vs_mean: number;
+  role: 'top_driver' | 'secondary' | 'underperformer';
+}
+
+export interface DriverAnalysisReport {
+  dataset_id: string;
+  metric_name: string;
+  dimension_name: string;
+  total_metric: number;
+  mean_metric: number;
+  pareto_concentration_pct: number;
+  pareto_contributors_count: number;
+  grand_categories: number;
+  drivers: DriverContributor[];
+  insights: string[];
+  chart_spec?: Record<string, any>;
+}

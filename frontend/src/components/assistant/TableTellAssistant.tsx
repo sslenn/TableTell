@@ -7,11 +7,14 @@ import {
   GripHorizontal,
   Lightbulb,
   CheckCircle2,
-  Database
+  Database,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { useDraggable } from '../../hooks/useDraggable';
 import { MarkdownRenderer } from '../common/MarkdownRenderer';
 import { useAppStore } from '../../store/useAppStore';
+import { authFetch } from '../../lib/api';
 import type { AssistantMessage, AssistantContext } from '../../types/assistant';
 
 const TAB_QUICK_PROMPTS: Record<string, string[]> = {
@@ -45,6 +48,7 @@ const TAB_QUICK_PROMPTS: Record<string, string[]> = {
 
 export const TableTellAssistant: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -54,8 +58,12 @@ export const TableTellAssistant: React.FC = () => {
   const activeDataset = datasets.find((d) => d.dataset_id === datasetId);
 
   const collapsedSize = 68;
-  const chatWidth = 380;
-  const chatHeight = 520;
+  const chatWidth = isExpanded
+    ? Math.min(680, typeof window !== 'undefined' ? window.innerWidth - 32 : 680)
+    : Math.min(460, typeof window !== 'undefined' ? window.innerWidth - 24 : 460);
+  const chatHeight = isExpanded
+    ? Math.min(720, typeof window !== 'undefined' ? window.innerHeight - 32 : 720)
+    : Math.min(580, typeof window !== 'undefined' ? window.innerHeight - 32 : 580);
 
   const {
     position,
@@ -74,7 +82,7 @@ export const TableTellAssistant: React.FC = () => {
     margin: 12
   });
 
-  // When opening, ensure the 380x520 window fits cleanly within the screen
+  // When opening or toggling expanded size, ensure the window fits cleanly within the screen
   useEffect(() => {
     if (isOpen) {
       const margin = 12;
@@ -85,7 +93,7 @@ export const TableTellAssistant: React.FC = () => {
         y: Math.min(Math.max(margin, prev.y), maxY)
       }));
     }
-  }, [isOpen, setPosition]);
+  }, [isOpen, isExpanded, chatWidth, chatHeight, setPosition]);
 
   // Scroll to bottom when messages update
   useEffect(() => {
@@ -110,7 +118,7 @@ export const TableTellAssistant: React.FC = () => {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/assistant/history');
+        const res = await authFetch('/api/assistant/history');
         if (res.ok) {
           const data = await res.json();
           if (data.messages && data.messages.length > 0) {
@@ -183,7 +191,7 @@ export const TableTellAssistant: React.FC = () => {
           : undefined
       };
 
-      const res = await fetch('/api/assistant/chat', {
+      const res = await authFetch('/api/assistant/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -193,7 +201,8 @@ export const TableTellAssistant: React.FC = () => {
       });
 
       if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Server error (${res.status})`);
       }
 
       const data = await res.json();
@@ -204,13 +213,13 @@ export const TableTellAssistant: React.FC = () => {
         created_at: data.created_at || new Date().toISOString()
       };
       setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err) {
+    } catch (err: any) {
       setMessages((prev) => [
         ...prev,
         {
           id: `err_${Date.now()}`,
           role: 'assistant',
-          content: '⚠️ Failed to reach assistant service. Please check your network or server connection.',
+          content: `⚠️ Failed to get answer: ${err?.message || 'Please check your connection.'}`,
           created_at: new Date().toISOString()
         }
       ]);
@@ -221,7 +230,7 @@ export const TableTellAssistant: React.FC = () => {
 
   const handleClearHistory = async () => {
     try {
-      await fetch('/api/assistant/history', { method: 'DELETE' });
+      await authFetch('/api/assistant/history', { method: 'DELETE' });
       setMessages([
         {
           id: `rst_${Date.now()}`,
@@ -283,8 +292,10 @@ export const TableTellAssistant: React.FC = () => {
           style={{
             left: `${position.x}px`,
             top: `${position.y}px`,
-            width: '380px',
-            height: '520px',
+            width: `${chatWidth}px`,
+            height: `${chatHeight}px`,
+            maxWidth: 'calc(100vw - 24px)',
+            maxHeight: 'calc(100vh - 24px)',
             backgroundColor: 'var(--tt-bg-surface)',
             borderColor: isDragging ? 'var(--tt-primary)' : 'var(--tt-border-strong)',
             boxShadow: '0 16px 48px -4px rgba(0, 0, 0, 0.5), 0 0 24px -2px rgba(45, 212, 191, 0.2)'
@@ -327,6 +338,14 @@ export const TableTellAssistant: React.FC = () => {
                 className="p-1 rounded-md text-[var(--tt-text-muted)] hover:text-[#F87171] hover:bg-[var(--tt-bg-surface)] transition-all cursor-pointer"
               >
                 <Trash2 className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsExpanded((prev) => !prev)}
+                title={isExpanded ? 'Restore Normal Size' : 'Expand Copilot Window'}
+                className="p-1 rounded-md text-[var(--tt-text-muted)] hover:text-[#2DD4BF] hover:bg-[var(--tt-bg-surface)] transition-all cursor-pointer"
+              >
+                {isExpanded ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
               </button>
               <button
                 type="button"
@@ -374,7 +393,7 @@ export const TableTellAssistant: React.FC = () => {
 
           {/* Conversation Messages Container */}
           <div
-            className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-3 text-xs scrollbar-thin select-text"
+            className="flex-1 overflow-y-auto overflow-x-hidden p-3.5 flex flex-col gap-3 text-xs scrollbar-thin select-text min-w-0 w-full"
             style={{ backgroundColor: 'var(--tt-bg-canvas)' }}
           >
             {messages.map((msg) => {
@@ -382,15 +401,15 @@ export const TableTellAssistant: React.FC = () => {
               return (
                 <div
                   key={msg.id}
-                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} gap-1 max-w-[92%] ${
-                    isUser ? 'self-end' : 'self-start'
+                  className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} gap-1 min-w-0 ${
+                    isUser ? 'max-w-[88%] self-end' : 'max-w-full w-full self-start'
                   }`}
                 >
                   <div
-                    className={`px-3.5 py-2.5 rounded-2xl ${
+                    className={`px-3.5 py-2.5 rounded-2xl min-w-0 max-w-full break-words [overflow-wrap:anywhere] overflow-hidden ${
                       isUser
                         ? 'bg-[var(--tt-primary)] text-slate-950 font-medium rounded-br-xs'
-                        : 'border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-[var(--tt-text-primary)] rounded-bl-xs'
+                        : 'w-full border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-[var(--tt-text-primary)] rounded-bl-xs'
                     }`}
                     style={
                       !isUser
@@ -401,9 +420,9 @@ export const TableTellAssistant: React.FC = () => {
                     }
                   >
                     {isUser ? (
-                      <p className="whitespace-pre-wrap">{msg.content}</p>
+                      <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">{msg.content}</p>
                     ) : (
-                      <MarkdownRenderer content={msg.content} className="text-xs" />
+                      <MarkdownRenderer content={msg.content} className="text-xs w-full min-w-0 max-w-full" />
                     )}
                   </div>
                   <span className="text-[10px] font-mono text-[var(--tt-text-muted)] px-1">
@@ -483,7 +502,7 @@ export const TableTellAssistant: React.FC = () => {
             <div className="flex items-center justify-between text-[10px] font-mono text-[var(--tt-text-muted)] px-1">
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-[#34D399]" />
-                <span>Gemini 3.5 Flash Connected</span>
+                <span>Gemini 3.8 Flash Connected</span>
               </span>
               <span className="opacity-70">Drag header to reposition</span>
             </div>

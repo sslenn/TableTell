@@ -27,9 +27,12 @@ class Settings(BaseSettings):
         "anomaly": 0.15,
     }
     
-    # Gemini / AI Configuration
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    DEFAULT_MODEL: str = "gemini-3.5-flash"
+    # AI / Model Configuration
+    AI_API_KEY: str = os.getenv("AI_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
+    AI_ENDPOINT: str = os.getenv("AI_ENDPOINT", "https://router.dockified.com/v1")
+    DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "agy/gemini-3.8-flash-high")
+    MODEL_NAME: str = os.getenv("MODEL_NAME", "Gemini 3.8 flash")
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("AI_API_KEY", "")
     
     # Clerk Authentication Configuration
     CLERK_SECRET_KEY: str = os.getenv("CLERK_SECRET_KEY", "")

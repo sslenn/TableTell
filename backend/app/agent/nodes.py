@@ -23,6 +23,7 @@ from app.analytics.sql_generator import (
 )
 from app.analytics.executor import query_executor
 from app.analytics.visualization import build_plotly_spec
+from app.analytics.insights_engine import synthesize_executive_briefing
 
 try:
     from google import genai
@@ -161,29 +162,15 @@ def visualize_and_summarize_node(state: AgentState) -> Dict[str, Any]:
     # Build responsive Plotly chart specification
     plotly_spec = build_plotly_spec(rows, columns, query)
 
-    # Generate executive summary takeaway
-    client = get_gemini_client()
-    summary = ""
-    if client and len(rows) > 0:
-        try:
-            sample_data_str = json.dumps(rows[:8], default=str)
-            sum_prompt = SUMMARY_PROMPT.format(
-                user_query=query,
-                sql=sql,
-                sample_data_str=sample_data_str
-            )
-            resp = client.models.generate_content(
-                model=settings.DEFAULT_MODEL,
-                contents=sum_prompt
-            )
-            summary = resp.text.strip()
-        except Exception:
-            top_row = rows[0]
-            summary = f"Query executed successfully returning **{len(rows)} records**. Top record: **{top_row}**."
-    else:
-        top_row = rows[0] if rows else {}
-        first_col = columns[0] if columns else "N/A"
-        summary = f"Query returned **{len(rows)} records** across {len(columns)} dimensions. Top entry: **{top_row.get(first_col)}**."
+    # Synthesize structured C-Suite Executive Decision Briefing
+    summary = synthesize_executive_briefing(
+        user_query=query,
+        sql=sql,
+        rows=rows,
+        columns=columns,
+        dataset_id=dataset_id,
+        error=None
+    )
 
     # Record run in metadata repository
     run_id = f"run_{uuid.uuid4().hex[:12]}"

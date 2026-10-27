@@ -83,75 +83,160 @@ export const CommandDock: React.FC<CommandDockProps> = ({
     }
   };
 
-  const handleMicToggle = () => {
+  const recognitionRef = useRef<any>(null);
+
+  // Clean up recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const handleMicToggle = async () => {
     setSpeechError(null);
+
+    // If already listening, stop it cleanly
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {
+          // ignore
+        }
+      }
+      setIsListening(false);
+      return;
+    }
+
     const speechWindow = window as unknown as {
-      SpeechRecognition?: new () => {
-        lang: string;
-        interimResults: boolean;
-        maxAlternatives: number;
-        onstart: () => void;
-        onend: () => void;
-        onerror: () => void;
-        onresult: (e: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => void;
-        start: () => void;
-      };
-      webkitSpeechRecognition?: new () => {
-        lang: string;
-        interimResults: boolean;
-        maxAlternatives: number;
-        onstart: () => void;
-        onend: () => void;
-        onerror: () => void;
-        onresult: (e: { results: { [key: number]: { [key: number]: { transcript: string } } } }) => void;
-        start: () => void;
-      };
+      SpeechRecognition?: new () => any;
+      webkitSpeechRecognition?: new () => any;
     };
 
     const SpeechRecognition =
       speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setSpeechError('Speech recognition is not supported in this browser. Please type.');
-      toast.warning('Speech Unsupported', 'Browser speech recognition is not available');
-      setTimeout(() => setSpeechError(null), 4000);
+      setSpeechError('Speech recognition is not supported in this browser. Please use Chrome, Edge, or Brave.');
+      toast.warning('Speech Unsupported', 'Browser speech recognition is not available in this browser.');
+      setTimeout(() => setSpeechError(null), 5000);
       return;
     }
 
-    if (isListening) {
-      setIsListening(false);
-      return;
+    // Step 1: Explicitly prompt browser for microphone permission via getUserMedia if needed
+    if (navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Immediately release audio track so Web Speech API gets exclusive microphone access
+        stream.getTracks().forEach((track) => track.stop());
+      } catch (err: any) {
+        if (err?.name === 'NotAllowedError' || err?.name === 'PermissionDeniedError') {
+          setSpeechError('Microphone permission blocked. Click the lock/settings icon in your browser URL bar to allow microphone access.');
+          toast.error('Microphone Blocked', 'Click the lock or site settings icon in your URL bar to allow microphone access.');
+          setTimeout(() => setSpeechError(null), 6000);
+          return;
+        }
+        if (err?.name === 'NotFoundError' || err?.name === 'DevicesNotFoundError') {
+          setSpeechError('No microphone detected on your system. Please connect an audio input device.');
+          toast.error('No Microphone', 'Please connect an audio input device.');
+          setTimeout(() => setSpeechError(null), 5000);
+          return;
+        }
+      }
     }
 
+    // Step 2: Initialize SpeechRecognition with real-time interim results
     try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {
+          // ignore
+        }
+      }
+
       const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
       recognition.lang = 'en-US';
-      recognition.interimResults = false;
+      recognition.interimResults = true;
       recognition.maxAlternatives = 1;
+      recognition.continuous = false;
 
       recognition.onstart = () => {
         setIsListening(true);
-        toast.info('Listening...', 'Speak your analytical question');
-      };
-      recognition.onend = () => setIsListening(false);
-      recognition.onerror = () => {
-        setIsListening(false);
-        setSpeechError('Could not capture audio. Please check microphone permissions.');
-        toast.error('Microphone Error', 'Check permissions and try again');
-        setTimeout(() => setSpeechError(null), 4000);
+        toast.info('Listening...', 'Speak your analytical question now');
       };
 
-      recognition.onresult = (event) => {
-        const transcript = event.results[0]?.[0]?.transcript || '';
-        setQuery(transcript);
+      recognition.onend = () => {
         setIsListening(false);
-        toast.success('Voice Transcribed', `"${transcript}"`);
+      };
+
+      recognition.onerror = (event: any) => {
+        setIsListening(false);
+        const errType = event?.error;
+
+        if (errType === 'no-speech') {
+          toast.info('No Speech Detected', 'Click the mic and speak clearly.');
+          return;
+        }
+
+        if (errType === 'aborted') {
+          return;
+        }
+
+        if (errType === 'not-allowed' || errType === 'service-not-allowed') {
+          setSpeechError('Microphone access blocked. Click the lock icon in the URL bar to allow microphone access.');
+          toast.error('Microphone Blocked', 'Click the lock/tune icon in your address bar to allow microphone access.');
+          setTimeout(() => setSpeechError(null), 6000);
+          return;
+        }
+
+        if (errType === 'network') {
+          setSpeechError('Speech recognition service unreachable. Please check your internet connection.');
+          toast.warning('Network Issue', 'Speech service could not be reached.');
+          setTimeout(() => setSpeechError(null), 5000);
+          return;
+        }
+
+        setSpeechError(`Microphone issue: ${errType || 'Could not capture audio'}`);
+        toast.error('Audio Error', 'Could not capture audio. Please try again.');
+        setTimeout(() => setSpeechError(null), 5000);
+      };
+
+      recognition.onresult = (event: any) => {
+        let interimText = '';
+        let finalText = '';
+
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          const res = event.results[i];
+          if (res.isFinal) {
+            finalText += res[0].transcript;
+          } else {
+            interimText += res[0].transcript;
+          }
+        }
+
+        const currentTranscription = (finalText || interimText).trim();
+        if (currentTranscription) {
+          setQuery(currentTranscription);
+        }
+
+        if (finalText.trim()) {
+          setIsListening(false);
+          toast.success('Voice Transcribed', `"${finalText.trim()}"`);
+        }
       };
 
       recognition.start();
     } catch {
       setIsListening(false);
-      setSpeechError('Microphone initialization failed.');
+      setSpeechError('Microphone initialization failed. Please try again.');
       setTimeout(() => setSpeechError(null), 4000);
     }
   };
