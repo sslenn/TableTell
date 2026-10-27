@@ -3,11 +3,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-}
     restart: unless-stopped
     expose:
       - "8000"
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
+      - CLERK_PUBLISHABLE_KEY=${CLERK_PUBLISHABLE_KEY:-}
+      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-}
       - HOST=0.0.0.0
       - PORT=8000
       - ENVIRONMENT=production

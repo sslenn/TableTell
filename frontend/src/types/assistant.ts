@@ -7,9 +7,20 @@ export interface AssistantMessage {
   created_at: string;
 }
 
+export interface AssistantContext {
+  current_tab?: string;
+  dataset_id?: string;
+  dataset_name?: string;
+  health_score?: number;
+  total_rows?: number;
+  columns?: string[];
+  audit_summary?: Record<string, any>;
+}
+
 export interface AssistantChatRequest {
   query: string;
   conversation_id?: string;
+  context?: AssistantContext;
 }
 
 export interface AssistantChatResponse {

@@ -10,6 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.61.11",
+    "@clerk/react": "^6.18.1",
+    "@clerk/themes": "^2.4.57",
     "@microsoft/fetch-event-source": "^2.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-table": "^8.21.3",

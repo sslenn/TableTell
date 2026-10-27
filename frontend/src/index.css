@@ -164,3 +164,302 @@ html, body {
 .animate-in {
   animation: fadeIn 0.2s ease-out forwards;
 }
+
+/* ========================================================
+   CLERK NORDIC TERMINAL THEME OVERRIDES (WCAG AAA STANDARD)
+   ======================================================== */
+.cl-rootBox,
+.cl-signIn-root,
+.cl-cardBox {
+  width: 100% !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.cl-card,
+.cl-signIn-start {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.cl-header {
+  padding-bottom: 0.25rem !important;
+}
+
+.cl-headerTitle {
+  color: #F0FDFA !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  letter-spacing: -0.025em !important;
+  text-align: center !important;
+}
+
+.cl-headerSubtitle {
+  color: rgba(153, 246, 228, 0.75) !important;
+  font-size: 0.75rem !important;
+  text-align: center !important;
+  margin-top: 0.15rem !important;
+}
+
+/* Strict edge alignment across social buttons, inputs, and dividers */
+.cl-socialButtons,
+.cl-socialButtonsBlockButton,
+.cl-form,
+.cl-formField,
+.cl-formFieldRow,
+.cl-formFieldInput,
+.cl-formButtonPrimary,
+.cl-dividerRow {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.cl-socialButtons {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.cl-socialButtonsBlockButton {
+  position: relative !important;
+  overflow: visible !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 2.5rem !important;
+  background-color: #142426 !important;
+  border: 1px solid rgba(45, 212, 191, 0.25) !important;
+  color: #F0FDFA !important;
+  border-radius: 0.625rem !important;
+  padding: 0 1rem !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.cl-socialButtonsBlockButton:hover {
+  background-color: #1C3336 !important;
+  border-color: rgba(45, 212, 191, 0.5) !important;
+  box-shadow: 0 0 15px rgba(45, 212, 191, 0.15) !important;
+}
+
+.cl-socialButtonsBlockButtonText {
+  color: #F0FDFA !important;
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+}
+
+.cl-socialButtonsProviderIcon {
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+}
+
+/* Fix "Last used" badge overflow clipping and alignment */
+.cl-badge,
+.cl-socialButtonsBlockButtonBadge,
+[class*="socialButtonsBlockButtonBadge"],
+[class*="cl-badge"] {
+  position: absolute !important;
+  top: 50% !important;
+  right: 10px !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  background-color: #1A3033 !important;
+  color: #5EEAD4 !important;
+  border: 1px solid rgba(45, 212, 191, 0.35) !important;
+  font-size: 0.625rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  padding: 0.125rem 0.5rem !important;
+  border-radius: 9999px !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: none !important;
+  width: auto !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  pointer-events: none !important;
+}
+
+.cl-dividerRow {
+  margin: 0.85rem 0 !important;
+  padding: 0 !important;
+}
+
+.cl-dividerLine {
+  background-color: rgba(45, 212, 191, 0.15) !important;
+  height: 1px !important;
+}
+
+.cl-dividerText {
+  color: rgba(94, 234, 212, 0.6) !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  font-family: monospace !important;
+  letter-spacing: 0.1em !important;
+  text-transform: uppercase !important;
+}
+
+.cl-formField {
+  margin-bottom: 0.75rem !important;
+}
+
+.cl-formFieldLabel {
+  color: #99F6E4 !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  margin-bottom: 0.375rem !important;
+  letter-spacing: 0.01em !important;
+}
+
+.cl-formFieldInput {
+  display: block !important;
+  width: 100% !important;
+  height: 2.5rem !important;
+  background-color: #060B0C !important;
+  border: 1px solid rgba(45, 212, 191, 0.25) !important;
+  color: #F0FDFA !important;
+  border-radius: 0.625rem !important;
+  padding: 0 0.875rem !important;
+  font-size: 0.8125rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+}
+
+.cl-formFieldInput::placeholder {
+  color: rgba(153, 246, 228, 0.35) !important;
+}
+
+.cl-formFieldInput:focus {
+  border-color: #2DD4BF !important;
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.5) !important;
+  outline: none !important;
+}
+
+.cl-formButtonPrimary {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 2.5rem !important;
+  background: linear-gradient(135deg, #0D9488 0%, #14B8A6 100%) !important;
+  color: #041A1C !important;
+  font-weight: 700 !important;
+  font-size: 0.8125rem !important;
+  border-radius: 0.625rem !important;
+  padding: 0 1rem !important;
+  border: 1px solid rgba(45, 212, 191, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(13, 148, 136, 0.35) !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+  margin-top: 0.35rem !important;
+}
+
+.cl-formButtonPrimary:hover {
+  background: linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%) !important;
+  box-shadow: 0 6px 20px rgba(45, 212, 191, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.cl-formButtonPrimary:active {
+  transform: translateY(0) !important;
+}
+
+.cl-footer,
+.cl-footerAction,
+.cl-footer * {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+.cl-footer {
+  border-top: 1px solid rgba(45, 212, 191, 0.12) !important;
+  padding-top: 1rem !important;
+  margin-top: 1rem !important;
+}
+
+.cl-footerActionText {
+  color: rgba(153, 246, 228, 0.65) !important;
+  font-size: 0.75rem !important;
+}
+
+.cl-footerActionLink {
+  color: #2DD4BF !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+}
+
+.cl-footerActionLink:hover {
+  color: #5EEAD4 !important;
+  text-decoration: underline !important;
+}
+
+.cl-identityPreviewText {
+  color: #F0FDFA !important;
+  font-weight: 600 !important;
+  font-size: 0.8125rem !important;
+}
+
+.cl-identityPreviewEditButton {
+  color: #2DD4BF !important;
+}
+
+.cl-identityPreviewEditButton:hover {
+  color: #5EEAD4 !important;
+}
+
+.cl-otpCodeFieldInput {
+  background-color: #060B0C !important;
+  border: 1px solid rgba(45, 212, 191, 0.3) !important;
+  color: #F0FDFA !important;
+  border-radius: 0.5rem !important;
+}
+
+.cl-otpCodeFieldInput:focus {
+  border-color: #2DD4BF !important;
+  box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.25) !important;
+}
+
+.cl-formFieldErrorText {
+  color: #F87171 !important;
+  font-size: 0.75rem !important;
+  margin-top: 0.25rem !important;
+}
+
+/* User Button & Popover styling */
+.cl-userButtonAvatarBox {
+  border-radius: 9999px !important;
+}
+
+.cl-userButtonPopoverCard {
+  background-color: #112022 !important;
+  border: 1px solid rgba(45, 212, 191, 0.25) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8) !important;
+  border-radius: 1rem !important;
+}
+
+.cl-userButtonPopoverActionButton {
+  color: #F0FDFA !important;
+  border-radius: 0.5rem !important;
+}
+
+.cl-userButtonPopoverActionButton:hover {
+  background-color: #182F32 !important;
+  color: #2DD4BF !important;
+}
+
+.cl-userButtonPopoverActionButtonText {
+  color: #F0FDFA !important;
+  font-size: 0.75rem !important;
+}
+
+.cl-userButtonPopoverFooter {
+  display: none !important;
+}

@@ -3,8 +3,32 @@ import type { DatasetSummary, DatasetAuditReport, CleaningResult, CleaningPlan }
 
 const BASE_URL = '/api';
 
+let authTokenGetter: (() => Promise<string | null>) | null = null;
+
+export function setAuthTokenGetter(getter: (() => Promise<string | null>) | null) {
+  authTokenGetter = getter;
+}
+
+export async function getAuthToken(): Promise<string | null> {
+  if (!authTokenGetter) return null;
+  try {
+    return await authTokenGetter();
+  } catch {
+    return null;
+  }
+}
+
+export async function authFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const headers = new Headers(init?.headers);
+  const token = await getAuthToken();
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  return fetch(input, { ...init, headers });
+}
+
 export async function fetchDatasets(): Promise<DatasetSummary[]> {
-  const res = await fetch(`${BASE_URL}/datasets`);
+  const res = await authFetch(`${BASE_URL}/datasets`);
   if (!res.ok) throw new Error(`Failed to fetch datasets: ${res.statusText}`);
   const data = await res.json();
   return data.datasets || [];
@@ -17,7 +41,7 @@ export async function uploadDataset(file: File, datasetName?: string): Promise<{
     formData.append('dataset_name', datasetName);
   }
 
-  const res = await fetch(`${BASE_URL}/datasets/upload`, {
+  const res = await authFetch(`${BASE_URL}/datasets/upload`, {
     method: 'POST',
     body: formData
   });
@@ -36,14 +60,14 @@ export async function uploadDataset(file: File, datasetName?: string): Promise<{
 
 export async function fetchAuditReport(datasetId: string, refresh = false): Promise<DatasetAuditReport> {
   const url = `${BASE_URL}/datasets/${datasetId}/audit${refresh ? '?refresh=true' : ''}`;
-  const res = await fetch(url);
+  const res = await authFetch(url);
   if (!res.ok) throw new Error(`Audit failed: ${res.statusText}`);
   const data = await res.json();
   return data.data;
 }
 
 export async function fetchCleaningPlan(datasetId: string): Promise<CleaningPlan> {
-  const res = await fetch(`${BASE_URL}/datasets/${datasetId}/cleaning-plans`, {
+  const res = await authFetch(`${BASE_URL}/datasets/${datasetId}/cleaning-plans`, {
     method: 'POST'
   });
   if (!res.ok) throw new Error(`Failed to create cleaning plan: ${res.statusText}`);
@@ -52,7 +76,7 @@ export async function fetchCleaningPlan(datasetId: string): Promise<CleaningPlan
 }
 
 export async function cleanDataset(datasetId: string): Promise<CleaningResult> {
-  const res = await fetch(`${BASE_URL}/datasets/${datasetId}/clean`, {
+  const res = await authFetch(`${BASE_URL}/datasets/${datasetId}/clean`, {
     method: 'POST'
   });
   if (!res.ok) throw new Error(`Cleaning failed: ${res.statusText}`);
@@ -65,7 +89,7 @@ export async function executeApprovedCleaning(
   approvedIds?: string[],
   description?: string
 ): Promise<CleaningResult> {
-  const res = await fetch(`${BASE_URL}/datasets/${datasetId}/cleaning-runs`, {
+  const res = await authFetch(`${BASE_URL}/datasets/${datasetId}/cleaning-runs`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -79,21 +103,21 @@ export async function executeApprovedCleaning(
 }
 
 export async function fetchDatasetVersions(datasetId: string): Promise<Record<string, unknown>[]> {
-  const res = await fetch(`${BASE_URL}/datasets/${datasetId}/versions`);
+  const res = await authFetch(`${BASE_URL}/datasets/${datasetId}/versions`);
   if (!res.ok) throw new Error(`Failed to fetch versions: ${res.statusText}`);
   const data = await res.json();
   return data.data || [];
 }
 
 export async function fetchDatasetPreview(datasetId: string, limit = 50): Promise<Record<string, unknown>> {
-  const res = await fetch(`${BASE_URL}/datasets/${datasetId}/preview?limit=${limit}`);
+  const res = await authFetch(`${BASE_URL}/datasets/${datasetId}/preview?limit=${limit}`);
   if (!res.ok) throw new Error(`Preview failed: ${res.statusText}`);
   const data = await res.json();
   return data.data;
 }
 
 export async function executeChatSync(req: ChatRequest): Promise<ChatResponsePayload> {
-  const res = await fetch(`${BASE_URL}/chat`, {
+  const res = await authFetch(`${BASE_URL}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(req)
@@ -108,7 +132,7 @@ export async function executeChatSync(req: ChatRequest): Promise<ChatResponsePay
 }
 
 export async function fetchSystemAuditLogs(): Promise<Record<string, unknown>[]> {
-  const res = await fetch(`${BASE_URL}/audit`);
+  const res = await authFetch(`${BASE_URL}/audit`);
   if (!res.ok) throw new Error(`Failed to fetch audit logs: ${res.statusText}`);
   const data = await res.json();
   return data.logs || [];
@@ -138,7 +162,7 @@ export function getDatasetExportUrl(datasetId: string, options: ExportDatasetOpt
 
 export async function downloadDatasetExport(datasetId: string, options: ExportDatasetOptions = {}): Promise<string> {
   const url = getDatasetExportUrl(datasetId, options);
-  const res = await fetch(url);
+  const res = await authFetch(url);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.detail || `Export failed: ${res.statusText}`);
@@ -166,7 +190,7 @@ export async function downloadDatasetExport(datasetId: string, options: ExportDa
 }
 
 export async function deleteDataset(datasetId: string): Promise<{ status: string; dataset_id: string; message: string }> {
-  const res = await fetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}`, {
+  const res = await authFetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}`, {
     method: 'DELETE'
   });
   if (!res.ok) {
@@ -180,7 +204,7 @@ export async function renameDataset(
   datasetId: string,
   newName: string
 ): Promise<{ status: string; old_dataset_id: string; new_dataset_id: string; message: string }> {
-  const res = await fetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}/rename`, {
+  const res = await authFetch(`${BASE_URL}/datasets/${encodeURIComponent(datasetId)}/rename`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ new_name: newName })

@@ -35,3 +35,8 @@ data_lake/metadata/*.db
 *.log
 .coverage
 htmlcov/
+
+# Architecture documents
+*ARCHITECTURE.html
+ARCHITECARCHITECTURE.html
+ARCHITECTURE.html

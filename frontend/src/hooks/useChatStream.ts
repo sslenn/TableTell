@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import type { ChatRequest, StreamEvent, ChatResponsePayload, StreamStatusStep } from '../types/api';
+import { getAuthToken } from '../lib/api';
 
 export interface UseChatStreamReturn {
   isStreaming: boolean;
@@ -79,9 +80,15 @@ export function useChatStream(): UseChatStreamReturn {
       setStatusMessage('Initializing LangGraph agent & DuckDB schema digest...');
 
       try {
+        const token = await getAuthToken();
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
         await fetchEventSource('/api/chat/stream', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify(req),
           signal: controller.signal,
           openWhenHidden: true,

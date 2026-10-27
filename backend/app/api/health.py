@@ -91,6 +91,12 @@ async def get_health_status():
         "api_key_configured": bool(settings.GEMINI_API_KEY.strip())
     }
 
+    # 5. Authentication Configuration Check
+    diagnostics["auth"] = {
+        "provider": "Clerk",
+        "enabled": bool(settings.CLERK_SECRET_KEY.strip() or settings.CLERK_PUBLISHABLE_KEY.strip())
+    }
+
     return {
         "status": health_status,
         "service": settings.PROJECT_NAME,

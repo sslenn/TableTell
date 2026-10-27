@@ -580,14 +580,14 @@ class MetadataRepository:
             now = datetime.now(timezone.utc).isoformat()
             conn.execute(
                 "INSERT INTO assistant_conversations (id, title, created_at, updated_at, model) VALUES (?, ?, ?, ?, ?)",
-                (conv_id, "TableTell Copilot", now, now, "gemini-2.5-flash")
+                (conv_id, "TableTell Copilot", now, now, settings.DEFAULT_MODEL)
             )
             return {
                 "id": conv_id,
                 "title": "TableTell Copilot",
                 "created_at": now,
                 "updated_at": now,
-                "model": "gemini-2.5-flash",
+                "model": settings.DEFAULT_MODEL,
                 "is_archived": 0
             }
 
@@ -638,3 +638,4 @@ class MetadataRepository:
 
 
 metadata_repo = MetadataRepository()
+
