@@ -260,6 +260,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
       {/* Speech Error Banner */}
       {speechError && (
         <div
+          role="alert"
           className="mb-2 p-2 rounded-lg border text-xs flex items-center gap-2 font-medium"
           style={{
             backgroundColor: 'rgba(248, 113, 113, 0.1)',
@@ -323,6 +324,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
               }
             }}
             placeholder={`Ask anything about ${datasetId}...`}
+            aria-label={`Ask a question about ${datasetId}`}
             rows={1}
             className="w-full resize-none bg-transparent outline-none text-sm placeholder:opacity-50 selection:bg-[#2DD4BF]/20 max-h-32 leading-relaxed"
             style={{
@@ -331,7 +333,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
           />
 
           {isListening && (
-            <div className="absolute right-2 top-2 flex items-center gap-1.5 text-xs text-[#F87171] font-mono animate-pulse">
+            <div role="status" className="absolute right-2 top-2 flex items-center gap-1.5 text-xs text-[#F87171] font-mono animate-pulse">
               <span className="w-2 h-2 rounded-full bg-[#F87171]" />
               <span>Listening...</span>
             </div>
@@ -390,6 +392,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
                   borderColor: isSchemaOpen ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
                   color: isSchemaOpen ? 'var(--tt-primary)' : 'var(--tt-text-secondary)'
                 }}
+                aria-pressed={isSchemaOpen}
                 title="Toggle schema inspector"
               >
                 <Columns3 className="w-3 h-3" />
@@ -404,6 +407,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
               type="button"
               onClick={() => setShowConfirmReset(true)}
               title="Reset conversation"
+              aria-label="Reset conversation"
               className="p-1.5 rounded-lg border transition-all cursor-pointer opacity-80 hover:opacity-100 hover:border-[#2DD4BF]"
               style={{
                 backgroundColor: 'var(--tt-bg-elevated)',
@@ -418,6 +422,8 @@ export const CommandDock: React.FC<CommandDockProps> = ({
               type="button"
               onClick={handleMicToggle}
               title={isListening ? 'Stop listening' : 'Voice input'}
+              aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+              aria-pressed={isListening}
               className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
                 isListening ? 'text-[#F87171] border-[#F87171] animate-pulse' : 'text-secondary hover:border-[#2DD4BF]'
               }`}

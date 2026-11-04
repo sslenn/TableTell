@@ -22,13 +22,19 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+    <div
+      className="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm w-full pointer-events-none"
+      role="region"
+      aria-label="Notifications"
+    >
       {toasts.map((t) => {
         const Icon = iconMap[t.type];
         const borderColor = borderMap[t.type];
         return (
           <div
             key={t.id}
+            role={t.type === 'error' ? 'alert' : 'status'}
+            aria-live={t.type === 'error' ? 'assertive' : 'polite'}
             className="pointer-events-auto flex items-start gap-3 p-3.5 rounded-xl border shadow-xl backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-bottom-2"
             style={{
               backgroundColor: 'var(--tt-bg-surface)',
@@ -56,9 +62,10 @@ export const ToastContainer: React.FC = () => {
             <button
               type="button"
               onClick={() => removeToast(t.id)}
+              aria-label="Dismiss notification"
               className="text-muted opacity-60 hover:opacity-100 p-0.5 rounded cursor-pointer transition-opacity"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-3.5 h-3.5" aria-hidden="true" />
             </button>
           </div>
         );
