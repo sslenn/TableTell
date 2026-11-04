@@ -40,13 +40,15 @@ export default defineConfig({
             return 'vendor-plotly';
           }
           if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
+            // Match whole package directories. A bare includes('react') also captures
+            // lucide-react, react-markdown and Clerk, which defeats the split below.
+            if (/node_modules\/(react|react-dom|scheduler)\//.test(id)) {
               return 'vendor-react';
             }
-            if (id.includes('react-markdown') || id.includes('remark-gfm')) {
+            if (/node_modules\/(react-markdown|remark-[^/]+|rehype-[^/]+|micromark[^/]*|mdast-[^/]+|hast-[^/]+|unified|unist-[^/]+|vfile[^/]*)\//.test(id)) {
               return 'vendor-markdown';
             }
-            if (id.includes('lucide-react') || id.includes('zustand') || id.includes('@tanstack')) {
+            if (/node_modules\/(lucide-react|zustand|@tanstack)\//.test(id)) {
               return 'vendor-ui';
             }
           }

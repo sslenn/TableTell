@@ -12,6 +12,22 @@ interface CorrelationHeatmapProps {
   datasetId: string;
 }
 
+/**
+ * Renders **bold** spans as React elements. Digest text comes from the server and
+ * can include column names from uploaded files, so it must never be injected as HTML.
+ */
+function renderBoldMarkdown(text: string): React.ReactNode[] {
+  return text.split(/\*\*(.*?)\*\*/g).map((part, i) =>
+    i % 2 === 1 ? (
+      <strong key={i} className="text-[var(--tt-text-primary)]">
+        {part}
+      </strong>
+    ) : (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    )
+  );
+}
+
 export const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = ({ datasetId }) => {
   const [data, setData] = useState<CorrelationReport | null>(null);
   const [loading, setLoading] = useState(false);
@@ -100,10 +116,9 @@ export const CorrelationHeatmap: React.FC<CorrelationHeatmapProps> = ({ datasetI
               <div
                 key={idx}
                 className="p-3 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-xs text-[var(--tt-text-secondary)] leading-relaxed"
-                dangerouslySetInnerHTML={{
-                  __html: digest.replace(/\*\*(.*?)\*\*/g, '<strong class="text-[var(--tt-text-primary)]">$1</strong>')
-                }}
-              />
+              >
+                {renderBoldMarkdown(digest)}
+              </div>
             ))}
           </div>
         )}

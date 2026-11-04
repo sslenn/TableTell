@@ -1,7 +1,8 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import type { ChatRequest, StreamEvent, ChatResponsePayload, StreamStatusStep } from '../types/api';
-import { getAuthToken } from '../lib/api';
+import { getAuthToken, readErrorMessage } from '../lib/api';
+import { logger } from '../lib/logger';
 
 export interface UseChatStreamReturn {
   isStreaming: boolean;
@@ -92,6 +93,16 @@ export function useChatStream(): UseChatStreamReturn {
           body: JSON.stringify(req),
           signal: controller.signal,
           openWhenHidden: true,
+          async onopen(response) {
+            const isEventStream = response.headers.get('content-type')?.includes('text/event-stream');
+            if (response.ok && isEventStream) return;
+            // Surface the server's reason (expired session, validation error) instead of a generic stream error.
+            throw new Error(
+              response.ok
+                ? 'The server did not start the analysis stream. Try again.'
+                : await readErrorMessage(response, 'The analysis could not start')
+            );
+          },
           onmessage(msg) {
             if (!msg.data) return;
 
@@ -123,7 +134,7 @@ export function useChatStream(): UseChatStreamReturn {
                 abortControllerRef.current = null;
               }
             } catch (err) {
-              console.error('Failed to parse SSE event data', err);
+              logger.error('Failed to parse SSE event data', err);
             }
           },
           onclose() {
@@ -135,7 +146,7 @@ export function useChatStream(): UseChatStreamReturn {
               // Expected user abort; do not retry, do not set error state
               throw err;
             }
-            console.error('SSE connection error:', err);
+            logger.error('SSE connection error', err);
             setError(err instanceof Error ? err.message : 'Streaming connection failed.');
             setIsStreaming(false);
             abortControllerRef.current = null;

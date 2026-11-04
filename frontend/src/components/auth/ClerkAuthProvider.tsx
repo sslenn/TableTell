@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { ClerkProvider, useAuth } from '@clerk/react';
 import { dark } from '@clerk/themes';
-import { setAuthTokenGetter } from '../../lib/api';
+import { setAuthTokenGetter, setUnauthorizedHandler } from '../../lib/api';
 import { SignInPage } from './SignInPage';
 import { BrandLogo } from '../common/BrandLogo';
 
@@ -24,15 +24,24 @@ export const useAuthConfig = () => useContext(AuthConfigContext);
 const STATIC_CLERK_KEY: string = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '').trim();
 
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isLoaded, isSignedIn, getToken } = useAuth();
+  const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
-      setAuthTokenGetter(getToken);
+      setAuthTokenGetter((options) => getToken(options));
+      // A 401 that survives a token refresh means the session is no longer valid.
+      // Signing out returns the user to the sign-in page instead of leaving broken views.
+      setUnauthorizedHandler(() => {
+        void signOut();
+      });
     } else {
       setAuthTokenGetter(null);
+      setUnauthorizedHandler(null);
     }
-  }, [isLoaded, isSignedIn, getToken]);
+    return () => {
+      setUnauthorizedHandler(null);
+    };
+  }, [isLoaded, isSignedIn, getToken, signOut]);
 
   if (!isLoaded) {
     return (

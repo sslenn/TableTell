@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { downloadDatasetExport, type ExportDatasetOptions } from '../../lib/api';
 import { toast } from '../../store/useToastStore';
+import { useDialogA11y } from '../../hooks/useDialogA11y';
 
 interface ExportDatasetModalProps {
   isOpen: boolean;
@@ -37,6 +38,7 @@ export const ExportDatasetModal: React.FC<ExportDatasetModalProps> = ({
   const [customFilename, setCustomFilename] = useState<string>(`${datasetId}.csv`);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [activePreset, setActivePreset] = useState<'standard' | 'excel' | 'custom'>('excel');
+  const dialogRef = useDialogA11y<HTMLDivElement>(isOpen, onClose);
 
   if (!isOpen) return null;
 
@@ -99,7 +101,12 @@ export const ExportDatasetModal: React.FC<ExportDatasetModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div
-        className="w-full max-w-xl bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="export-dialog-title"
+        tabIndex={-1}
+        className="w-full max-w-xl bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -110,7 +117,7 @@ export const ExportDatasetModal: React.FC<ExportDatasetModalProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-base text-[var(--tt-text-primary)]">
+                <h3 id="export-dialog-title" className="font-bold text-base text-[var(--tt-text-primary)]">
                   Export Clean Dataset
                 </h3>
                 {isCleaned && (
@@ -128,6 +135,7 @@ export const ExportDatasetModal: React.FC<ExportDatasetModalProps> = ({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close export dialog"
             className="p-1.5 rounded-lg text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />

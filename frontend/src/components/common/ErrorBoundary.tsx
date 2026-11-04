@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { AlertTriangle, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { logger } from '../../lib/logger';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -29,7 +30,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[TableTell ErrorBoundary caught an error]:', error, errorInfo);
+    logger.error('Render error caught by ErrorBoundary', { error, componentStack: errorInfo.componentStack });
     this.setState({ errorInfo });
   }
 

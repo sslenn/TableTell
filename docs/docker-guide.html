@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Docker from zero, using TableTell as the example</title>
+<style>
+  :root {
+    color-scheme: light;
+    --ink: #14232E;
+    --muted: #4C5E6B;
+    --line: #D5DEE4;
+    --paper: #F6F9FB;
+    --card: #FFFFFF;
+    --teal: #0B7A72;
+    --teal-soft: #DDF1EE;
+    --amber: #A8560B;
+    --amber-soft: #FCEBD6;
+    --red: #B3261E;
+    --red-soft: #FADCD9;
+    --blue: #1F5F99;
+    --blue-soft: #DCEAF7;
+    --code-bg: #E8EFF3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 17px/1.65 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header.top {
+    background: var(--ink);
+    color: #F2F7FA;
+    padding: 56px 24px 48px;
+  }
+  header.top .inner { max-width: 880px; margin: 0 auto; }
+  header.top h1 {
+    font: 700 40px/1.15 Georgia, "Iowan Old Style", Palatino, serif;
+    margin: 0 0 14px;
+    letter-spacing: -0.01em;
+  }
+  header.top p { margin: 0; max-width: 62ch; color: #C9D8E2; font-size: 18px; }
+  main { max-width: 880px; margin: 0 auto; padding: 8px 24px 80px; }
+  h2 {
+    font: 700 29px/1.2 Georgia, "Iowan Old Style", Palatino, serif;
+    margin: 64px 0 14px;
+    letter-spacing: -0.005em;
+  }
+  h3 { font-size: 19px; margin: 30px 0 6px; }
+  p { margin: 0 0 14px; max-width: 70ch; }
+  ul, ol { max-width: 70ch; padding-left: 22px; margin: 0 0 16px; }
+  li { margin-bottom: 6px; }
+  a { color: var(--blue); }
+  a:focus-visible, summary:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+  code {
+    font: 0.88em ui-monospace, "Cascadia Mono", Consolas, monospace;
+    background: var(--code-bg);
+    padding: 1px 6px;
+    border-radius: 4px;
+  }
+  pre {
+    background: #10202B;
+    color: #E6EEF3;
+    padding: 16px 18px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font: 14px/1.55 ui-monospace, "Cascadia Mono", Consolas, monospace;
+    margin: 0 0 18px;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; color: inherit; }
+  pre .c { color: #8FB3C7; }
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px 26px;
+    margin: 32px 0 0;
+  }
+  .toc h2 { font-size: 20px; margin: 0 0 8px; }
+  .toc ol { columns: 2; column-gap: 32px; margin: 0; }
+  .toc li { break-inside: avoid; }
+  .note, .warn, .bad {
+    border-left: 5px solid var(--teal);
+    background: var(--teal-soft);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 20px 0;
+    max-width: 76ch;
+  }
+  .warn { border-color: var(--amber); background: var(--amber-soft); }
+  .bad { border-color: var(--red); background: var(--red-soft); }
+  .note > :last-child, .warn > :last-child, .bad > :last-child { margin-bottom: 0; }
+  .note strong:first-child, .warn strong:first-child, .bad strong:first-child { display: block; margin-bottom: 2px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 14px 0 22px;
+    font-size: 15.5px;
+  }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #EDF3F6; font-weight: 650; }
+  tr:last-child td { border-bottom: 0; }
+  .table-wrap { overflow-x: auto; }
+  figure.fig {
+    margin: 26px 0 30px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 16px 12px;
+    overflow-x: auto;
+  }
+  figure.fig svg { display: block; width: 100%; min-width: 640px; height: auto; }
+  figure.fig figcaption { color: var(--muted); font-size: 15px; margin: 10px 4px 2px; max-width: 80ch; }
+  details {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 4px 18px;
+    margin: 0 0 10px;
+  }
+  details summary { cursor: pointer; font-weight: 650; padding: 10px 0; }
+  details[open] summary { border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+  .kitchen td:first-child { font-weight: 650; white-space: nowrap; }
+
+  /* Diagram styles */
+  svg text { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; fill: var(--ink); }
+  svg .box  { fill: #fff;            stroke: var(--ink);   stroke-width: 2; }
+  svg .teal { fill: var(--teal-soft);  stroke: var(--teal); }
+  svg .amber{ fill: var(--amber-soft); stroke: var(--amber); }
+  svg .blue { fill: var(--blue-soft);  stroke: var(--blue); }
+  svg .red  { fill: var(--red-soft);   stroke: var(--red); }
+  svg .gray { fill: #EDF2F5;           stroke: #7F909C; }
+  svg .dash { stroke-dasharray: 7 6; }
+  svg .arrow  { stroke: var(--ink); stroke-width: 2.5; fill: none; marker-end: url(#ah); }
+  svg .arrow2 { stroke: var(--ink); stroke-width: 2.5; fill: none; marker-end: url(#ah); marker-start: url(#ah); }
+  svg .thin { stroke: var(--muted); stroke-width: 1.5; fill: none; }
+  svg .h   { font-size: 18px; font-weight: 700; }
+  svg .lbl { font-size: 15px; }
+  svg .sub { font-size: 13.5px; fill: var(--muted); }
+  svg .good { fill: var(--teal); font-weight: 650; }
+  svg .hot  { fill: var(--amber); font-weight: 650; }
+  svg .mid { text-anchor: middle; }
+
+  @media (max-width: 640px) {
+    header.top h1 { font-size: 30px; }
+    .toc ol { columns: 1; }
+    h2 { font-size: 25px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Shared arrowhead for every diagram -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#14232E"/>
+    </marker>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="inner">
+    <h1>Docker from zero, using TableTell as the example</h1>
+    <p>What Docker is, how each piece fits, and how your own project uses it. Every idea starts with a kitchen comparison, then shows the real file from your repo.</p>
+  </div>
+</header>
+
+<main>
+
+<nav class="toc" aria-label="Contents">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#idea">The idea in one minute</a></li>
+    <li><a href="#vm">Why not a virtual machine?</a></li>
+    <li><a href="#words">The words you will hear</a></li>
+    <li><a href="#layers">Images are stacks of layers</a></li>
+    <li><a href="#dockerfile">The Dockerfile, line by line</a></li>
+    <li><a href="#multistage">Multi-stage builds</a></li>
+    <li><a href="#containers">Containers and their life</a></li>
+    <li><a href="#volumes">Volumes: keeping your data</a></li>
+    <li><a href="#network">Ports and networking</a></li>
+    <li><a href="#compose">Docker Compose</a></li>
+    <li><a href="#config">Settings and secrets</a></li>
+    <li><a href="#health">Health checks, restarts, logs</a></li>
+    <li><a href="#tabletell">TableTell end to end</a></li>
+    <li><a href="#findings">Problems found in your setup</a></li>
+    <li><a href="#cheat">Command cheat sheet</a></li>
+    <li><a href="#trouble">When something breaks</a></li>
+    <li><a href="#next">What to learn next</a></li>
+  </ol>
+</nav>
+
+<div class="note">
+  <strong>How this guide was made</strong>
+  <p>I could not reach the Docker documentation or web search from this environment. The concepts come from long-standing Docker behavior, and the findings come from reading your Dockerfile, <code>docker-compose.yml</code>, <code>.dockerignore</code>, <code>run.py</code>, <code>config.py</code>, <code>DEPLOYMENT.md</code> and the files in <code>deploy/</code>. I did not run Docker. Check commands against <code>docker --help</code> on your own machine if one behaves differently.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="idea">The idea in one minute</h2>
+
+<p>Your app only works if the computer running it has the right Python version, the right Node version, the right packages, and the right folders. On your laptop that is true. On a new server it usually is not, and you spend an afternoon fixing it.</p>
+
+<p>Docker solves this by sealing the app and everything it needs into one package. That package runs the same way on your Windows PC, on a colleague's Mac, and on a rented Linux server.</p>
+
+<p>Think of a restaurant kitchen:</p>
+
+<div class="table-wrap">
+<table class="kitchen">
+  <thead><tr><th>Docker word</th><th>Kitchen version</th><th>In TableTell</th></tr></thead>
+  <tbody>
+    <tr><td>Dockerfile</td><td>The written recipe</td><td><code>Dockerfile</code> at the project root</td></tr>
+    <tr><td>Image</td><td>The frozen meal box made from the recipe. It never changes once made.</td><td>The built <code>tabletell</code> image: Python, your backend code, the compiled website</td></tr>
+    <tr><td>Container</td><td>A meal being heated and served right now</td><td>The running TableTell server on port 8000</td></tr>
+    <tr><td>Registry</td><td>The supermarket freezer aisle where images are stored and shared</td><td>Docker Hub, where <code>python:3.13-slim</code> comes from</td></tr>
+    <tr><td>Volume</td><td>A fridge outside the kitchen. Food in it survives when the kitchen is cleaned.</td><td>Your <code>./data_lake</code> folder</td></tr>
+    <tr><td>Compose file</td><td>The order slip listing everything for the table</td><td><code>docker-compose.yml</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure class="fig">
+<svg viewBox="0 0 960 430" role="img" aria-labelledby="d1t">
+  <title id="d1t">Big picture: a Dockerfile builds an image, an image runs as a container, a registry stores images, and a volume keeps container data.</title>
+
+  <rect class="box blue" x="340" y="18" width="200" height="70" rx="10"/>
+  <text class="h mid" x="440" y="48">Registry</text>
+  <text class="sub mid" x="440" y="70">shared image shelf</text>
+
+  <path class="arrow2" d="M440 90 L440 148"/>
+  <text class="lbl" x="456" y="124">pull / push</text>
+
+  <rect class="box amber" x="20" y="150" width="190" height="92" rx="10"/>
+  <text class="h mid" x="115" y="184">Dockerfile</text>
+  <text class="sub mid" x="115" y="206">the recipe</text>
+  <text class="sub mid" x="115" y="226">a text file of steps</text>
+
+  <path class="arrow" d="M212 196 L336 196"/>
+  <text class="lbl mid" x="274" y="184">docker build</text>
+
+  <rect class="box teal" x="340" y="150" width="200" height="92" rx="10"/>
+  <text class="h mid" x="440" y="184">Image</text>
+  <text class="sub mid" x="440" y="206">the frozen meal box</text>
+  <text class="sub mid" x="440" y="226">read-only and reusable</text>
+
+  <path class="arrow" d="M542 196 L666 196"/>
+  <text class="lbl mid" x="604" y="184">docker run</text>
+
+  <rect class="box blue" x="670" y="150" width="200" height="92" rx="10"/>
+  <text class="h mid" x="770" y="184">Container</text>
+  <text class="sub mid" x="770" y="206">the meal being served</text>
+  <text class="sub mid" x="770" y="226">your app, running</text>
+
+  <text class="sub mid" x="440" y="272">one image can start many containers</text>
+
+  <path class="arrow2" d="M770 244 L770 328"/>
+  <text class="lbl" x="786" y="292">reads and writes</text>
+
+  <rect class="box gray" x="670" y="330" width="200" height="76" rx="10"/>
+  <text class="h mid" x="770" y="362">Volume</text>
+  <text class="sub mid" x="770" y="384">files that survive</text>
+
+  <rect class="box gray dash" x="20" y="330" width="500" height="76" rx="10"/>
+  <text class="h" x="40" y="362">docker-compose.yml</text>
+  <text class="sub" x="40" y="384">the order slip: which image, which port, which folder, which secrets</text>
+</svg>
+<figcaption>The whole story in one picture. Everything else in this guide zooms into one of these boxes.</figcaption>
+</figure>
+
+<!-- ============================================================ -->
+<h2 id="vm">Why not a virtual machine?</h2>
+
+<p>A virtual machine (VM) pretends to be a whole computer, including its own full operating system. A container does not. It borrows the operating system core (the kernel) from the computer it runs on and only packs the app and its libraries. That is why containers are small (tens or hundreds of megabytes instead of gigabytes) and start in seconds.</p>
+
+<figure class="fig">
+<svg viewBox="0 0 960 410" role="img" aria-labelledby="d2t">
+  <title id="d2t">Virtual machines each carry a full guest operating system; containers share the host kernel through Docker Engine.</title>
+
+  <text class="h mid" x="230" y="30">Virtual machines</text>
+  <rect class="box blue" x="40" y="76" width="120" height="88" rx="8"/>
+  <text class="lbl mid" x="100" y="116">App +</text><text class="lbl mid" x="100" y="136">libraries</text>
+  <rect class="box blue" x="170" y="76" width="120" height="88" rx="8"/>
+  <text class="lbl mid" x="230" y="116">App +</text><text class="lbl mid" x="230" y="136">libraries</text>
+  <rect class="box blue" x="300" y="76" width="120" height="88" rx="8"/>
+  <text class="lbl mid" x="360" y="116">App +</text><text class="lbl mid" x="360" y="136">libraries</text>
+  <rect class="box red" x="40" y="168" width="120" height="62" rx="8"/>
+  <text class="sub mid" x="100" y="204">Whole guest OS</text>
+  <rect class="box red" x="170" y="168" width="120" height="62" rx="8"/>
+  <text class="sub mid" x="230" y="204">Whole guest OS</text>
+  <rect class="box red" x="300" y="168" width="120" height="62" rx="8"/>
+  <text class="sub mid" x="360" y="204">Whole guest OS</text>
+  <rect class="box amber" x="40" y="236" width="380" height="42" rx="8"/>
+  <text class="lbl mid" x="230" y="263">Hypervisor</text>
+  <rect class="box gray" x="40" y="284" width="380" height="42" rx="8"/>
+  <text class="lbl mid" x="230" y="311">Host operating system</text>
+  <rect class="box gray" x="40" y="332" width="380" height="42" rx="8"/>
+  <text class="lbl mid" x="230" y="359">Computer hardware</text>
+
+  <text class="h mid" x="730" y="30">Containers</text>
+  <rect class="box blue" x="540" y="130" width="120" height="100" rx="8"/>
+  <text class="lbl mid" x="600" y="176">App +</text><text class="lbl mid" x="600" y="196">libraries</text>
+  <rect class="box blue" x="670" y="130" width="120" height="100" rx="8"/>
+  <text class="lbl mid" x="730" y="176">App +</text><text class="lbl mid" x="730" y="196">libraries</text>
+  <rect class="box blue" x="800" y="130" width="120" height="100" rx="8"/>
+  <text class="lbl mid" x="860" y="176">App +</text><text class="lbl mid" x="860" y="196">libraries</text>
+  <rect class="box teal" x="540" y="236" width="380" height="42" rx="8"/>
+  <text class="lbl mid" x="730" y="263">Docker Engine</text>
+  <rect class="box gray" x="540" y="284" width="380" height="42" rx="8"/>
+  <text class="lbl mid" x="730" y="311">Host operating system (kernel shared)</text>
+  <rect class="box gray" x="540" y="332" width="380" height="42" rx="8"/>
+  <text class="lbl mid" x="730" y="359">Computer hardware</text>
+
+  <text class="sub mid" x="230" y="398">each VM carries its own OS: heavy, slow to start</text>
+  <text class="sub mid" x="730" y="398">containers share the host kernel: light, quick to start</text>
+</svg>
+<figcaption>The red boxes are the extra weight a VM carries and a container does not.</figcaption>
+</figure>
+
+<div class="note">
+  <strong>On your Windows PC</strong>
+  <p>Containers need a Linux kernel. Docker Desktop on Windows quietly runs a small hidden Linux machine (WSL 2) and puts your containers inside it. This is why TableTell's image is built on Linux (<code>python:3.13-slim</code> is Debian Linux), and why your Windows <code>node_modules</code> and <code>backend/.venv</code> folders must never be copied into the image. Your <code>.dockerignore</code> already excludes them.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="words">The words you will hear</h2>
+
+<h3>Docker Engine, the daemon, and the CLI</h3>
+<p>When you type <code>docker something</code>, you are using the <strong>CLI</strong> (command line tool). It does no work itself. It sends your request to the <strong>daemon</strong> (<code>dockerd</code>), a background program that builds images and runs containers. Together with the supporting parts, this is the <strong>Docker Engine</strong>. If a command says it cannot connect to the Docker daemon, Docker Desktop (or the service on a server) is not running.</p>
+
+<h3>Image</h3>
+<p>A read-only snapshot containing an operating system's files, your programs, and your settings. You build it once and can start it many times. You cannot change an image after it exists. You build a new one instead.</p>
+
+<h3>Container</h3>
+<p>A running (or stopped) instance of an image. Docker adds a thin writable layer on top of the image for that container's own changes, and that layer is thrown away when the container is deleted.</p>
+
+<h3>Registry and tag</h3>
+<p>A registry stores images. Docker Hub is the default one. An image name looks like <code>python:3.13-slim</code>: the part before the colon is the name, the part after is the <strong>tag</strong> (a version label). Tags like <code>latest</code> or <code>3.13-slim</code> can move to newer builds over time.</p>
+
+<h3>Volume and bind mount</h3>
+<p>Ways to keep files outside the container so they survive. Covered in <a href="#volumes">its own section</a>.</p>
+
+<h3>Network</h3>
+<p>The private wiring between containers, and between containers and the outside world. Covered in <a href="#network">its own section</a>.</p>
+
+<h3>Compose</h3>
+<p>A tool that reads one YAML file and starts everything for you with a single command, so you do not retype long <code>docker run</code> commands.</p>
+
+<!-- ============================================================ -->
+<h2 id="layers">Images are stacks of layers</h2>
+
+<p>Every instruction in a Dockerfile that changes files (<code>RUN</code>, <code>COPY</code>) adds one <strong>layer</strong> to the image. Layers stack, and Docker saves each one.</p>
+
+<p>The rule that makes builds fast: <strong>if an instruction and the files it uses have not changed since last time, Docker reuses the saved layer. The moment one layer changes, that layer and every layer above it are rebuilt.</strong></p>
+
+<figure class="fig">
+<svg viewBox="0 0 960 420" role="img" aria-labelledby="d3t">
+  <title id="d3t">Image layers stacked bottom to top. The lower layers are cached; editing your code rebuilds only the top code layer.</title>
+
+  <rect class="box gray dash" x="60" y="14" width="470" height="40" rx="8"/>
+  <text class="lbl mid" x="295" y="40">Container layer (temporary, lost when removed)</text>
+
+  <rect class="box amber" x="60" y="62" width="470" height="48" rx="8"/>
+  <text class="lbl" x="76" y="92">COPY backend/ (your code)</text>
+
+  <rect class="box teal" x="60" y="118" width="470" height="48" rx="8"/>
+  <text class="lbl" x="76" y="148">RUN pip install -r requirements.txt</text>
+
+  <rect class="box teal" x="60" y="172" width="470" height="48" rx="8"/>
+  <text class="lbl" x="76" y="202">COPY requirements.txt</text>
+
+  <rect class="box teal" x="60" y="226" width="470" height="48" rx="8"/>
+  <text class="lbl" x="76" y="256">RUN apt-get install curl gcc</text>
+
+  <rect class="box teal" x="60" y="280" width="470" height="48" rx="8"/>
+  <text class="lbl" x="76" y="310">FROM python:3.13-slim (base OS + Python)</text>
+
+  <path class="thin" d="M548 66 L548 108"/>
+  <text class="hot" font-size="15" x="566" y="82" style="font-size:15px">You edited code.</text>
+  <text class="sub" x="566" y="102">This layer rebuilds. It is small and fast.</text>
+
+  <path class="thin" d="M548 122 L548 324"/>
+  <text class="good" x="566" y="196" style="font-size:15px">Cached.</text>
+  <text class="sub" x="566" y="217">Nothing below your code changed,</text>
+  <text class="sub" x="566" y="237">so Docker reuses these in seconds</text>
+  <text class="sub" x="566" y="257">and skips the slow pip install.</text>
+
+  <text class="sub" x="60" y="362">Order matters: put things that change rarely at the bottom, things that change often at the top.</text>
+  <text class="sub" x="60" y="384">Copying requirements.txt first, installing, and only then copying code is the standard trick.</text>
+</svg>
+<figcaption>If <code>COPY backend/</code> came before <code>pip install</code>, every code edit would re-download every Python package.</figcaption>
+</figure>
+
+<!-- ============================================================ -->
+<h2 id="dockerfile">The Dockerfile, line by line</h2>
+
+<p>A Dockerfile is a list of steps, run top to bottom, that builds an image. These are the instructions you need to know, with where TableTell uses them.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Instruction</th><th>What it does</th><th>In your Dockerfile</th></tr></thead>
+  <tbody>
+    <tr><td><code>FROM</code></td><td>Pick the starting image. Every Dockerfile begins with one.</td><td><code>FROM node:20-alpine AS frontend-builder</code> and <code>FROM python:3.13-slim</code></td></tr>
+    <tr><td><code>WORKDIR</code></td><td>Set the folder where later commands run (like <code>cd</code>, and it creates the folder).</td><td><code>WORKDIR /app/frontend</code></td></tr>
+    <tr><td><code>COPY</code></td><td>Copy files from your project into the image.</td><td><code>COPY backend/ /app/backend/</code></td></tr>
+    <tr><td><code>RUN</code></td><td>Run a command while building. The result is saved as a layer.</td><td><code>RUN npm ci</code>, <code>RUN pip install ...</code></td></tr>
+    <tr><td><code>ARG</code></td><td>A setting that exists only during the build.</td><td><code>ARG VITE_CLERK_PUBLISHABLE_KEY</code></td></tr>
+    <tr><td><code>ENV</code></td><td>A setting that exists in the finished image and the running container.</td><td><code>ENV ENVIRONMENT=production</code></td></tr>
+    <tr><td><code>EXPOSE</code></td><td>A note saying which port the app listens on. It does not open anything by itself.</td><td><code>EXPOSE 8000</code></td></tr>
+    <tr><td><code>HEALTHCHECK</code></td><td>A command Docker runs repeatedly to ask "is the app okay?"</td><td><code>curl -f http://localhost:8000/api/health</code></td></tr>
+    <tr><td><code>CMD</code></td><td>The command that starts when a container starts. Only one counts.</td><td><code>CMD ["python", "run.py"]</code></td></tr>
+    <tr><td><code>USER</code></td><td>Which user runs the app. Not set in your Dockerfile, so it runs as root. See <a href="#findings">the findings</a>.</td><td>none</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p><code>RUN</code> happens once, when you build. <code>CMD</code> happens every time a container starts. Mixing these up is the most common beginner mistake.</p>
+
+<h3>The .dockerignore file</h3>
+<p>Before building, Docker sends your project folder to the daemon. <code>.dockerignore</code> lists what to leave out, like <code>.gitignore</code> does for Git. It keeps images small, speeds up builds, and keeps private files out. Yours excludes <code>.git</code>, <code>backend/.venv</code>, <code>frontend/node_modules</code>, and <code>frontend/dist</code>. It is missing one important line, covered in <a href="#findings">the findings</a>.</p>
+
+<!-- ============================================================ -->
+<h2 id="multistage">Multi-stage builds</h2>
+
+<p>Building your React website needs Node.js and hundreds of megabytes of packages. Running it needs none of that, because the result is plain HTML, JavaScript and CSS files. A multi-stage build uses two <code>FROM</code> lines: the first stage builds, the second stage is the real image, and only the files you choose to copy across make it in.</p>
+
+<figure class="fig">
+<svg viewBox="0 0 960 450" role="img" aria-labelledby="d4t">
+  <title id="d4t">TableTell's two-stage build. Stage 1 compiles the React app with Node; only the dist folder is copied into stage 2, the Python image.</title>
+
+  <rect class="box gray dash" x="20" y="36" width="420" height="392" rx="12"/>
+  <text class="h" x="40" y="64">Stage 1: build the website</text>
+  <text class="sub" x="40" y="82" style="display:none">node</text>
+
+  <rect class="box amber" x="50" y="96" width="360" height="44" rx="8"/>
+  <text class="lbl mid" x="230" y="124">COPY package.json + package-lock.json</text>
+  <path class="arrow" d="M230 141 L230 158"/>
+  <rect class="box amber" x="50" y="160" width="360" height="44" rx="8"/>
+  <text class="lbl mid" x="230" y="188">RUN npm ci   (install JS packages)</text>
+  <path class="arrow" d="M230 205 L230 222"/>
+  <rect class="box amber" x="50" y="224" width="360" height="44" rx="8"/>
+  <text class="lbl mid" x="230" y="252">COPY frontend/   (your React code)</text>
+  <path class="arrow" d="M230 269 L230 286"/>
+  <rect class="box amber" x="50" y="288" width="360" height="44" rx="8"/>
+  <text class="lbl mid" x="230" y="316">RUN npm run build</text>
+  <path class="arrow" d="M230 333 L230 350"/>
+  <rect class="box teal" x="50" y="352" width="360" height="52" rx="8"/>
+  <text class="h mid" x="230" y="376">dist/</text>
+  <text class="sub mid" x="230" y="394">plain HTML, JS and CSS</text>
+  <text class="sub mid" x="230" y="422">node:20-alpine. Thrown away after the build.</text>
+
+  <rect class="box teal" x="520" y="36" width="420" height="392" rx="12"/>
+  <text class="h" x="540" y="64">Stage 2: the real image</text>
+
+  <rect class="box blue" x="550" y="96" width="360" height="40" rx="8"/>
+  <text class="lbl mid" x="730" y="122">FROM python:3.13-slim</text>
+  <rect class="box blue" x="550" y="146" width="360" height="40" rx="8"/>
+  <text class="lbl mid" x="730" y="172">apt-get install curl gcc</text>
+  <rect class="box blue" x="550" y="196" width="360" height="40" rx="8"/>
+  <text class="lbl mid" x="730" y="222">pip install -r requirements.txt</text>
+  <rect class="box blue" x="550" y="246" width="360" height="40" rx="8"/>
+  <text class="lbl mid" x="730" y="272">COPY backend/</text>
+  <rect class="box teal" x="550" y="296" width="360" height="40" rx="8" stroke-width="3"/>
+  <text class="lbl mid" x="730" y="322">COPY --from=frontend-builder dist</text>
+  <rect class="box blue" x="550" y="346" width="360" height="40" rx="8"/>
+  <text class="lbl mid" x="730" y="372">CMD python run.py</text>
+  <text class="good mid" x="730" y="412" style="font-size:15px">The final image is stage 2 only.</text>
+
+  <path class="arrow" d="M412 378 C480 378 480 316 548 316"/>
+  <text class="lbl mid" x="480" y="352" style="display:none">x</text>
+</svg>
+<figcaption>The single arrow is the only thing that crosses from stage 1 to stage 2: the compiled <code>dist/</code> folder. Node.js and <code>node_modules</code> never reach the final image.</figcaption>
+</figure>
+
+<!-- ============================================================ -->
+<h2 id="containers">Containers and their life</h2>
+
+<p>A container has a small set of states. Knowing them tells you what each command does.</p>
+
+<figure class="fig">
+<svg viewBox="0 0 960 300" role="img" aria-labelledby="d8t">
+  <title id="d8t">Container life cycle: created, running, stopped, removed, with the commands that move between them.</title>
+
+  <text class="sub mid" x="480" y="34">docker run (and docker compose up) does "create" and "start" in one step</text>
+
+  <rect class="box gray" x="20" y="100" width="140" height="70" rx="10"/>
+  <text class="h mid" x="90" y="141">Created</text>
+
+  <rect class="box teal" x="260" y="100" width="140" height="70" rx="10"/>
+  <text class="h mid" x="330" y="141">Running</text>
+
+  <rect class="box gray" x="500" y="100" width="140" height="70" rx="10"/>
+  <text class="h mid" x="570" y="141">Stopped</text>
+
+  <rect class="box red" x="740" y="100" width="140" height="70" rx="10"/>
+  <text class="h mid" x="810" y="141">Removed</text>
+
+  <path class="arrow" d="M162 135 L258 135"/>
+  <text class="lbl mid" x="210" y="124">start</text>
+
+  <path class="arrow" d="M402 135 L498 135"/>
+  <text class="lbl mid" x="450" y="124">stop or crash</text>
+
+  <path class="arrow" d="M642 135 L738 135"/>
+  <text class="lbl mid" x="690" y="124">rm</text>
+
+  <path class="arrow" d="M570 172 C570 250 330 250 330 174"/>
+  <text class="lbl mid" x="450" y="244">start again</text>
+
+  <text class="sub mid" x="810" y="198">its own files are gone</text>
+  <text class="sub mid" x="330" y="198" style="display:none">x</text>
+</svg>
+<figcaption>Stopping a container keeps its files. Removing it deletes them. That is why anything you want to keep must live in a <a href="#volumes">volume</a>.</figcaption>
+</figure>
+
+<h3>Things worth remembering</h3>
+<ul>
+  <li><strong>Containers are disposable.</strong> To update TableTell you do not patch the running container. You build a new image and replace the container.</li>
+  <li><strong>One main process per container.</strong> When that process exits, the container stops. If a container stops right after starting, the app crashed. Run <code>docker logs</code> to see why.</li>
+  <li><strong><code>localhost</code> inside a container means the container itself</strong>, not your computer.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="volumes">Volumes: keeping your data</h2>
+
+<p>A container's own files vanish when it is removed. TableTell stores uploaded datasets, converted Parquet files and a SQLite database of dataset records. Losing those on every update would be a disaster, so they live in a folder outside the container.</p>
+
+<figure class="fig">
+<svg viewBox="0 0 960 360" role="img" aria-labelledby="d5t">
+  <title id="d5t">The old and the new container both mount the same data_lake folder on the server disk, so data survives a rebuild.</title>
+
+  <rect class="box gray dash" x="40" y="50" width="260" height="100" rx="10"/>
+  <text class="h mid" x="170" y="86">Old container</text>
+  <text class="sub mid" x="170" y="108">removed by a rebuild</text>
+  <text class="sub mid" x="170" y="130">/app/backend/data_lake</text>
+
+  <rect class="box blue" x="40" y="200" width="260" height="100" rx="10"/>
+  <text class="h mid" x="170" y="236">New container</text>
+  <text class="sub mid" x="170" y="258">started from the new image</text>
+  <text class="sub mid" x="170" y="280">/app/backend/data_lake</text>
+
+  <rect class="box gray" x="560" y="40" width="360" height="280" rx="12"/>
+  <text class="h" x="580" y="70">Your server's disk</text>
+  <rect class="box teal" x="590" y="100" width="300" height="190" rx="10"/>
+  <text class="h" x="608" y="130">./data_lake</text>
+  <text class="sub" x="608" y="160">ecommerce_sales.parquet</text>
+  <text class="sub" x="608" y="184">metadata/tabletell_metadata.db</text>
+  <text class="sub" x="608" y="208">raw/    (uploaded files)</text>
+  <text class="sub" x="608" y="232">processed/    (Parquet versions)</text>
+  <text class="good" x="608" y="270" style="font-size:15px">Nothing here is deleted by a rebuild.</text>
+
+  <path class="arrow2 dash" d="M302 100 L588 160" style="stroke-dasharray:7 6"/>
+  <path class="arrow2" d="M302 250 L588 232"/>
+  <text class="lbl mid" x="445" y="338">the same folder, mounted into each container</text>
+</svg>
+<figcaption>Your compose file says <code>./data_lake:/app/backend/data_lake</code>. Left of the colon is the folder on the server. Right of the colon is where the app sees it inside the container.</figcaption>
+</figure>
+
+<h3>Two kinds of storage</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th></th><th>Bind mount (what TableTell uses)</th><th>Named volume</th></tr></thead>
+  <tbody>
+    <tr><td>Looks like</td><td><code>./data_lake:/app/...</code> (starts with a path)</td><td><code>mydata:/app/...</code> (just a name)</td></tr>
+    <tr><td>Where the files are</td><td>A normal folder you can open, copy and back up</td><td>Managed by Docker in its own area</td></tr>
+    <tr><td>Good for</td><td>Data you want to see and back up easily</td><td>Data only the container touches</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="warn">
+  <strong>What deletes your data</strong>
+  <p><code>docker compose down</code> removes containers and the network but never deletes a bind-mounted folder. <code>docker compose down -v</code> also deletes named volumes, but not bind mounts. The real risks for <code>./data_lake</code> are deleting the folder yourself, running the project from a different directory (a different <code>./data_lake</code>), or forgetting to back it up.</p>
+  <p>To back up safely, stop the container first (<code>docker compose stop</code>), then copy the whole <code>data_lake</code> folder. Copying a SQLite file while the app is writing to it can give you a damaged copy.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="network">Ports and networking</h2>
+
+<p>A container is sealed. Nothing from outside can reach it unless you open a door. Three words describe the doors:</p>
+
+<ul>
+  <li><strong><code>EXPOSE</code> / <code>expose:</code></strong> a label that says "the app listens on 8000". Other containers on the same Docker network can connect. Your computer and the internet cannot.</li>
+  <li><strong><code>ports: "HOST:CONTAINER"</code></strong> actually publishes the port on the server. <code>"8000:8000"</code> means server port 8000 forwards to container port 8000.</li>
+  <li><strong><code>HOST=0.0.0.0</code></strong> is a setting inside the app. It must listen on all addresses, not just <code>127.0.0.1</code>, or nothing outside the container can reach it. Your <code>run.py</code> defaults to <code>0.0.0.0</code>, which is correct.</li>
+</ul>
+
+<figure class="fig">
+<svg viewBox="0 0 960 480" role="img" aria-labelledby="d6t">
+  <title id="d6t">Two ways a reverse proxy can reach the TableTell container: through a published port on the host, or over a shared Docker network.</title>
+
+  <text class="h" x="20" y="30">Case A: the proxy runs on the server itself (Caddy or nginx from DEPLOYMENT.md)</text>
+
+  <rect class="box gray" x="20" y="64" width="130" height="70" rx="10"/>
+  <text class="lbl mid" x="85" y="104">Browser</text>
+  <path class="arrow" d="M152 99 L208 99"/>
+  <rect class="box blue" x="210" y="64" width="170" height="70" rx="10"/>
+  <text class="lbl mid" x="295" y="94">Caddy / nginx</text>
+  <text class="sub mid" x="295" y="116">HTTPS on port 443</text>
+  <path class="arrow" d="M382 99 L438 99"/>
+  <rect class="box amber" x="440" y="64" width="210" height="70" rx="10"/>
+  <text class="lbl mid" x="545" y="94">server 127.0.0.1:8000</text>
+  <text class="sub mid" x="545" y="116">needs a published port</text>
+  <path class="arrow" d="M652 99 L708 99"/>
+  <rect class="box teal" x="710" y="64" width="210" height="70" rx="10"/>
+  <text class="lbl mid" x="815" y="94">container :8000</text>
+  <text class="sub mid" x="815" y="116">TableTell</text>
+
+  <text class="sub" x="20" y="166">Compose needs:   ports: - "127.0.0.1:8000:8000"</text>
+  <text class="hot" x="20" y="192" style="font-size:15px">Your compose file only has expose, so this link is missing today.</text>
+
+  <line class="thin" x1="20" y1="226" x2="940" y2="226"/>
+
+  <text class="h" x="20" y="262">Case B: the proxy runs as a container on the same Docker network (Coolify, Traefik)</text>
+
+  <rect class="box gray" x="20" y="300" width="130" height="70" rx="10"/>
+  <text class="lbl mid" x="85" y="340">Browser</text>
+  <path class="arrow" d="M152 335 L238 335"/>
+
+  <rect class="box blue dash" x="220" y="284" width="710" height="102" rx="12" style="fill:#F1F7FC"/>
+  <text class="sub" x="236" y="306">Docker network</text>
+  <rect class="box blue" x="240" y="316" width="190" height="56" rx="10"/>
+  <text class="lbl mid" x="335" y="350">Proxy container</text>
+  <path class="arrow" d="M432 344 L618 344"/>
+  <text class="sub mid" x="525" y="334">tabletell:8000</text>
+  <rect class="box teal" x="620" y="316" width="190" height="56" rx="10"/>
+  <text class="lbl mid" x="715" y="350">TableTell :8000</text>
+
+  <text class="good" x="20" y="424" style="font-size:15px">expose is enough here. No port is opened on the server.</text>
+  <text class="sub" x="20" y="448">Containers on one network reach each other by service name. In compose, that name is "tabletell".</text>
+</svg>
+<figcaption>Which case you are in depends on how you deploy. The commit message on your compose file says <code>expose</code> was chosen to avoid port clashes on a proxy server, which points to Case B. The nginx and Caddy files in <code>deploy/</code> are written for Case A.</figcaption>
+</figure>
+
+<div class="bad">
+  <strong>Publishing a port can bypass your firewall</strong>
+  <p>On Linux, Docker edits the firewall rules itself when it publishes a port. A plain <code>"8000:8000"</code> listens on every network interface, and can be reachable from the internet even when a firewall tool such as ufw says it is blocked. Use <code>"127.0.0.1:8000:8000"</code> so only the proxy on the same machine can reach it.</p>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="compose">Docker Compose</h2>
+
+<p>Without Compose you would type a long <code>docker run</code> command with ports, folders and settings every time. Compose stores all of that in <code>docker-compose.yml</code>. Yours, with notes:</p>
+
+<pre><code>services:
+  tabletell:                      <span class="c"># the service name; also its hostname on the network</span>
+    build:
+      context: .                  <span class="c"># send the whole project folder to the build</span>
+      dockerfile: Dockerfile
+      args:
+        - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY:-}   <span class="c"># build-time setting</span>
+    restart: unless-stopped       <span class="c"># restart after crashes and reboots, unless you stopped it</span>
+    expose:
+      - "8000"                    <span class="c"># reachable by other containers only</span>
+    environment:                  <span class="c"># run-time settings, read from your shell or .env</span>
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY:-}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - ENVIRONMENT=production
+    volumes:
+      - ./data_lake:/app/backend/data_lake    <span class="c"># your data survives rebuilds</span>
+    env_file:
+      - path: .env
+        required: false           <span class="c"># fine if the file is missing</span>
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s           <span class="c"># grace time while the app boots</span></code></pre>
+
+<p><code>${NAME:-}</code> means "use the value of NAME, or an empty string if it is not set". Compose reads values from your shell and from a file called <code>.env</code> next to the compose file.</p>
+
+<h3>The commands you will use daily</h3>
+<pre><code>docker compose up -d --build     <span class="c"># build the image, start the container in the background</span>
+docker compose ps                <span class="c"># is it running? is it healthy?</span>
+docker compose logs -f tabletell <span class="c"># watch the app's output live (Ctrl+C to stop watching)</span>
+docker compose restart tabletell <span class="c"># restart without rebuilding</span>
+docker compose down              <span class="c"># stop and remove the container (your data_lake stays)</span></code></pre>
+
+<p>Use <code>docker compose</code> (with a space). The older <code>docker-compose</code> (with a hyphen) is a previous generation of the tool.</p>
+
+<!-- ============================================================ -->
+<h2 id="config">Settings and secrets</h2>
+
+<p>The same image should run anywhere, so settings that change (API keys, ports) stay outside it. There are two moments a setting can enter, and mixing them up causes confusing bugs.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th></th><th>Build time (<code>ARG</code>)</th><th>Run time (<code>environment</code>, <code>env_file</code>)</th></tr></thead>
+  <tbody>
+    <tr><td>When it is read</td><td>While <code>docker build</code> runs</td><td>Each time a container starts</td></tr>
+    <tr><td>Changing it needs</td><td>A rebuild</td><td>Only a restart</td></tr>
+    <tr><td>TableTell example</td><td><code>VITE_CLERK_PUBLISHABLE_KEY</code>. Vite writes it into the JavaScript files.</td><td><code>GEMINI_API_KEY</code>, <code>CLERK_SECRET_KEY</code>, <code>PORT</code>, <code>ENVIRONMENT</code></td></tr>
+    <tr><td>Safe for secrets?</td><td>No. Anything built into the website is public. Clerk's publishable key is designed to be public, so it is fine.</td><td>Yes, this is where secrets belong</td></tr>
+  </tbody>
+</table>
+</div>
+
+<div class="warn">
+  <strong>Rules that prevent leaks</strong>
+  <ul>
+    <li>Never write a secret in a Dockerfile (<code>ENV</code> or <code>ARG</code>) or copy a file that contains one into the image. Anyone who gets the image can read it.</li>
+    <li>Keep <code>.env</code> out of Git (yours is) and out of the image (see <a href="#findings">the findings</a>).</li>
+    <li>Values in <code>environment</code> are visible to anyone who can run <code>docker inspect</code> on the server. That is acceptable for a single-owner server, so keep server access tight.</li>
+  </ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="health">Health checks, restarts, logs</h2>
+
+<h3>Health check</h3>
+<p>Your healthcheck runs <code>curl</code> against <code>/api/health</code> every 30 seconds. The container shows <code>starting</code>, then <code>healthy</code> or <code>unhealthy</code> in <code>docker compose ps</code>. Plain Docker does not restart an unhealthy container. It only reports the state, and tools such as Coolify or Traefik use it to decide where to send traffic.</p>
+
+<h3>Restart policy</h3>
+<p><code>restart: unless-stopped</code> brings the container back after a crash or a server reboot, but not if you stopped it by hand. It reacts to the process exiting, not to a failing health check.</p>
+
+<h3>Logs</h3>
+<p>Whatever the app prints appears in <code>docker compose logs</code>. That is why the Dockerfile sets <code>PYTHONUNBUFFERED=1</code>: Python then prints immediately instead of holding output back.</p>
+
+<p>By default Docker keeps logs in a file with no size limit, which can slowly fill a small server disk. If you run this for months, add a limit under the service:</p>
+<pre><code>    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"</code></pre>
+
+<!-- ============================================================ -->
+<h2 id="tabletell">TableTell end to end</h2>
+
+<p>This is what happens when someone opens your site on a server that uses Docker Compose.</p>
+
+<figure class="fig">
+<svg viewBox="0 0 960 540" role="img" aria-labelledby="d7t">
+  <title id="d7t">Request flow: the browser reaches a reverse proxy, then the TableTell container where FastAPI serves the React files and the API, which uses DuckDB and SQLite stored on a volume, and calls out to the AI provider and Clerk.</title>
+
+  <rect class="box gray" x="20" y="190" width="130" height="80" rx="10"/>
+  <text class="lbl mid" x="85" y="236">Browser</text>
+
+  <path class="arrow" d="M152 230 L198 230"/>
+  <rect class="box blue" x="200" y="190" width="170" height="80" rx="10"/>
+  <text class="lbl mid" x="285" y="222">Caddy / nginx</text>
+  <text class="sub mid" x="285" y="244">HTTPS, certificates</text>
+
+  <path class="arrow" d="M372 230 L448 230"/>
+
+  <rect class="box dash" x="420" y="40" width="520" height="360" rx="14" style="fill:#F4FAF9;stroke:#0B7A72"/>
+  <text class="h" x="440" y="70">TableTell container (port 8000)</text>
+
+  <rect class="box teal" x="450" y="190" width="150" height="80" rx="10"/>
+  <text class="lbl mid" x="525" y="222">FastAPI</text>
+  <text class="sub mid" x="525" y="244">run.py / uvicorn</text>
+
+  <path class="arrow" d="M602 210 L678 130"/>
+  <rect class="box amber" x="680" y="88" width="240" height="76" rx="10"/>
+  <text class="lbl mid" x="800" y="116">Website files</text>
+  <text class="sub mid" x="800" y="138">/ and /assets from</text>
+  <text class="sub mid" x="800" y="156">/app/frontend/dist</text>
+
+  <path class="arrow" d="M602 230 L678 230"/>
+  <rect class="box teal" x="680" y="190" width="240" height="80" rx="10"/>
+  <text class="lbl mid" x="800" y="218">API  (/api/*)</text>
+  <text class="sub mid" x="800" y="240">upload, audit, clean,</text>
+  <text class="sub mid" x="800" y="258">chat agent (LangGraph)</text>
+
+  <path class="arrow" d="M730 272 L712 328"/>
+  <path class="arrow" d="M860 272 L858 328"/>
+  <rect class="box gray" x="640" y="330" width="140" height="58" rx="8"/>
+  <text class="lbl mid" x="710" y="355">DuckDB</text>
+  <text class="sub mid" x="710" y="374">reads Parquet</text>
+  <rect class="box gray" x="790" y="330" width="130" height="58" rx="8"/>
+  <text class="lbl mid" x="855" y="355">SQLite</text>
+  <text class="sub mid" x="855" y="374">dataset records</text>
+
+  <path class="arrow" d="M710 390 L710 448"/>
+  <path class="arrow" d="M855 390 L855 448"/>
+  <rect class="box teal" x="640" y="450" width="280" height="60" rx="10"/>
+  <text class="lbl mid" x="780" y="476">Volume: ./data_lake</text>
+  <text class="sub mid" x="780" y="496">lives on the server disk</text>
+
+  <path class="arrow dash" d="M500 272 L500 448" style="stroke-dasharray:7 6"/>
+  <rect class="box gray dash" x="400" y="450" width="200" height="60" rx="10"/>
+  <text class="lbl mid" x="500" y="476">Clerk + AI provider</text>
+  <text class="sub mid" x="500" y="496">outbound internet calls</text>
+</svg>
+<figcaption>One container does everything: serves the website, answers API calls, runs queries, and talks out to Clerk (login) and the AI provider. Only the <code>data_lake</code> folder sits outside it.</figcaption>
+</figure>
+
+<h3>Deploying, step by step</h3>
+<ol>
+  <li>Install Docker and the Compose plugin on the server, and start the Docker service.</li>
+  <li>Copy the project to the server and create <code>.env</code> from <code>deploy/.env.production.example</code>, filling in your keys.</li>
+  <li>Run <code>docker compose up -d --build</code>. Docker builds stage 1 (website), builds stage 2 (Python image with the website inside), and starts the container.</li>
+  <li>Run <code>docker compose ps</code> until the status reads <code>healthy</code>.</li>
+  <li>Point a reverse proxy (Caddy or nginx) at the container and enable HTTPS. See <a href="#network">the networking section</a> for which port setup you need.</li>
+  <li>To update: pull the new code, run <code>docker compose up -d --build</code> again. The data stays in <code>data_lake</code>.</li>
+</ol>
+
+<h3>Why the proxy has special settings</h3>
+<p>The chat page streams the AI's progress live (Server-Sent Events). A proxy that buffers responses holds that stream back until the whole answer is done. Your nginx file turns buffering off for <code>/api/chat/stream</code>, and your Caddyfile uses <code>flush_interval -1</code> for the same reason. Both also raise the upload limit to 100 MB, matching <code>MAX_UPLOAD_SIZE_MB</code> in the app.</p>
+
+<!-- ============================================================ -->
+<h2 id="findings">Problems found in your setup</h2>
+
+<p>I read your files looking for gaps. These are ordered by how much they matter. I have not changed any of them.</p>
+
+<div class="bad">
+  <strong>1. Your .env files can be baked into the image</strong>
+  <p><code>.dockerignore</code> has no line excluding <code>.env</code>, and the Dockerfile runs <code>COPY backend/ /app/backend/</code>. Your repo contains <code>backend/.env</code>, so it is copied into the image, and any API keys inside travel with the image to wherever it is stored or shared. The same applies to <code>frontend/.env</code> in the build stage, which only holds a publishable key.</p>
+  <p><strong>Fix:</strong> add these lines to <code>.dockerignore</code> and rebuild:</p>
+  <pre><code>.env
+**/.env
+!**/.env.example</code></pre>
+  <p>If an image built this way was ever pushed to a registry or shared, treat the keys in <code>backend/.env</code> as exposed and replace them.</p>
+</div>
+
+<div class="warn">
+  <strong>2. The compose file and the proxy files disagree</strong>
+  <p>Compose publishes nothing (<code>expose</code> only), but <code>deploy/Caddyfile</code>, <code>deploy/nginx/tabletell.conf</code> and <code>DEPLOYMENT.md</code> send traffic to <code>127.0.0.1:8000</code> on the server. That address will refuse connections. Pick one: if you run Caddy or nginx directly on the server, add <code>ports: - "127.0.0.1:8000:8000"</code>. If you deploy through Coolify or another proxy container, keep <code>expose</code> and ignore the Caddy and nginx files.</p>
+</div>
+
+<div class="warn">
+  <strong>3. The app runs as root inside the container</strong>
+  <p>The Dockerfile has no <code>USER</code> line. If someone exploits the app, they have root inside the container. <code>DEPLOYMENT.md</code> tells you to <code>chown -R 1000:1000</code> the data folder, which suggests a non-root user was intended. Adding a user later means the mounted <code>data_lake</code> folder must be writable by that user, so test it before relying on it.</p>
+</div>
+
+<h3>Smaller notes</h3>
+<ul>
+  <li><strong>Unused folder.</strong> The Dockerfile creates <code>/app/data_lake/...</code>, but the app (via <code>config.py</code>) uses <code>/app/backend/data_lake</code>, which is also where compose mounts your folder. The <code>mkdir</code> line does nothing useful, and the app creates its own folders on startup.</li>
+  <li><strong>Build tools left in the image.</strong> <code>gcc</code> is installed in the final image. If every Python package you use ships a ready-made wheel, you can remove it and make the image smaller. Test before removing.</li>
+  <li><strong>Run one copy only.</strong> SQLite and DuckDB files on one disk are not designed for several containers writing at once. Do not scale this to multiple replicas on one data folder.</li>
+  <li><strong><code>npm ci</code> is stricter than <code>npm install</code>.</strong> I switched the Dockerfile to <code>npm ci</code> earlier. It fails if <code>package.json</code> and <code>package-lock.json</code> disagree, and I could not test that here. If the build stops with a lockfile error, run <code>npm install</code> in <code>frontend/</code> on your computer and commit the updated lockfile. (The lockfile does include the Linux packages that the Alpine build stage needs.)</li>
+  <li><strong>Moving tags.</strong> <code>python:3.13-slim</code> and <code>node:20-alpine</code> can change underneath you between builds. That is usually fine for a project this size, but it is why a rebuild a month later can behave slightly differently.</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="cheat">Command cheat sheet</h2>
+
+<h3>Compose (what you will use most)</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>docker compose up -d --build</code></td><td>Build and start in the background. Use after any code or Dockerfile change.</td></tr>
+    <tr><td><code>docker compose ps</code></td><td>Show status and health.</td></tr>
+    <tr><td><code>docker compose logs -f tabletell</code></td><td>Follow the app's output.</td></tr>
+    <tr><td><code>docker compose exec tabletell bash</code></td><td>Open a shell inside the running container to look around.</td></tr>
+    <tr><td><code>docker compose restart tabletell</code></td><td>Restart without rebuilding. Use after changing <code>.env</code>.</td></tr>
+    <tr><td><code>docker compose stop</code> / <code>start</code></td><td>Pause and resume without removing the container.</td></tr>
+    <tr><td><code>docker compose down</code></td><td>Stop and remove the container and network. Data folder stays.</td></tr>
+    <tr><td><code>docker compose config</code></td><td>Print the final compose file with values filled in. Good for catching typos.</td></tr>
+    <tr><td><code>docker compose build --no-cache</code></td><td>Rebuild from scratch, ignoring saved layers.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<h3>Plain Docker</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+  <tbody>
+    <tr><td><code>docker ps</code> / <code>docker ps -a</code></td><td>List running containers / all containers including stopped.</td></tr>
+    <tr><td><code>docker images</code></td><td>List images on this machine.</td></tr>
+    <tr><td><code>docker build -t tabletell .</code></td><td>Build an image and name it.</td></tr>
+    <tr><td><code>docker logs -f NAME</code></td><td>Follow a container's output.</td></tr>
+    <tr><td><code>docker exec -it NAME bash</code></td><td>Shell inside a container.</td></tr>
+    <tr><td><code>docker stop NAME</code> / <code>docker rm NAME</code></td><td>Stop / delete a container.</td></tr>
+    <tr><td><code>docker rmi IMAGE</code></td><td>Delete an image.</td></tr>
+    <tr><td><code>docker system df</code></td><td>Show how much disk Docker uses.</td></tr>
+    <tr><td><code>docker system prune</code></td><td>Delete stopped containers, unused networks and dangling images. Adding <code>-a</code> or <code>--volumes</code> deletes much more, so read the prompt.</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="trouble">When something breaks</h2>
+
+<details>
+  <summary>The container starts, then stops right away</summary>
+  <p>The app crashed during startup. Run <code>docker compose logs tabletell</code> and read the last lines. Usual causes: a missing setting, a typo in <code>.env</code>, or a Python package error.</p>
+</details>
+
+<details>
+  <summary>I changed code but the site looks the same</summary>
+  <p>You probably restarted without rebuilding. The code lives inside the image, so run <code>docker compose up -d --build</code>. If it still looks old, hard-refresh the browser, since the browser caches JavaScript files.</p>
+</details>
+
+<details>
+  <summary>Status says "unhealthy"</summary>
+  <p>The health check could not reach <code>/api/health</code>. Run <code>docker compose logs tabletell</code>, then <code>docker compose exec tabletell curl -s localhost:8000/api/health</code> to see the answer from inside. A check that works inside but the site does not open from outside points to the port setup in <a href="#network">networking</a>.</p>
+</details>
+
+<details>
+  <summary>The proxy says "connection refused" or 502</summary>
+  <p>Either the container is not running or healthy (check <code>docker compose ps</code>), or the port is not published for a proxy that runs on the host. See finding 2 above.</p>
+</details>
+
+<details>
+  <summary>"port is already allocated" or "address already in use"</summary>
+  <p>Something else on the server already uses that port. Find it (<code>sudo ss -ltnp</code> on Linux) and stop it, or publish a different host port, for example <code>"127.0.0.1:8001:8000"</code>.</p>
+</details>
+
+<details>
+  <summary>The build fails at npm ci</summary>
+  <p>Usually the lockfile and <code>package.json</code> are out of sync. Run <code>npm install</code> in <code>frontend/</code> on your computer, commit the new <code>package-lock.json</code>, and build again.</p>
+</details>
+
+<details>
+  <summary>"permission denied" when saving uploads</summary>
+  <p>The user inside the container cannot write to the mounted <code>data_lake</code> folder. Right now the app runs as root, so this mainly appears if you add a <code>USER</code> line later. Fix the folder's owner on the server to match.</p>
+</details>
+
+<details>
+  <summary>My datasets disappeared after an update</summary>
+  <p>Check that you ran compose from the project folder you used before. A different folder has a different <code>./data_lake</code>. Also check that <code>docker compose config</code> still shows the volume line.</p>
+</details>
+
+<details>
+  <summary>The server disk is full</summary>
+  <p>Run <code>docker system df</code> to see whether images or logs are the cause. Old images build up with every rebuild, and <code>docker system prune</code> clears the safe ones. Large log files are fixed with the logging limit in <a href="#health">the health section</a>.</p>
+</details>
+
+<details>
+  <summary>"Cannot connect to the Docker daemon"</summary>
+  <p>Docker is not running. On Windows, start Docker Desktop and wait until it says it is running. On a Linux server, run <code>sudo systemctl start docker</code>.</p>
+</details>
+
+<!-- ============================================================ -->
+<h2 id="next">What to learn next</h2>
+
+<p>You now know enough to run, update, and debug TableTell. In rough order of usefulness:</p>
+<ol>
+  <li>Apply the <code>.dockerignore</code> fix and settle the port question (findings 1 and 2).</li>
+  <li>Practice <code>docker compose up -d --build</code>, <code>logs</code> and <code>exec</code> on your PC until they feel routine.</li>
+  <li>Set up a backup of <code>data_lake</code> (stop, copy, start).</li>
+  <li>Add the non-root <code>USER</code> and the log size limit.</li>
+  <li>Later, if you automate releases: build the image in CI and push it to a registry, so the server pulls a ready image instead of building.</li>
+</ol>
+
+<p>You can ignore Kubernetes and Docker Swarm. They coordinate many containers across many servers, and TableTell is one container on one server.</p>
+
+</main>
+</body>
+</html>

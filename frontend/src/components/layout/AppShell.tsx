@@ -21,8 +21,10 @@ import { useAppStore, type AppTab } from '../../store/useAppStore';
 import { BrandLogo } from '../common/BrandLogo';
 import { ThemeToggle } from '../common/ThemeToggle';
 import { ToastContainer } from '../common/ToastContainer';
+import { OfflineBanner } from '../common/OfflineBanner';
 import { TableTellAssistant } from '../assistant/TableTellAssistant';
 import { fetchDatasets } from '../../lib/api';
+import { logger } from '../../lib/logger';
 import { toast } from '../../store/useToastStore';
 
 interface AppShellProps {
@@ -69,12 +71,17 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard shortcut Ctrl+B / Cmd+B for sidebar toggle
+  // Keyboard shortcuts: Ctrl+B / Cmd+B toggles the sidebar, Escape closes open menus
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
         toggleSidebar();
+      }
+      if (e.key === 'Escape') {
+        setDatasetDropdownOpen(false);
+        setHeaderDatasetOpen(false);
+        setUserDropdownOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -89,7 +96,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           setDatasetId(res[0].dataset_id);
         }
       })
-      .catch((err) => console.error('Failed to load datasets:', err));
+      .catch((err) => {
+        logger.error('Failed to load datasets', err);
+        toast.error('Could not load datasets', err instanceof Error ? err.message : undefined);
+      });
   }, [setDatasets, datasetId, setDatasetId]);
 
   const navItems: { id: AppTab; label: string; icon: React.ElementType }[] = [
@@ -114,6 +124,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   return (
     <div className="flex h-screen w-screen overflow-hidden select-none bg-[var(--tt-bg-canvas)]">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* Toast Notification Container */}
       <ToastContainer />
 
@@ -128,9 +142,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <div className="flex flex-col gap-5">
           {/* Brand Lockup */}
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
-            <div
-              className="flex items-center gap-3 cursor-pointer group min-w-0"
+            <button
+              type="button"
+              className="flex items-center gap-3 cursor-pointer group min-w-0 text-left rounded-lg"
               onClick={() => setActiveTab('studio')}
+              aria-label="TableTell home"
               title="TableTell — Data Analyst Assistant"
             >
               <BrandLogo
@@ -151,13 +167,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   </div>
                 </div>
               )}
-            </div>
+            </button>
 
             {!sidebarCollapsed && (
               <button
                 type="button"
                 onClick={toggleSidebar}
                 className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all shrink-0 ml-1"
+                aria-label="Collapse sidebar"
                 title="Collapse sidebar (Ctrl+B)"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
@@ -175,6 +192,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               <button
                 type="button"
                 onClick={() => setDatasetDropdownOpen(!datasetDropdownOpen)}
+                aria-haspopup="true"
+                aria-expanded={datasetDropdownOpen}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs transition-all cursor-pointer shadow-[var(--tt-shadow-card)]"
               >
                 <div className="flex items-center gap-2.5 truncate">
@@ -201,6 +220,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                       value={datasetSearch}
                       onChange={(e) => setDatasetSearch(e.target.value)}
                       placeholder="Search tables..."
+                      aria-label="Search tables"
                       className="w-full bg-transparent outline-none text-xs text-[var(--tt-text-primary)]"
                       autoFocus
                     />
@@ -284,6 +304,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <button
               type="button"
               onClick={toggleSidebar}
+              aria-label={`Active dataset ${datasetId}. Expand sidebar`}
               title={`Active: ${datasetId} (Click to expand)`}
               className="flex items-center justify-center p-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
             >
@@ -292,9 +313,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           )}
 
           {/* Navigation Links */}
-          <nav className="flex flex-col gap-1">
+          <nav className="flex flex-col gap-1" aria-label="Main navigation">
             {!sidebarCollapsed && (
-              <div className="text-[10px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1 px-0.5">
+              <div aria-hidden="true" className="text-[10px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1 px-0.5">
                 NAVIGATION
               </div>
             )}
@@ -306,6 +327,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   key={item.id}
                   type="button"
                   onClick={() => setActiveTab(item.id)}
+                  aria-current={isActive ? 'page' : undefined}
+                  aria-label={sidebarCollapsed ? item.label : undefined}
                   className={`flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
                     } rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${isActive
                       ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
@@ -329,6 +352,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 type="button"
                 onClick={toggleSidebar}
                 className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] cursor-pointer text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:border-[var(--tt-border-strong)] transition-all"
+                aria-label="Expand sidebar"
                 title="Expand sidebar (Ctrl+B)"
               >
                 <PanelLeftOpen className="w-4 h-4 text-[#0D9488]" />
@@ -351,6 +375,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 type="button"
                 onClick={toggleSidebar}
                 className="p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)] transition-all cursor-pointer"
+                aria-label="Collapse sidebar"
                 title="Collapse sidebar (Ctrl+B)"
               >
                 <PanelLeftClose className="w-3.5 h-3.5" />
@@ -361,7 +386,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
       </aside>
 
       {/* Main App Workspace */}
-      <main className="flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-[var(--tt-bg-canvas)]">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="flex-1 flex flex-col h-full min-h-0 overflow-hidden bg-[var(--tt-bg-canvas)] focus:outline-none"
+      >
+        <OfflineBanner />
+
         {/* Top Header */}
         <header className="h-14 shrink-0 border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center justify-between px-6 transition-all select-none">
           {/* Left: Breadcrumbs & Dataset Quick Switcher */}
@@ -371,6 +402,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 type="button"
                 onClick={toggleSidebar}
                 className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer hover:bg-[var(--tt-bg-elevated)] transition-all mr-1 text-[var(--tt-text-muted)]"
+                aria-label="Expand sidebar"
                 title="Expand sidebar (Ctrl+B)"
               >
                 <PanelLeftOpen className="w-3.5 h-3.5 text-[#0D9488]" />
@@ -383,6 +415,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 type="button"
                 onClick={() => setActiveTab('studio')}
                 className="hover:text-[var(--tt-text-primary)] cursor-pointer flex items-center p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] transition-all"
+                aria-label="Go to Ask & Analyze"
                 title="Go to Ask & Analyze (Home)"
               >
                 <Home className="w-3.5 h-3.5 text-[var(--tt-text-muted)] hover:text-[#0D9488] transition-colors" />
@@ -410,6 +443,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   type="button"
                   id="header-dataset-selector-btn"
                   onClick={() => setHeaderDatasetOpen(!headerDatasetOpen)}
+                  aria-haspopup="true"
+                  aria-expanded={headerDatasetOpen}
+                  aria-label={`Active dataset: ${datasetId}. Switch dataset`}
                   className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs font-semibold border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)]"
                   title="Switch Active Dataset"
                 >
@@ -431,6 +467,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                         value={datasetSearch}
                         onChange={(e) => setDatasetSearch(e.target.value)}
                         placeholder="Search tables..."
+                        aria-label="Search tables"
                         className="w-full bg-transparent outline-none text-xs text-[var(--tt-text-primary)] placeholder-[var(--tt-text-muted)]"
                         autoFocus
                       />
@@ -551,6 +588,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   type="button"
                   id="user-profile-menu-btn"
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  aria-haspopup="true"
+                  aria-expanded={userDropdownOpen}
+                  aria-label="Account menu"
                   className="flex items-center gap-2 h-8 pl-1.5 pr-2.5 py-0.5 rounded-full border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all group select-none"
                   title="User Profile & Session (Active Analyst)"
                 >
