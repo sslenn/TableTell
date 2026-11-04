@@ -3,7 +3,9 @@ import { ClerkProvider, useAuth } from '@clerk/react';
 import { dark } from '@clerk/themes';
 import { setAuthTokenGetter, setUnauthorizedHandler } from '../../lib/api';
 import { SignInPage } from './SignInPage';
+import { LandingPage } from '../landing/LandingPage';
 import { BrandLogo } from '../common/BrandLogo';
+import { useAppStore } from '../../store/useAppStore';
 
 interface ClerkAuthProviderProps {
   children: React.ReactNode;
@@ -25,6 +27,8 @@ const STATIC_CLERK_KEY: string = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 
 
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
+  const [showSignIn, setShowSignIn] = useState(false);
+  const { setDatasetId, setSuggestedPrompt, setShowLanding } = useAppStore();
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
@@ -56,7 +60,23 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
 
   if (!isSignedIn) {
-    return <SignInPage />;
+    if (!showSignIn) {
+      return (
+        <LandingPage
+          onLaunchStudio={(ds, prompt) => {
+            if (ds) setDatasetId(ds);
+            if (prompt) setSuggestedPrompt(prompt);
+            setShowLanding(false);
+            setShowSignIn(true);
+          }}
+          onSignIn={() => {
+            setShowLanding(false);
+            setShowSignIn(true);
+          }}
+        />
+      );
+    }
+    return <SignInPage onBack={() => setShowSignIn(false)} />;
   }
 
   return <>{children}</>;

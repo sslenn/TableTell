@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { useChatStream } from '../../hooks/useChatStream';
 import { TelemetryRail } from './TelemetryRail';
@@ -26,7 +26,9 @@ export const StudioView: React.FC = () => {
     setActiveColumns,
     addMessage,
     clearMessages,
-    setSuggestedPrompt
+    setSuggestedPrompt,
+    schemaInspectorOpen: isSchemaOpen,
+    setSchemaInspectorOpen: setIsSchemaOpen
   } = useAppStore();
 
   const {
@@ -40,7 +42,6 @@ export const StudioView: React.FC = () => {
     cancelStream
   } = useChatStream();
 
-  const [isSchemaOpen, setIsSchemaOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeDatasetObj = datasets.find((d) => d.dataset_id === datasetId);

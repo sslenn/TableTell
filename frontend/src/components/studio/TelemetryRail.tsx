@@ -1,7 +1,6 @@
 import React from 'react';
-import { Database, Cpu, CheckCircle2, RefreshCw, AlertTriangle, BarChart3, Table, Square } from 'lucide-react';
+import { Database, Cpu, CheckCircle2, RefreshCw, AlertTriangle, BarChart3, Square } from 'lucide-react';
 import type { StreamStatusStep } from '../../types/api';
-import { useAppStore } from '../../store/useAppStore';
 
 interface TelemetryRailProps {
   isStreaming: boolean;
@@ -20,96 +19,11 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
   statusMessage,
   selfHealMessage,
   repairedSql,
-  onCancelQuery,
-  onToggleSchema,
-  isSchemaOpen
+  onCancelQuery
 }) => {
-  const { datasetId, datasets, activeColumns } = useAppStore();
-  const activeDataset = datasets.find((d) => d.dataset_id === datasetId);
-
+  // S2: Dataset metadata & Schema toggle are consolidated into the top AppShell header when idle
   if (!isStreaming && !selfHealMessage && !statusMessage) {
-    return (
-      <div
-        className="flex items-center justify-between px-3.5 py-2 rounded-xl border text-xs mb-2 transition-all shadow-[var(--tt-shadow-card)]"
-        style={{
-          backgroundColor: 'var(--tt-bg-surface)',
-          borderColor: 'var(--tt-border-subtle)',
-          color: 'var(--tt-text-secondary)'
-        }}
-      >
-        {/* Left: Active Dataset & Metrics */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-1.5 font-semibold shrink-0" style={{ color: 'var(--tt-text-primary)' }}>
-            <Database className="w-3.5 h-3.5 text-[#0D9488]" />
-            <span className="font-mono truncate max-w-[160px] sm:max-w-[220px]" title={datasetId}>
-              {datasetId || 'No dataset selected'}
-            </span>
-          </div>
-
-          {activeDataset && (
-            <>
-              <span className="text-[var(--tt-border-strong)] opacity-40">•</span>
-              <div className="flex items-center gap-2 text-[11px] font-mono text-[var(--tt-text-muted)] shrink-0">
-                <span>{activeDataset.total_rows.toLocaleString()} rows</span>
-                <span>•</span>
-                <span>{activeDataset.total_cols || activeColumns.length} cols</span>
-
-                {activeDataset.data_health_score !== undefined && (
-                  <span
-                    className="px-1.5 py-0.5 rounded text-[10px] font-semibold tracking-wide"
-                    style={{
-                      backgroundColor:
-                        activeDataset.data_health_score >= 80
-                          ? 'rgba(16, 185, 129, 0.12)'
-                          : activeDataset.data_health_score >= 50
-                          ? 'rgba(245, 158, 11, 0.12)'
-                          : 'rgba(239, 68, 68, 0.12)',
-                      color:
-                        activeDataset.data_health_score >= 80
-                          ? '#10B981'
-                          : activeDataset.data_health_score >= 50
-                          ? '#F59E0B'
-                          : '#EF4444'
-                    }}
-                    title={`Data health score: ${Math.round(activeDataset.data_health_score)}%`}
-                  >
-                    {Math.round(activeDataset.data_health_score)}% Health
-                  </span>
-                )}
-              </div>
-            </>
-          )}
-
-          {!activeDataset && activeColumns.length > 0 && (
-            <>
-              <span className="text-[var(--tt-border-strong)] opacity-40">•</span>
-              <span className="text-[11px] font-mono text-[var(--tt-text-muted)]">
-                {activeColumns.length} columns active
-              </span>
-            </>
-          )}
-        </div>
-
-        {/* Right: Actions */}
-        <div className="flex items-center gap-2 shrink-0">
-          {onToggleSchema && (
-            <button
-              type="button"
-              onClick={onToggleSchema}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-md border text-[11px] font-medium transition-all cursor-pointer ${
-                isSchemaOpen
-                  ? 'border-[#0D9488] text-[#0D9488] bg-[#0D9488]/10'
-                  : 'border-[var(--tt-border-subtle)] text-[var(--tt-text-muted)] hover:text-[var(--tt-text-primary)] hover:bg-[var(--tt-bg-elevated)]'
-              }`}
-              title="Inspect Schema & Column Statistics"
-            >
-              <Table className="w-3 h-3 text-[#0D9488]" />
-              <span>Schema</span>
-            </button>
-          )}
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const steps = [
@@ -121,7 +35,7 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
 
   return (
     <div
-      className="p-3.5 rounded-xl border flex flex-col gap-2.5 transition-all duration-300"
+      className="p-3.5 rounded-xl border flex flex-col gap-2.5 mb-2 transition-all duration-300"
       style={{
         backgroundColor: 'var(--tt-bg-surface)',
         borderColor: currentStep === 'self_healing' ? 'var(--tt-accent-warm)' : 'var(--tt-border-strong)',
@@ -173,7 +87,7 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           return (
             <React.Fragment key={st.id}>
               <div
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all"
                 style={{
                   backgroundColor: isActive
                     ? 'var(--tt-primary-subtle)'
@@ -183,7 +97,7 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
                   color: isActive ? 'var(--tt-primary)' : isDone ? 'var(--tt-text-secondary)' : 'var(--tt-text-muted)'
                 }}
               >
-                <Icon className="w-3 h-3" />
+                <Icon className="w-3.5 h-3.5" />
                 <span>{st.label}</span>
               </div>
               {i < steps.length - 1 && (
@@ -217,10 +131,10 @@ export const TelemetryRail: React.FC<TelemetryRailProps> = ({
           <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
           <div className="flex flex-col gap-1">
             <span className="font-semibold">Self-Healing DAG Recovery Loop</span>
-            <span className="text-[11px] opacity-90">{selfHealMessage}</span>
+            <span className="text-xs opacity-90">{selfHealMessage}</span>
             {repairedSql && (
               <pre
-                className="p-1.5 rounded text-[10px] font-mono overflow-x-auto mt-1"
+                className="p-1.5 rounded text-xs font-mono overflow-x-auto mt-1"
                 style={{ backgroundColor: 'var(--tt-bg-sunken)' }}
               >
                 {repairedSql}
