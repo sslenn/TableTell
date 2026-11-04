@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Send,
   Square,
   Mic,
   MicOff,
   RotateCcw,
-  Zap,
-  Columns3,
   AlertCircle,
   TrendingUp,
   BarChart2,
@@ -30,9 +27,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
   isStreaming,
   onSubmitQuery,
   onCancelQuery,
-  onResetChat,
-  onToggleSchema,
-  isSchemaOpen
+  onResetChat
 }) => {
   const [query, setQuery] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -43,7 +38,6 @@ export const CommandDock: React.FC<CommandDockProps> = ({
 
   const {
     datasetId,
-    activeColumns,
     suggestedPrompt,
     setSuggestedPrompt
   } = useAppStore();
@@ -311,7 +305,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-2.5">
+      <form onSubmit={handleSubmit} className="flex flex-col gap-3">
         <div className="relative">
           <textarea
             ref={textareaRef}
@@ -323,10 +317,10 @@ export const CommandDock: React.FC<CommandDockProps> = ({
                 handleSubmit();
               }
             }}
-            placeholder={`Ask anything about ${datasetId}...`}
+            placeholder={`Ask a follow-up question about ${datasetId}...`}
             aria-label={`Ask a question about ${datasetId}`}
             rows={1}
-            className="w-full resize-none bg-transparent outline-none text-sm placeholder:opacity-50 selection:bg-[#2DD4BF]/20 max-h-32 leading-relaxed"
+            className="w-full resize-none bg-transparent outline-none text-[15px] placeholder:text-[#64748B] dark:placeholder:text-[#94A3B8] selection:bg-[#2DD4BF]/20 max-h-32 leading-relaxed"
             style={{
               color: 'var(--tt-text-primary)'
             }}
@@ -340,82 +334,53 @@ export const CommandDock: React.FC<CommandDockProps> = ({
           )}
         </div>
 
-        {/* Quick Query Templates */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-          {quickTemplates.map((tpl, i) => {
-            const Icon = tpl.icon;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handleApplyTemplate(tpl.template)}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono border cursor-pointer transition-all hover:border-[#2DD4BF] hover:text-[#2DD4BF] group"
-                style={{
-                  backgroundColor: 'var(--tt-bg-elevated)',
-                  borderColor: 'var(--tt-border-subtle)',
-                  color: 'var(--tt-text-secondary)'
-                }}
-              >
-                <Icon className="w-2.5 h-2.5 text-[#2DD4BF] opacity-70 group-hover:opacity-100" />
-                <span>{tpl.label}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Bottom Toolbar & Action Bar */}
+        {/* S5: Clean Single Bottom Action & Templates Row */}
         <div
-          className="flex flex-wrap items-center justify-between pt-2.5 border-t gap-2 select-none"
+          className="flex flex-wrap items-center justify-between pt-3 border-t gap-2 select-none"
           style={{ borderColor: 'var(--tt-border-subtle)' }}
         >
-          {/* Active Dataset Pill & Column Helper */}
-          <div className="flex items-center gap-2">
-            <span
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-medium border"
-              style={{
-                backgroundColor: 'var(--tt-bg-elevated)',
-                borderColor: 'var(--tt-border-subtle)',
-                color: 'var(--tt-primary)'
-              }}
-            >
-              <Zap className="w-3 h-3 text-[#2DD4BF]" />
-              <span className="font-semibold">{datasetId}</span>
+          {/* Left: Readable Quick Prompt Templates */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-mono mr-0.5" style={{ color: 'var(--tt-text-muted)' }}>
+              Templates:
             </span>
-
-            {onToggleSchema && (
-              <button
-                type="button"
-                onClick={onToggleSchema}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-mono border cursor-pointer transition-colors hover:border-[#2DD4BF]"
-                style={{
-                  backgroundColor: isSchemaOpen ? 'var(--tt-primary-subtle)' : 'var(--tt-bg-elevated)',
-                  borderColor: isSchemaOpen ? 'var(--tt-primary)' : 'var(--tt-border-subtle)',
-                  color: isSchemaOpen ? 'var(--tt-primary)' : 'var(--tt-text-secondary)'
-                }}
-                aria-pressed={isSchemaOpen}
-                title="Toggle schema inspector"
-              >
-                <Columns3 className="w-3 h-3" />
-                <span>Schema ({activeColumns.length})</span>
-              </button>
-            )}
+            {quickTemplates.map((tpl, i) => {
+              const Icon = tpl.icon;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleApplyTemplate(tpl.template)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium border cursor-pointer transition-all hover:border-[#2DD4BF] hover:text-[#2DD4BF] group"
+                  style={{
+                    backgroundColor: 'var(--tt-bg-canvas)',
+                    borderColor: 'var(--tt-border-subtle)',
+                    color: 'var(--tt-text-secondary)'
+                  }}
+                >
+                  <Icon className="w-3 h-3 text-[#2DD4BF] opacity-85 group-hover:opacity-100" />
+                  <span>{tpl.label}</span>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Action Buttons */}
+          {/* Right: Action Buttons (Clear, Voice, Run Query) */}
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setShowConfirmReset(true)}
-              title="Reset conversation"
-              aria-label="Reset conversation"
-              className="p-1.5 rounded-lg border transition-all cursor-pointer opacity-80 hover:opacity-100 hover:border-[#2DD4BF]"
+              title="Clear conversation"
+              aria-label="Clear conversation"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all cursor-pointer hover:border-[#2DD4BF]"
               style={{
-                backgroundColor: 'var(--tt-bg-elevated)',
+                backgroundColor: 'var(--tt-bg-canvas)',
                 borderColor: 'var(--tt-border-subtle)',
                 color: 'var(--tt-text-secondary)'
               }}
             >
-              <RotateCcw className="w-4 h-4" />
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Clear</span>
             </button>
 
             <button
@@ -428,7 +393,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
                 isListening ? 'text-[#F87171] border-[#F87171] animate-pulse' : 'text-secondary hover:border-[#2DD4BF]'
               }`}
               style={{
-                backgroundColor: 'var(--tt-bg-elevated)',
+                backgroundColor: 'var(--tt-bg-canvas)',
                 borderColor: isListening ? '#F87171' : 'var(--tt-border-subtle)',
                 color: isListening ? '#F87171' : 'var(--tt-text-secondary)'
               }}
@@ -458,15 +423,14 @@ export const CommandDock: React.FC<CommandDockProps> = ({
               <button
                 type="submit"
                 disabled={!query.trim()}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-semibold text-xs tracking-wide transition-all cursor-pointer disabled:opacity-40 hover:opacity-95 shadow-md active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg font-bold text-xs tracking-wide transition-all cursor-pointer disabled:opacity-40 hover:brightness-110 shadow-md active:scale-95"
                 style={{
-                  backgroundColor: 'var(--tt-primary)',
-                  color: '#0A1214',
+                  background: 'linear-gradient(135deg, #0D9488 0%, #2DD4BF 100%)',
+                  color: '#041A1C',
                   boxShadow: '0 2px 12px var(--tt-primary-subtle)'
                 }}
               >
-                <span>Run</span>
-                <Send className="w-3.5 h-3.5" />
+                <span>Run Query →</span>
               </button>
             )}
           </div>

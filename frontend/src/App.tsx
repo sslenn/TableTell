@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react';
 import { useAppStore } from './store/useAppStore';
 import { AppShell } from './components/layout/AppShell';
+import { LandingPage } from './components/landing/LandingPage';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { ViewLoadingSkeleton } from './components/common/ViewLoadingSkeleton';
 
@@ -19,13 +20,38 @@ const TelemetryView = lazy(() =>
 );
 
 export function App() {
-  const { activeTab, theme } = useAppStore();
+  const {
+    activeTab,
+    theme,
+    showLanding,
+    setShowLanding,
+    setDatasetId,
+    setSuggestedPrompt,
+    setActiveTab,
+  } = useAppStore();
 
   useEffect(() => {
     // Ensure both data-theme attribute and dark class on root html element
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.classList.toggle('dark', theme === 'dark');
   }, [theme]);
+
+  if (showLanding) {
+    return (
+      <LandingPage
+        onLaunchStudio={(ds, prompt) => {
+          if (ds) setDatasetId(ds);
+          if (prompt) setSuggestedPrompt(prompt);
+          setActiveTab('studio');
+          setShowLanding(false);
+        }}
+        onSignIn={() => {
+          setActiveTab('studio');
+          setShowLanding(false);
+        }}
+      />
+    );
+  }
 
   const getTabLabel = (tab: string) => {
     switch (tab) {

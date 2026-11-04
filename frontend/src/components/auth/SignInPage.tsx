@@ -1,12 +1,26 @@
 import React from 'react';
 import { SignIn } from '@clerk/react';
 import { dark } from '@clerk/themes';
-import { Lock } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { BrandLogo } from '../common/BrandLogo';
 
-export const SignInPage: React.FC = () => {
+interface SignInPageProps {
+  onBack?: () => void;
+}
+
+export const SignInPage: React.FC<SignInPageProps> = ({ onBack }) => {
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#070D0E] text-[#F0FDFA] relative overflow-hidden select-none px-4 py-8">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="absolute top-6 left-6 z-20 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-[#24303F] bg-[#131A22]/80 text-xs font-mono text-[#CBD5E1] hover:text-[#2DD4BF] hover:border-[#2DD4BF]/40 transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to overview</span>
+        </button>
+      )}
       {/* Background Architectural Ambient Lighting */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full bg-[#0D9488]/15 blur-[160px] pointer-events-none" />
       <div className="absolute bottom-10 right-1/4 w-[400px] h-[400px] rounded-full bg-[#0284C7]/10 blur-[150px] pointer-events-none" />
@@ -60,14 +74,20 @@ export const SignInPage: React.FC = () => {
                   borderRadius: '0.625rem',
                 },
                 elements: {
-                  rootBox: 'w-full',
-                  card: 'bg-transparent shadow-none border-0 p-0 w-full',
+                  rootBox: 'w-full !overflow-visible',
+                  cardBox: 'w-full !overflow-visible !shadow-none !border-0 !bg-transparent',
+                  card: 'bg-transparent shadow-none border-0 p-0 w-full !overflow-visible',
+                  main: '!overflow-visible w-full',
                   headerTitle: '!text-[#F0FDFA] !font-extrabold text-lg tracking-tight text-center',
                   headerSubtitle: '!text-[#99F6E4]/70 text-xs text-center mt-0.5',
+                  socialButtonsRoot: '!overflow-visible w-full',
+                  socialButtons: '!overflow-visible w-full !px-0.5 !pt-2',
                   socialButtonsBlockButton:
-                    '!w-full !h-10 !bg-[#142426] hover:!bg-[#1C3336] !border !border-[#2DD4BF]/25 hover:!border-[#2DD4BF]/50 !text-[#F0FDFA] font-medium rounded-[10px] text-xs transition-all cursor-pointer shadow-sm',
+                    'relative !overflow-visible !w-full !h-10 !bg-[#142426] hover:!bg-[#1C3336] !border !border-[#2DD4BF]/25 hover:!border-[#2DD4BF]/50 !text-[#F0FDFA] font-medium rounded-[10px] text-xs transition-all cursor-pointer shadow-sm',
                   socialButtonsBlockButtonText: '!text-[#F0FDFA] !font-semibold text-xs',
                   socialButtonsProviderIcon: 'w-4 h-4',
+                  lastAuthenticationStrategyBadge:
+                    '!absolute !top-0 !right-3 !-translate-y-1/2 !translate-x-0 !bg-[#132629] !text-[#5EEAD4] !border !border-[#2DD4BF]/40 !text-[10px] !font-bold !px-2 !py-0.5 !rounded-full !whitespace-nowrap !overflow-visible !shadow-md',
                   dividerRow: 'my-2.5',
                   dividerLine: '!bg-[#2DD4BF]/20',
                   dividerText: '!text-[#5EEAD4]/60 text-[10px] uppercase font-mono tracking-wider',
@@ -82,12 +102,6 @@ export const SignInPage: React.FC = () => {
                 },
               }}
             />
-
-            {/* Security Assurance */}
-            <div className="mt-3 pt-2.5 border-t border-[#2DD4BF]/10 flex items-center justify-center gap-1.5 text-[11px] text-[#5EEAD4]/60 font-mono">
-              <Lock className="w-3.5 h-3.5 text-[#2DD4BF]" />
-              <span>256-Bit Encrypted Session • Enterprise Access</span>
-            </div>
           </div>
         </div>
 

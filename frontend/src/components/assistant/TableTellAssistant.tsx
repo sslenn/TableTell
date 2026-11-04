@@ -47,17 +47,25 @@ const TAB_QUICK_PROMPTS: Record<string, string[]> = {
 };
 
 export const TableTellAssistant: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { activeTab, datasetId, datasets, activeColumns, auditReport } = useAppStore();
+  const {
+    activeTab,
+    datasetId,
+    datasets,
+    activeColumns,
+    auditReport,
+    copilotOpen: isOpen,
+    setCopilotOpen: setIsOpen,
+    sidebarCollapsed
+  } = useAppStore();
   const activeDataset = datasets.find((d) => d.dataset_id === datasetId);
 
-  const collapsedSize = 68;
+  const collapsedSize = 44;
   const chatWidth = isExpanded
     ? Math.min(680, typeof window !== 'undefined' ? window.innerWidth - 32 : 680)
     : Math.min(460, typeof window !== 'undefined' ? window.innerWidth - 24 : 460);
@@ -71,7 +79,6 @@ export const TableTellAssistant: React.FC = () => {
     handlePointerDown,
     handlePointerMove,
     handlePointerUp,
-    handleSafeClick,
     isDragging
   } = useDraggable({
     width: isOpen ? chatWidth : collapsedSize,
@@ -112,7 +119,7 @@ export const TableTellAssistant: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, setIsOpen]);
 
   // Load message history on mount
   useEffect(() => {
@@ -248,41 +255,16 @@ export const TableTellAssistant: React.FC = () => {
 
   return (
     <>
-      {/* 1. COLLAPSED FLOATING CYBER-ORB BOT (DRAGGABLE TO EVERY CORNER) */}
-      {!isOpen && (
-        <div
-          className="fixed z-50 select-none group touch-none"
-          style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-            width: `${collapsedSize}px`,
-            height: `${collapsedSize}px`,
-            cursor: isDragging ? 'grabbing' : 'grab'
-          }}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onClick={() => handleSafeClick(() => setIsOpen(true))}
-          title="TableTell Copilot (Click to open, drag to any corner)"
+      {/* 1. COMPACT AI GUIDE TRIGGER WHEN SIDEBAR IS COLLAPSED */}
+      {!isOpen && sidebarCollapsed && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          title="Open AI Guide"
+          className="fixed bottom-4 left-3 z-40 w-10 h-10 rounded-xl border border-[#2DD4BF]/35 bg-[#131A22] text-[#2DD4BF] grid place-items-center text-sm font-bold shadow-lg hover:bg-[#1E293B] transition-all cursor-pointer"
         >
-          <div className="relative w-full h-full flex items-center justify-center transition-transform duration-200 group-hover:scale-105 active:scale-95">
-            {/* Ambient Multi-Ring Orbital Glow */}
-            <div className="absolute -inset-2 rounded-full border border-teal-400/25 pointer-events-none animate-pulse" />
-            <div className="absolute -inset-1 rounded-full border border-teal-300/35 pointer-events-none" />
-            <div className="absolute inset-0 rounded-full bg-teal-400/20 blur-xl group-hover:bg-teal-400/40 transition-all duration-300 pointer-events-none" />
-
-            {/* Glowing Cyber-Orb Bot Avatar */}
-            <img
-              src="/tabletell-avatar.png"
-              alt="TableTell Copilot"
-              className="relative w-full h-full object-contain rounded-full select-none pointer-events-none drop-shadow-[0_0_18px_rgba(45,212,191,0.65)]"
-              draggable={false}
-            />
-
-            {/* Online Green Beacon */}
-            <span className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-canvas)] shadow-[0_0_8px_#10B981] pointer-events-none animate-pulse" />
-          </div>
-        </div>
+          ✦
+        </button>
       )}
 
       {/* 2. EXPANDED DRAGGABLE CHAT WINDOW */}

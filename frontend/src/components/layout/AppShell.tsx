@@ -15,7 +15,9 @@ import {
   PlusCircle,
   ChevronRight,
   User,
-  Home
+  Home,
+  Columns3,
+  Sparkles
 } from 'lucide-react';
 import { useAppStore, type AppTab } from '../../store/useAppStore';
 import { BrandLogo } from '../common/BrandLogo';
@@ -42,8 +44,16 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     setDatasets,
     sidebarCollapsed,
     toggleSidebar,
-    clearMessages
+    clearMessages,
+    setShowLanding,
+    activeColumns,
+    schemaInspectorOpen,
+    toggleSchemaInspector,
+    copilotOpen,
+    toggleCopilot
   } = useAppStore();
+
+  const activeDataset = datasets.find((d) => d.dataset_id === datasetId);
 
   const [datasetDropdownOpen, setDatasetDropdownOpen] = useState(false);
   const [headerDatasetOpen, setHeaderDatasetOpen] = useState(false);
@@ -150,8 +160,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               title="TableTell — Data Analyst Assistant"
             >
               <BrandLogo
-                size={sidebarCollapsed ? 32 : 36}
-                variant="tabletell-badge"
+                size={sidebarCollapsed ? 32 : 34}
+                variant="waveform-table"
                 className="transition-transform duration-300 group-hover:scale-105 shrink-0"
               />
               {!sidebarCollapsed && (
@@ -162,8 +172,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   >
                     TableTell
                   </div>
-                  <div className="text-[11px] font-medium text-[var(--tt-text-muted)] tracking-tight truncate leading-normal select-none">
-                    Data Analyst Assistant
+                  <div className="text-xs font-medium text-[var(--tt-text-muted)] tracking-tight truncate leading-normal select-none">
+                    Lakehouse Studio
                   </div>
                 </div>
               )}
@@ -182,11 +192,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             )}
           </div>
 
-          {/* Active Workspace Card & Dropdown */}
+          {/* Active Dataset Card & Dropdown */}
           {!sidebarCollapsed ? (
             <div className="relative" ref={dropdownRef}>
-              <div className="text-[10px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1.5 px-0.5">
-                ACTIVE WORKSPACE
+              <div className="font-mono text-[11px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1.5 px-0.5">
+                ACTIVE DATASET
               </div>
 
               <button
@@ -194,13 +204,20 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 onClick={() => setDatasetDropdownOpen(!datasetDropdownOpen)}
                 aria-haspopup="true"
                 aria-expanded={datasetDropdownOpen}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs transition-all cursor-pointer shadow-[var(--tt-shadow-card)]"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] hover:bg-[var(--tt-bg-elevated)] text-xs transition-all cursor-pointer shadow-[var(--tt-shadow-card)]"
               >
-                <div className="flex items-center gap-2.5 truncate">
-                  <div className="w-6 h-6 rounded-lg bg-[var(--tt-bg-elevated)] border border-[var(--tt-border-subtle)] flex items-center justify-center shrink-0 text-[#0D9488]">
-                    <Database className="w-3.5 h-3.5" />
+                <div className="flex items-center gap-2.5 min-w-0 text-left">
+                  <span className="w-2 h-2 rounded-full bg-[#34D399] shrink-0" />
+                  <div className="truncate">
+                    <div className="font-mono font-semibold text-xs text-[var(--tt-text-primary)] truncate">
+                      {datasetId || 'Select dataset'}
+                    </div>
+                    {activeDataset && (
+                      <div className="text-[11px] text-[var(--tt-text-muted)] truncate mt-0.5">
+                        {activeDataset.total_rows.toLocaleString()} rows · {activeDataset.total_cols} cols
+                      </div>
+                    )}
                   </div>
-                  <span className="truncate font-semibold text-[var(--tt-text-primary)]">TableTell Workspace</span>
                 </div>
                 <ChevronDown className={`w-3.5 h-3.5 text-[var(--tt-text-muted)] shrink-0 transition-transform ${datasetDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
@@ -315,7 +332,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {/* Navigation Links */}
           <nav className="flex flex-col gap-1" aria-label="Main navigation">
             {!sidebarCollapsed && (
-              <div aria-hidden="true" className="text-[10px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1 px-0.5">
+              <div aria-hidden="true" className="font-mono text-[11px] font-semibold text-[var(--tt-text-muted)] tracking-wider uppercase mb-1.5 px-0.5">
                 NAVIGATION
               </div>
             )}
@@ -330,13 +347,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   aria-current={isActive ? 'page' : undefined}
                   aria-label={sidebarCollapsed ? item.label : undefined}
                   className={`flex items-center ${sidebarCollapsed ? 'justify-center px-2 py-2.5' : 'gap-3 px-3 py-2.5'
-                    } rounded-xl text-xs font-medium transition-all text-left cursor-pointer ${isActive
-                      ? 'bg-[#0D9488]/15 text-[#0D9488] font-bold'
-                      : 'text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)]'
+                    } rounded-xl text-sm font-medium transition-all text-left cursor-pointer border ${isActive
+                      ? 'bg-[#0D9488]/15 border-[#0D9488]/30 text-[#0D9488] dark:text-[#2DD4BF] font-semibold'
+                      : 'border-transparent text-[var(--tt-text-secondary)] hover:bg-[var(--tt-bg-elevated)] hover:text-[var(--tt-text-primary)]'
                     }`}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
-                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0D9488]' : 'text-[var(--tt-text-muted)]'}`} />
+                  <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#0D9488] dark:text-[#2DD4BF]' : 'text-[var(--tt-text-muted)]'}`} />
                   {!sidebarCollapsed && <span>{item.label}</span>}
                 </button>
               );
@@ -344,8 +361,38 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="pt-3 border-t border-[var(--tt-border-subtle)]">
+        {/* Sidebar Footer: Docked AI Guide + API Docs */}
+        <div className="pt-3 border-t border-[var(--tt-border-subtle)] flex flex-col gap-2.5">
+          {!sidebarCollapsed && (
+            <button
+              type="button"
+              onClick={toggleCopilot}
+              className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition-all cursor-pointer ${
+                copilotOpen
+                  ? 'border-[#0D9488] bg-[#0D9488]/10'
+                  : 'border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] hover:border-[#0D9488]/50'
+              }`}
+              title="Open TableTell AI Guide"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="w-7 h-7 rounded-lg bg-[#0D9488]/15 border border-[#0D9488]/35 text-[#0D9488] dark:text-[#2DD4BF] grid place-items-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </span>
+                <div className="truncate">
+                  <div className="text-xs font-semibold text-[var(--tt-text-primary)] leading-tight">
+                    AI Guide
+                  </div>
+                  <div className="text-[11px] text-[var(--tt-text-muted)] truncate">
+                    Ask how to use Studio
+                  </div>
+                </div>
+              </div>
+              <span className="font-mono text-xs font-semibold text-[#0D9488] dark:text-[#2DD4BF] shrink-0 ml-2">
+                {copilotOpen ? 'Close' : 'Open'}
+              </span>
+            </button>
+          )}
+
           {sidebarCollapsed ? (
             <div className="flex justify-center">
               <button
@@ -413,10 +460,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             <div className="flex items-center gap-2 text-xs text-[var(--tt-text-muted)]">
               <button
                 type="button"
-                onClick={() => setActiveTab('studio')}
+                onClick={() => setShowLanding(true)}
                 className="hover:text-[var(--tt-text-primary)] cursor-pointer flex items-center p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] transition-all"
-                aria-label="Go to Ask & Analyze"
-                title="Go to Ask & Analyze (Home)"
+                aria-label="Back to Landing Page"
+                title="Back to Landing Page (Overview)"
               >
                 <Home className="w-3.5 h-3.5 text-[var(--tt-text-muted)] hover:text-[#0D9488] transition-colors" />
               </button>
@@ -446,10 +493,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   aria-haspopup="true"
                   aria-expanded={headerDatasetOpen}
                   aria-label={`Active dataset: ${datasetId}. Switch dataset`}
-                  className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs font-semibold border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)]"
+                  className="inline-flex items-center gap-2 h-8 px-3 rounded-lg text-xs font-mono font-semibold border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)]"
                   title="Switch Active Dataset"
                 >
-                  <Database className="w-3.5 h-3.5 text-[#0D9488]" />
+                  <span className="w-2 h-2 rounded-full bg-[#2DD4BF] shrink-0" />
                   <span className="max-w-[140px] sm:max-w-[200px] md:max-w-[260px] truncate">{datasetId}</span>
                   <ChevronDown className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${headerDatasetOpen ? 'rotate-180' : ''}`} />
                 </button>
@@ -549,8 +596,50 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Right: Actions, Connected Badge, and User Avatar */}
+          {/* Right: Consolidated Dataset Metrics, Schema Inspector, and User Avatar */}
           <div className="flex items-center gap-2.5">
+            {/* S2: Consolidated Dataset Metrics Pill + Schema Button */}
+            {activeDataset && (
+              <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[var(--tt-text-secondary)] bg-[var(--tt-bg-canvas)] px-3 py-1.5 rounded-lg border border-[var(--tt-border-subtle)]">
+                <span>{activeDataset.total_rows.toLocaleString()} rows</span>
+                <span className="opacity-40">·</span>
+                <span>{activeDataset.total_cols || activeColumns.length} cols</span>
+                {activeDataset.data_health_score !== undefined && (
+                  <>
+                    <span className="opacity-40">·</span>
+                    <span
+                      className={`font-semibold ${
+                        activeDataset.data_health_score >= 80
+                          ? 'text-emerald-500 dark:text-[#34D399]'
+                          : activeDataset.data_health_score >= 50
+                          ? 'text-amber-500'
+                          : 'text-red-500'
+                      }`}
+                    >
+                      {Math.round(activeDataset.data_health_score)}% Health
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'studio' && (
+              <button
+                type="button"
+                onClick={toggleSchemaInspector}
+                aria-pressed={schemaInspectorOpen}
+                className={`inline-flex items-center gap-1.5 h-8 px-3 py-1 rounded-lg border text-xs font-mono font-semibold cursor-pointer transition-all ${
+                  schemaInspectorOpen
+                    ? 'border-[#0D9488] bg-[#0D9488]/15 text-[#0D9488] dark:text-[#2DD4BF] dark:border-[#2DD4BF]/50'
+                    : 'border-[#0D9488]/35 bg-[#0D9488]/10 text-[#0D9488] dark:text-[#2DD4BF] hover:bg-[#0D9488]/20'
+                }`}
+                title="Inspect Schema & Column Statistics"
+              >
+                <Columns3 className="w-3.5 h-3.5" />
+                <span>Schema{activeColumns.length > 0 ? ` (${activeColumns.length})` : ''}</span>
+              </button>
+            )}
+
             {/* Quick Action: New Query (Studio) */}
             {activeTab === 'studio' && (
               <button

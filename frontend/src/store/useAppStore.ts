@@ -19,7 +19,10 @@ interface AppState {
   sidebarCollapsed: boolean;
   activeColumns: string[];
   suggestedPrompt: string;
-  
+  showLanding: boolean;
+  schemaInspectorOpen: boolean;
+  copilotOpen: boolean;
+
   // Actions
   setTheme: (theme: ThemeMode) => void;
   toggleTheme: () => void;
@@ -32,6 +35,11 @@ interface AppState {
   toggleSidebar: () => void;
   setActiveColumns: (cols: string[]) => void;
   setSuggestedPrompt: (prompt: string) => void;
+  setShowLanding: (show: boolean) => void;
+  setSchemaInspectorOpen: (open: boolean) => void;
+  toggleSchemaInspector: () => void;
+  setCopilotOpen: (open: boolean) => void;
+  toggleCopilot: () => void;
   addMessage: (message: Omit<MessageItem, 'id' | 'timestamp'>) => void;
   clearMessages: () => void;
 }
@@ -39,8 +47,8 @@ interface AppState {
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      theme: 'light',
-      logoVariant: 'tabletell-badge',
+      theme: 'dark',
+      logoVariant: 'waveform-table',
       datasetId: 'ecommerce_sales',
       activeTab: 'studio',
       messages: [],
@@ -49,6 +57,9 @@ export const useAppStore = create<AppState>()(
       sidebarCollapsed: false,
       activeColumns: [],
       suggestedPrompt: '',
+      showLanding: true,
+      schemaInspectorOpen: false,
+      copilotOpen: false,
 
       setTheme: (theme) => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -73,6 +84,12 @@ export const useAppStore = create<AppState>()(
       toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
       setActiveColumns: (activeColumns) => set({ activeColumns }),
       setSuggestedPrompt: (suggestedPrompt) => set({ suggestedPrompt }),
+      setShowLanding: (showLanding) => set({ showLanding }),
+      setSchemaInspectorOpen: (schemaInspectorOpen) => set({ schemaInspectorOpen }),
+      toggleSchemaInspector: () =>
+        set((s) => ({ schemaInspectorOpen: !s.schemaInspectorOpen })),
+      setCopilotOpen: (copilotOpen) => set({ copilotOpen }),
+      toggleCopilot: () => set((s) => ({ copilotOpen: !s.copilotOpen })),
 
       addMessage: (msg) => {
         const newMsg: MessageItem = {
