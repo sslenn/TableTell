@@ -143,24 +143,13 @@ TableTell comes pre-seeded with 3 realistic enterprise business benchmarks ready
 
 ---
 
-## ✨ Key Features
+## ✨ Key Features (What TableTell Solves)
 
-- **Enterprise Authentication & Session Security**:
-  - Clerk OAuth & Email Sign-In with customized dark glassmorphism styling.
-  - Server-side JWKS cryptographic token verification across all analytical endpoints.
-  - Runtime public auth bootstrap (`/api/auth/config`) enabling dynamic key injection in containerized deployments.
-  - Seamless offline developer fallback when Clerk keys are not set.
-- **Data Catalog & Synchronization**: Upload CSV/Excel/Parquet files. Rename datasets on the fly with atomic synchronization across local Parquet files, SQLite lineage, and registered DuckDB catalog views.
-- **5-Dimensional Data Health Scoring**: Deterministic quality evaluation across Completeness, Validity, Consistency, Uniqueness, and Anomaly frequency (scored 0–100%).
-- **Interactive Studio**:
-  - Contextual schema-adaptive suggested prompts.
-  - Interactive Plotly visualizations (KPI cards, bar charts, time-series line plots, scatter plots).
-  - High-performance TanStack Table preview with sortable columns and null indicators.
-  - Built-in Schema Inspector with live column distributions, null ratios, and data types.
-  - Speech-to-text voice input transcription.
-  - Dynamic **Run $\rightarrow$ Stop** button toggle with prompt recovery on cancel.
-- **Production Observability**: Real-time `/api/health` system diagnostics endpoint monitoring SQLite integrity, DuckDB engine connectivity, auth status, and data lake disk usage.
-- **System Audit Trail**: Complete log of all data transformations, approvals, run durations, user attribution, and model provenance.
+- **Plain-English to Verified SQL & Charts**: Ask questions in natural language; TableTell generates read-only SQL, runs all math in **DuckDB**, and renders interactive **Plotly** charts with zero LLM math hallucination.
+- **5-D Data Quality & Non-Destructive Cleaning**: Automatically scores datasets (`0–100%`) across Completeness, Validity, Consistency, Uniqueness, and Anomalies—saving cleaned outputs as immutable Parquet versions (`v1` $\rightarrow$ `v2`) without overwriting raw files.
+- **Self-Healing Query Agent**: A **LangGraph** state machine catches DuckDB syntax or schema errors, repairs the SQL automatically, and streams real-time progress over SSE.
+- **Statistical AI Copilot**: Built-in floating assistant grounded in live DuckDB dataset statistics (mean, SD, quartiles, correlations) to explain trends and answer statistical questions directly.
+- **Multi-Tenant Security & BYOK Quota**: Clerk JWT authentication, isolated per-user workspaces, sandboxed DuckDB execution, and 20 free daily queries with **Bring Your Own Key (BYOK)** support.
 
 ---
 

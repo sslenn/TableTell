@@ -468,14 +468,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <OfflineBanner />
 
         {/* Top Header */}
-        <header className="h-14 shrink-0 border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center justify-between px-6 transition-all select-none">
+        <header className="h-14 shrink-0 border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] flex items-center justify-between gap-4 px-5 transition-all select-none">
           {/* Left: Breadcrumbs & Dataset Quick Switcher */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 min-w-0">
             {sidebarCollapsed && (
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer hover:bg-[var(--tt-bg-elevated)] transition-all mr-1 text-[var(--tt-text-muted)]"
+                className="p-1.5 rounded-lg border border-[var(--tt-border-subtle)] text-xs cursor-pointer hover:bg-[var(--tt-bg-elevated)] transition-all mr-1 text-[var(--tt-text-muted)] shrink-0"
                 aria-label="Expand sidebar"
                 title="Expand sidebar (Ctrl+B)"
               >
@@ -484,35 +484,35 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             )}
 
             {/* Breadcrumb Trail */}
-            <div className="flex items-center gap-2 text-xs text-[var(--tt-text-muted)]">
+            <div className="flex items-center gap-2 text-xs text-[var(--tt-text-muted)] min-w-0">
               <button
                 type="button"
                 onClick={() => setShowLanding(true)}
-                className="hover:text-[var(--tt-text-primary)] cursor-pointer flex items-center p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] transition-all"
+                className="hover:text-[var(--tt-text-primary)] cursor-pointer flex items-center p-1.5 rounded-lg border border-transparent hover:border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] transition-all shrink-0"
                 aria-label="Back to Landing Page"
                 title="Back to Landing Page (Overview)"
               >
                 <Home className="w-3.5 h-3.5 text-[var(--tt-text-muted)] hover:text-[#0D9488] transition-colors" />
               </button>
 
-              <ChevronRight className="w-3.5 h-3.5 text-[var(--tt-text-muted)] opacity-40 shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 text-[var(--tt-text-muted)] opacity-35 shrink-0" />
 
               {/* Active Section Label with Tab Icon */}
               {(() => {
                 const currentNav = navItems.find((n) => n.id === activeTab);
                 const NavIcon = currentNav?.icon || MessageSquare;
                 return (
-                  <div className="flex items-center gap-1.5 font-semibold text-[var(--tt-text-secondary)]">
-                    <NavIcon className="w-3.5 h-3.5 text-[#0D9488]" />
-                    <span className="hidden sm:inline">{currentNav?.label || 'Overview'}</span>
+                  <div className="flex items-center gap-1.5 font-semibold text-[var(--tt-text-secondary)] whitespace-nowrap shrink-0">
+                    <NavIcon className="w-3.5 h-3.5 text-[#0D9488] shrink-0" />
+                    <span className="hidden md:inline">{currentNav?.label || 'Overview'}</span>
                   </div>
                 );
               })()}
 
-              <ChevronRight className="w-3.5 h-3.5 text-[var(--tt-text-muted)] opacity-40 shrink-0" />
+              <ChevronRight className="w-3.5 h-3.5 text-[var(--tt-text-muted)] opacity-35 shrink-0" />
 
-              {/* Dataset Switcher Pill with its OWN anchored Dropdown */}
-              <div className="relative" ref={headerDatasetRef}>
+              {/* Unified Dataset Switcher Pill with inline metadata */}
+              <div className="relative min-w-0" ref={headerDatasetRef}>
                 <button
                   type="button"
                   id="header-dataset-selector-btn"
@@ -520,12 +520,36 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   aria-haspopup="true"
                   aria-expanded={headerDatasetOpen}
                   aria-label={`Active dataset: ${datasetId}. Switch dataset`}
-                  className="inline-flex items-center gap-2 h-8 px-3 rounded-lg text-xs font-mono font-semibold border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)]"
-                  title="Switch Active Dataset"
+                  className="inline-flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs font-mono border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-primary)] cursor-pointer transition-all hover:border-[var(--tt-border-strong)] whitespace-nowrap"
+                  title={
+                    activeDataset
+                      ? `${datasetId} — ${activeDataset.total_rows.toLocaleString()} rows · ${activeDataset.total_cols || activeColumns.length} cols`
+                      : 'Switch Active Dataset'
+                  }
                 >
                   <span className="w-2 h-2 rounded-full bg-[#2DD4BF] shrink-0" />
-                  <span className="max-w-[140px] sm:max-w-[200px] md:max-w-[260px] truncate">{datasetId}</span>
-                  <ChevronDown className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${headerDatasetOpen ? 'rotate-180' : ''}`} />
+                  <span className="font-semibold max-w-[140px] sm:max-w-[200px] lg:max-w-[240px] truncate">
+                    {datasetId}
+                  </span>
+                  {activeDataset && (
+                    <span className="hidden xl:inline-flex items-center gap-1.5 pl-1.5 border-l border-[var(--tt-border-subtle)] text-[11px] text-[var(--tt-text-muted)] font-normal">
+                      <span>{activeDataset.total_rows.toLocaleString()}r</span>
+                      {activeDataset.data_health_score !== undefined && (
+                        <span
+                          className={`font-semibold ${
+                            activeDataset.data_health_score >= 80
+                              ? 'text-emerald-500 dark:text-[#34D399]'
+                              : activeDataset.data_health_score >= 50
+                              ? 'text-amber-500'
+                              : 'text-red-500'
+                          }`}
+                        >
+                          {Math.round(activeDataset.data_health_score)}%
+                        </span>
+                      )}
+                    </span>
+                  )}
+                  <ChevronDown className={`w-3 h-3 text-[var(--tt-text-muted)] shrink-0 transition-transform ${headerDatasetOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {headerDatasetOpen && (
@@ -623,68 +647,44 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
             </div>
           </div>
 
-          {/* Right: Consolidated Dataset Metrics, Schema Inspector, and User Avatar */}
-          <div className="flex items-center gap-2.5">
-            {/* S2: Consolidated Dataset Metrics Pill + Schema Button */}
-            {activeDataset && (
-              <div className="hidden sm:flex items-center gap-2 text-xs font-mono text-[var(--tt-text-secondary)] bg-[var(--tt-bg-canvas)] px-3 py-1.5 rounded-lg border border-[var(--tt-border-subtle)]">
-                <span>{activeDataset.total_rows.toLocaleString()} rows</span>
-                <span className="opacity-40">·</span>
-                <span>{activeDataset.total_cols || activeColumns.length} cols</span>
-                {activeDataset.data_health_score !== undefined && (
-                  <>
-                    <span className="opacity-40">·</span>
-                    <span
-                      className={`font-semibold ${
-                        activeDataset.data_health_score >= 80
-                          ? 'text-emerald-500 dark:text-[#34D399]'
-                          : activeDataset.data_health_score >= 50
-                          ? 'text-amber-500'
-                          : 'text-red-500'
-                      }`}
-                    >
-                      {Math.round(activeDataset.data_health_score)}% Health
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
-
+          {/* Right: Workspace Actions + System Utilities */}
+          <div className="flex items-center gap-2 shrink-0">
             {activeTab === 'studio' && (
-              <button
-                type="button"
-                onClick={toggleSchemaInspector}
-                aria-pressed={schemaInspectorOpen}
-                className={`inline-flex items-center gap-1.5 h-8 px-3 py-1 rounded-lg border text-xs font-mono font-semibold cursor-pointer transition-all ${
-                  schemaInspectorOpen
-                    ? 'border-[#0D9488] bg-[#0D9488]/15 text-[#0D9488] dark:text-[#2DD4BF] dark:border-[#2DD4BF]/50'
-                    : 'border-[#0D9488]/35 bg-[#0D9488]/10 text-[#0D9488] dark:text-[#2DD4BF] hover:bg-[#0D9488]/20'
-                }`}
-                title="Inspect Schema & Column Statistics"
-              >
-                <Columns3 className="w-3.5 h-3.5" />
-                <span>Schema{activeColumns.length > 0 ? ` (${activeColumns.length})` : ''}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={toggleSchemaInspector}
+                  aria-pressed={schemaInspectorOpen}
+                  className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-mono font-semibold cursor-pointer transition-all whitespace-nowrap shrink-0 ${
+                    schemaInspectorOpen
+                      ? 'border-[#0D9488] bg-[#0D9488]/15 text-[#0D9488] dark:text-[#2DD4BF] dark:border-[#2DD4BF]/50'
+                      : 'border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] text-[var(--tt-text-secondary)] hover:text-[#0D9488] dark:hover:text-[#2DD4BF] hover:border-[#0D9488]/40'
+                  }`}
+                  title="Inspect Schema & Column Statistics"
+                >
+                  <Columns3 className="w-3.5 h-3.5 text-[#0D9488] shrink-0" />
+                  <span>Schema{activeColumns.length > 0 ? ` (${activeColumns.length})` : ''}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearMessages}
+                  className="hidden sm:inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] hover:text-[var(--tt-text-primary)] cursor-pointer transition-all whitespace-nowrap shrink-0"
+                  title="Start a new analytical query"
+                >
+                  <PlusCircle className="w-3.5 h-3.5 text-[#0D9488] shrink-0" />
+                  <span>New Query</span>
+                </button>
+
+                <div className="hidden sm:block h-4 w-px bg-[var(--tt-border-subtle)] mx-0.5 shrink-0" />
+              </>
             )}
 
-            {/* Quick Action: New Query (Studio) */}
-            {activeTab === 'studio' && (
-              <button
-                type="button"
-                onClick={clearMessages}
-                className="hidden sm:flex items-center gap-1.5 h-8 px-3 py-1 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-xs font-medium text-[var(--tt-text-secondary)] cursor-pointer transition-all shadow-[var(--tt-shadow-card)]"
-                title="Start a new analytical query"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-[#0D9488]" />
-                <span>New Query</span>
-              </button>
-            )}
-
-            {/* BYOK & Quota Pill Button */}
+            {/* Compact BYOK & Quota Pill */}
             <button
               type="button"
               onClick={() => setApiKeyModalOpen(true)}
-              className={`flex items-center gap-1.5 h-8 px-2.5 py-1 rounded-lg border text-xs font-mono font-medium cursor-pointer transition-all shadow-[var(--tt-shadow-card)] ${
+              className={`inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border text-xs font-mono font-medium cursor-pointer transition-all whitespace-nowrap shrink-0 ${
                 hasCustomKey || quotaStatus?.byok_active
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
                   : 'border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-secondary)] hover:text-[var(--tt-text-primary)]'
@@ -698,23 +698,23 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               {hasCustomKey || quotaStatus?.byok_active ? (
                 <>
                   <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  <span className="font-semibold text-emerald-400">BYOK ⚡</span>
+                  <span className="font-semibold text-emerald-400">BYOK</span>
                 </>
               ) : (
                 <>
                   <Key className="w-3.5 h-3.5 text-[#0D9488] shrink-0" />
-                  <span className="hidden sm:inline text-[var(--tt-text-muted)]">Quota:</span>
-                  <span className="font-semibold text-[#0D9488]">{quotaStatus?.remaining ?? 20} left</span>
+                  <span className="font-semibold text-[#0D9488]">{quotaStatus?.remaining ?? 20}</span>
+                  <span className="hidden md:inline text-[var(--tt-text-muted)]">left</span>
                 </>
               )}
             </button>
 
-            {/* Theme Toggle Button */}
+            {/* Theme Toggle Icon Button */}
             <ThemeToggle />
 
             {/* Logged-In User Profile & Account Menu */}
             {isAuthEnabled ? (
-              <div className="flex items-center pl-1">
+              <div className="flex items-center pl-0.5 shrink-0">
                 <UserButton
                   appearance={{
                     elements: {
@@ -728,7 +728,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                 />
               </div>
             ) : (
-              <div className="relative" ref={userDropdownRef}>
+              <div className="relative shrink-0" ref={userDropdownRef}>
                 <button
                   type="button"
                   id="user-profile-menu-btn"
@@ -736,29 +736,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
                   aria-haspopup="true"
                   aria-expanded={userDropdownOpen}
                   aria-label="Account menu"
-                  className="flex items-center gap-2 h-8 pl-1.5 pr-2.5 py-0.5 rounded-full border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer shadow-[var(--tt-shadow-card)] hover:border-[var(--tt-border-strong)] transition-all group select-none"
+                  className="relative flex items-center justify-center w-8 h-8 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] cursor-pointer hover:border-[var(--tt-border-strong)] transition-all group select-none"
                   title="User Profile & Session (Active Analyst)"
                 >
-                  {/* Avatar with Online Indicator */}
-                  <div className="relative">
-                    <div className="w-6 h-6 rounded-full bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] font-extrabold text-[11px] flex items-center justify-center group-hover:scale-105 transition-transform">
-                      TT
-                    </div>
-                    <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-surface)]" />
-                  </div>
-
-                  {/* User Name & Status */}
-                  <div className="hidden sm:flex items-center gap-1.5 text-left">
-                    <span className="text-xs font-bold leading-tight text-[var(--tt-text-primary)]">
-                      Analyst
-                    </span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                  </div>
-
-                  <ChevronDown
-                    className={`w-3 h-3 text-[var(--tt-text-muted)] transition-transform ${userDropdownOpen ? 'rotate-180' : ''
-                      }`}
-                  />
+                  <span className="font-extrabold text-[11px] text-[#0D9488] group-hover:scale-105 transition-transform">
+                    TT
+                  </span>
+                  <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#10B981] ring-2 ring-[var(--tt-bg-surface)]" />
                 </button>
 
                 {/* User Profile Popover */}
