@@ -29,7 +29,7 @@ import { DataGrid } from '../studio/DataGrid';
 import { ExportDatasetModal } from '../common/ExportDatasetModal';
 
 export const DatasetsView: React.FC = () => {
-  const { datasets, setDatasets, datasetId, setDatasetId, setActiveTab } = useAppStore();
+  const { datasets, setDatasets, datasetId, setDatasetId, setActiveTab, setSuggestedPrompt } = useAppStore();
   const [isUploading, setIsUploading] = useState(false);
   const [cleaningId, setCleaningId] = useState<string | null>(null);
   const [cleanResult, setCleanResult] = useState<CleaningResult | null>(null);
@@ -433,6 +433,83 @@ export const DatasetsView: React.FC = () => {
             {uploadMessage}
           </div>
         )}
+      </div>
+
+      {/* 1-Click Instant Demo Benchmark Datasets */}
+      <div className="p-4 rounded-xl border border-[#0D9488]/30 bg-[#0D9488]/5 flex flex-col gap-3 shadow-[var(--tt-shadow-card)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-[#0D9488]" />
+            <span className="text-xs font-bold text-[var(--tt-text-primary)]">
+              Pre-loaded Enterprise Benchmarks (1-Click Exploration)
+            </span>
+          </div>
+          <span className="text-[10px] text-[var(--tt-text-muted)] font-mono">Zero upload required</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              setDatasetId('retail_superstore_sales');
+              setActiveTab('studio');
+              setSuggestedPrompt('Which sub-category has the lowest profit margin and discount leak?');
+              toast.info('Switched Workspace', 'Loaded Retail Superstore Sales (10,000 orders)');
+            }}
+            className="p-3 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] hover:border-[#0D9488] transition-all text-left flex flex-col gap-1 cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-[var(--tt-text-primary)] group-hover:text-[#0D9488]">
+                ⚡ Retail Superstore
+              </span>
+              <span className="text-[10px] font-mono text-[#0D9488] bg-[#0D9488]/15 px-1.5 py-0.2 rounded font-semibold">10k rows</span>
+            </div>
+            <p className="text-[11px] text-[var(--tt-text-muted)] line-clamp-2">
+              Uncovers a -15.4% furniture margin leak in Tables and Supplies driven by &gt;30% discounting.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDatasetId('ecommerce_customer_churn');
+              setActiveTab('studio');
+              setSuggestedPrompt('Compare customer churn rate by complaint and tenure cohort');
+              toast.info('Switched Workspace', 'Loaded E-Commerce Customer Churn (5,000 profiles)');
+            }}
+            className="p-3 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] hover:border-[#38BDF8] transition-all text-left flex flex-col gap-1 cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-[var(--tt-text-primary)] group-hover:text-[#38BDF8]">
+                ⚡ Customer Churn
+              </span>
+              <span className="text-[10px] font-mono text-[#38BDF8] bg-[#38BDF8]/15 px-1.5 py-0.2 rounded font-semibold">5k rows</span>
+            </div>
+            <p className="text-[11px] text-[var(--tt-text-muted)] line-clamp-2">
+              Driver analysis isolating the 70.8% churn risk cohort in the first 90 days with complaints.
+            </p>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setDatasetId('saas_subscription_financials');
+              setActiveTab('studio');
+              setSuggestedPrompt('What percentage of ARR comes from Enterprise tier and what are the LTV to CAC ratios?');
+              toast.info('Switched Workspace', 'Loaded SaaS Financials (1,200 accounts)');
+            }}
+            className="p-3 rounded-lg border border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] hover:border-[#FBBF24] transition-all text-left flex flex-col gap-1 cursor-pointer group"
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-xs text-[var(--tt-text-primary)] group-hover:text-[#FBBF24]">
+                ⚡ SaaS Financials
+              </span>
+              <span className="text-[10px] font-mono text-[#FBBF24] bg-[#FBBF24]/15 px-1.5 py-0.2 rounded font-semibold">1.2k rows</span>
+            </div>
+            <p className="text-[11px] text-[var(--tt-text-muted)] line-clamp-2">
+              Pareto 80/20 concentration showing 11.3% Enterprise accounts driving 61.7% of ARR.
+            </p>
+          </button>
+        </div>
       </div>
 
       {/* Cleaning Report Banner */}

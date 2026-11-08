@@ -17,7 +17,9 @@ import {
   User,
   Home,
   Columns3,
-  Sparkles
+  Sparkles,
+  Key,
+  Zap
 } from 'lucide-react';
 import { useAppStore, type AppTab } from '../../store/useAppStore';
 import { BrandLogo } from '../common/BrandLogo';
@@ -25,7 +27,9 @@ import { ThemeToggle } from '../common/ThemeToggle';
 import { ToastContainer } from '../common/ToastContainer';
 import { OfflineBanner } from '../common/OfflineBanner';
 import { TableTellAssistant } from '../assistant/TableTellAssistant';
-import { fetchDatasets } from '../../lib/api';
+import { ApiKeyModal } from '../common/ApiKeyModal';
+import { fetchDatasets, fetchQuotaStatus, type QuotaStatus } from '../../lib/api';
+import { getCustomApiKey, onCustomApiKeyChange } from '../../lib/apiKeyStorage';
 import { logger } from '../../lib/logger';
 import { toast } from '../../store/useToastStore';
 
@@ -60,9 +64,32 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [datasetSearch, setDatasetSearch] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'clean' | 'raw'>('all');
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  const [quotaStatus, setQuotaStatus] = useState<QuotaStatus | null>(null);
+  const [hasCustomKey, setHasCustomKey] = useState<boolean>(Boolean(getCustomApiKey()));
   const dropdownRef = useRef<HTMLDivElement>(null);
   const headerDatasetRef = useRef<HTMLDivElement>(null);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Load and listen to quota / BYOK state
+  useEffect(() => {
+    const loadQuota = () => {
+      fetchQuotaStatus()
+        .then(setQuotaStatus)
+        .catch(() => {});
+    };
+    loadQuota();
+    const unsubscribe = onCustomApiKeyChange((key) => {
+      setHasCustomKey(Boolean(key));
+      loadQuota();
+    });
+    const handleOpenModal = () => setApiKeyModalOpen(true);
+    window.addEventListener('open-api-key-modal', handleOpenModal);
+    return () => {
+      unsubscribe();
+      window.removeEventListener('open-api-key-modal', handleOpenModal);
+    };
+  }, []);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -653,6 +680,35 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
               </button>
             )}
 
+            {/* BYOK & Quota Pill Button */}
+            <button
+              type="button"
+              onClick={() => setApiKeyModalOpen(true)}
+              className={`flex items-center gap-1.5 h-8 px-2.5 py-1 rounded-lg border text-xs font-mono font-medium cursor-pointer transition-all shadow-[var(--tt-shadow-card)] ${
+                hasCustomKey || quotaStatus?.byok_active
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20'
+                  : 'border-[var(--tt-border-subtle)] bg-[var(--tt-bg-surface)] hover:bg-[var(--tt-bg-elevated)] text-[var(--tt-text-secondary)] hover:text-[var(--tt-text-primary)]'
+              }`}
+              title={
+                hasCustomKey || quotaStatus?.byok_active
+                  ? 'BYOK Mode Active: Unlimited queries using your private key'
+                  : `Free Daily Quota: ${quotaStatus?.remaining ?? 20} queries remaining today (Click to add your own Gemini key)`
+              }
+            >
+              {hasCustomKey || quotaStatus?.byok_active ? (
+                <>
+                  <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span className="font-semibold text-emerald-400">BYOK ⚡</span>
+                </>
+              ) : (
+                <>
+                  <Key className="w-3.5 h-3.5 text-[#0D9488] shrink-0" />
+                  <span className="hidden sm:inline text-[var(--tt-text-muted)]">Quota:</span>
+                  <span className="font-semibold text-[#0D9488]">{quotaStatus?.remaining ?? 20} left</span>
+                </>
+              )}
+            </button>
+
             {/* Theme Toggle Button */}
             <ThemeToggle />
 
@@ -789,6 +845,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {children}
         </div>
       </main>
+
+      {/* AI Engine & BYOK Quota Modal */}
+      <ApiKeyModal isOpen={apiKeyModalOpen} onClose={() => setApiKeyModalOpen(false)} />
     </div>
   );
 };

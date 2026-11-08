@@ -122,10 +122,19 @@ class MetadataRepository:
                     FOREIGN KEY (conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE
                 );
 
+                CREATE TABLE IF NOT EXISTS daily_usage (
+                    id TEXT PRIMARY KEY,
+                    user_identifier TEXT NOT NULL,
+                    usage_date TEXT NOT NULL,
+                    query_count INTEGER NOT NULL DEFAULT 0,
+                    last_request_at TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_versions_dataset ON dataset_versions(dataset_id);
                 CREATE INDEX IF NOT EXISTS idx_runs_dataset ON analytical_runs(dataset_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);
                 CREATE INDEX IF NOT EXISTS idx_assistant_messages_conv ON assistant_messages(conversation_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_daily_usage_user_date ON daily_usage(user_identifier, usage_date);
             """)
 
     # -------------------------------------------------------------------------
@@ -635,6 +644,33 @@ class MetadataRepository:
         with self._get_connection() as conn:
             conn.execute("DELETE FROM assistant_messages WHERE conversation_id = ?", (conversation_id,))
             conn.execute("UPDATE assistant_conversations SET updated_at = ? WHERE id = ?", (now, conversation_id))
+
+    def get_daily_usage(self, user_identifier: str, usage_date: str) -> int:
+        """Retrieves count of queries used by a user/client for a given calendar date (YYYY-MM-DD)."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                "SELECT query_count FROM daily_usage WHERE user_identifier = ? AND usage_date = ?",
+                (user_identifier, usage_date)
+            ).fetchone()
+            return int(row["query_count"]) if row else 0
+
+    def record_usage(self, user_identifier: str, usage_date: str) -> int:
+        """Increments and returns the updated daily query count for a user/client."""
+        now = datetime.now(timezone.utc).isoformat()
+        record_id = f"{user_identifier}:{usage_date}"
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO daily_usage (id, user_identifier, usage_date, query_count, last_request_at)
+                VALUES (?, ?, ?, 1, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    query_count = query_count + 1,
+                    last_request_at = excluded.last_request_at;
+            """, (record_id, user_identifier, usage_date, now))
+            row = conn.execute(
+                "SELECT query_count FROM daily_usage WHERE id = ?",
+                (record_id,)
+            ).fetchone()
+            return int(row["query_count"]) if row else 1
 
 
 metadata_repo = MetadataRepository()

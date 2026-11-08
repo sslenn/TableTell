@@ -34,7 +34,7 @@ except ImportError:
 
 def generate_sql_node(state: AgentState) -> Dict[str, Any]:
     """Node 1: Generates DuckDB SQL from User Query and Schema Digest."""
-    client = get_gemini_client()
+    client = get_gemini_client(api_key=state.get("api_key"))
     dataset_id = state["dataset_id"]
     version = state.get("version")
     user_query = state["user_query"]
@@ -95,7 +95,7 @@ def execute_sql_node(state: AgentState) -> Dict[str, Any]:
 
 def self_heal_node(state: AgentState) -> Dict[str, Any]:
     """Node 3: Self-healing error correction loop when SQL execution fails."""
-    client = get_gemini_client()
+    client = get_gemini_client(api_key=state.get("api_key"))
     dataset_id = state["dataset_id"]
     version = state.get("version")
     user_query = state["user_query"]
@@ -169,7 +169,8 @@ def visualize_and_summarize_node(state: AgentState) -> Dict[str, Any]:
         rows=rows,
         columns=columns,
         dataset_id=dataset_id,
-        error=None
+        error=None,
+        api_key=state.get("api_key")
     )
 
     # Record run in metadata repository

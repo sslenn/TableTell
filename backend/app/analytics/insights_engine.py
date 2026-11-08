@@ -34,7 +34,8 @@ def synthesize_executive_briefing(
     rows: List[Dict[str, Any]],
     columns: List[str],
     dataset_id: str,
-    error: Optional[str] = None
+    error: Optional[str] = None,
+    api_key: Optional[str] = None
 ) -> str:
     """
     Synthesizes a structured 4-part Executive Decision Memo:
@@ -145,7 +146,7 @@ Analysis of **{metric_col.replace('_', ' ').title()}** by **{dim_col.replace('_'
 3. **Portfolio Diversification**: Address high concentration risk by accelerating growth across mid-tier cohorts."""
 
     # Enhance with Gemini AI if client is available
-    client = get_gemini_client()
+    client = get_gemini_client(api_key=api_key)
     if client:
         try:
             prompt = f"""You are an elite Senior Data Analyst preparing an Executive Decision Briefing for C-Suite leadership.

@@ -20,3 +20,4 @@ class AgentState(TypedDict):
     status: str
     history: List[Dict[str, Any]]
     run_id: Optional[str]
+    api_key: Optional[str]

@@ -13,6 +13,7 @@ from app.api.chat import router as chat_router
 from app.api.audit import router as audit_router
 from app.api.assistant import router as assistant_router
 from app.api.health import router as health_router
+from app.api.usage import router as usage_router
 
 api_router = APIRouter()
 
@@ -40,3 +41,4 @@ api_router.include_router(assistant_router, dependencies=[Depends(get_optional_u
 
 # Public endpoints (Docker and Coolify healthchecks)
 api_router.include_router(health_router)
+api_router.include_router(usage_router)

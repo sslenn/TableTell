@@ -283,31 +283,13 @@ class DatasetService:
 
     def _ensure_benchmark_datasets_exist(self):
         """Creates benchmark datasets if they don't exist yet."""
-        ecom_path = settings.DATA_LAKE_DIR / "ecommerce_sales.parquet"
-        if not ecom_path.exists():
-            rng = np.random.default_rng(42)
-            n_rows = 5000
-            categories = ["Electronics", "Fashion", "Home & Living", "Beauty & Health", "Books"]
-            cat_choices = rng.choice(categories, size=n_rows, p=[0.30, 0.25, 0.20, 0.15, 0.10])
-            dates = pd.date_range("2026-01-01", "2026-06-30", freq="h")
-            prices = {"Electronics": 150.0, "Fashion": 45.0, "Home & Living": 85.0, "Beauty & Health": 30.0, "Books": 22.0}
-            unit_prices = [round(prices[c] * rng.uniform(0.7, 1.4), 2) for c in cat_choices]
-            quantities = rng.choice([1, 2, 3, 4, 5], size=n_rows)
-            discounts = rng.choice([0.0, 0.05, 0.10, 0.15, 0.20], size=n_rows)
-            revenue = [round(p * q * (1 - d), 2) for p, q, d in zip(unit_prices, quantities, discounts)]
-
-            df = pd.DataFrame({
-                "order_id": [f"ORD-{i:05d}" for i in range(1001, 1001 + n_rows)],
-                "order_date": rng.choice(dates, size=n_rows),
-                "product_category": cat_choices,
-                "unit_price_usd": unit_prices,
-                "quantity": quantities,
-                "discount_pct": [round(d * 100, 1) for d in discounts],
-                "revenue_usd": revenue,
-                "country": rng.choice(["United States", "Germany", "United Kingdom", "Japan", "Singapore"], size=n_rows),
-                "delivery_status": rng.choice(["Delivered", "Shipped", "Processing", "Cancelled"], size=n_rows, p=[0.75, 0.15, 0.07, 0.03])
-            })
-            df.to_parquet(ecom_path, engine="pyarrow", index=False)
+        retail_path = settings.DATA_LAKE_DIR / "retail_superstore_sales.parquet"
+        if not retail_path.exists():
+            try:
+                from app.scripts.seed_data import run_seeder
+                run_seeder()
+            except Exception as e:
+                pass
 
 
 dataset_service = DatasetService()

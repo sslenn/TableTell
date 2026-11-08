@@ -19,24 +19,24 @@ import type { AssistantMessage, AssistantContext } from '../../types/assistant';
 
 const TAB_QUICK_PROMPTS: Record<string, string[]> = {
   studio: [
-    'What questions can I ask this dataset?',
-    'Help me phrase a monthly revenue trend',
-    'How do I split-view chart and table?',
-    "Explain 'Self-Healed' query badge",
-    'Why DuckDB instead of SQLite?'
+    'Show live statistical profile of this dataset',
+    'Explain standard deviation & variance',
+    'Explain Pearson r correlation & R-squared',
+    'What is a p-value & hypothesis testing?',
+    'What questions can I ask this dataset?'
   ],
   audit: [
+    'Explain 1.5x IQR & Z-score outliers',
+    'Mean vs. Median on skewed data',
     'Why is my health score at this level?',
-    'Explain 1.5x IQR outliers',
     'Is it safe to drop duplicate rows?',
-    'What does Anomaly Review check?',
     'How does Auto-Clean work?'
   ],
   datasets: [
+    'Show live statistical profile of this dataset',
     'Why convert CSV to Parquet?',
     'How does lakehouse immutability work?',
-    'What happens when I click Auto-Clean?',
-    'What file formats are supported?'
+    'What happens when I click Auto-Clean?'
   ],
   telemetry: [
     'Explain the LangGraph DAG pipeline',
@@ -484,7 +484,7 @@ export const TableTellAssistant: React.FC = () => {
             <div className="flex items-center justify-between text-[10px] font-mono text-[var(--tt-text-muted)] px-1">
               <span className="flex items-center gap-1">
                 <CheckCircle2 className="w-3 h-3 text-[#34D399]" />
-                <span>Gemini 3.8 Flash Connected</span>
+                <span>Statistics Copilot</span>
               </span>
               <span className="opacity-70">Drag header to reposition</span>
             </div>

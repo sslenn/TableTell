@@ -273,14 +273,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSign
                 <button
                   type="button"
                   onClick={() =>
-                    onLaunchStudio('ecommerce_sales', 'Which region drives the most revenue?')
+                    onLaunchStudio('retail_superstore_sales', 'Which sub-category has the lowest profit margin and discount leak?')
                   }
                   className="px-5 py-2.5 rounded-lg font-semibold text-sm text-[#041A1C] cursor-pointer transition-all hover:-translate-y-0.5 hover:brightness-110 shadow-[0_6px_20px_rgba(45,212,191,0.35)]"
                   style={{
                     background: 'linear-gradient(135deg, #0D9488 0%, #14B8A6 100%)',
                   }}
                 >
-                  Upload a CSV — it&apos;s free
+                  Analyze Superstore Demo (10k rows) →
                 </button>
                 <button
                   type="button"
@@ -289,6 +289,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSign
                 >
                   Watch 60s demo
                 </button>
+              </div>
+
+              {/* Instant 1-Click Portfolio Demo Datasets */}
+              <div className="mt-5 flex flex-col gap-2">
+                <span className="text-xs font-semibold text-[#2DD4BF] flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#2DD4BF] animate-ping" />
+                  One-Click Benchmark Datasets (No Upload Required):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => onLaunchStudio('retail_superstore_sales', 'Which sub-category has the lowest profit margin?')}
+                    className="px-2.5 py-1.5 rounded-lg border border-[#2DD4BF]/40 bg-[#2DD4BF]/10 hover:bg-[#2DD4BF]/20 text-xs font-mono text-[#F8FAFC] transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>⚡ Superstore Sales</span>
+                    <span className="text-[10px] text-[#2DD4BF] font-semibold">(10k rows)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onLaunchStudio('ecommerce_customer_churn', 'Compare customer churn rate by complaint and tenure cohort')}
+                    className="px-2.5 py-1.5 rounded-lg border border-[#38BDF8]/40 bg-[#38BDF8]/10 hover:bg-[#38BDF8]/20 text-xs font-mono text-[#F8FAFC] transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>⚡ Customer Churn</span>
+                    <span className="text-[10px] text-[#38BDF8] font-semibold">(5k rows)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onLaunchStudio('saas_subscription_financials', 'What percentage of ARR comes from Enterprise tier and what are the LTV to CAC ratios?')}
+                    className="px-2.5 py-1.5 rounded-lg border border-[#FBBF24]/40 bg-[#FBBF24]/10 hover:bg-[#FBBF24]/20 text-xs font-mono text-[#F8FAFC] transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+                  >
+                    <span>⚡ SaaS Financials</span>
+                    <span className="text-[10px] text-[#FBBF24] font-semibold">(1.2k rows)</span>
+                  </button>
+                </div>
               </div>
 
               <div className="mt-6 font-mono text-xs flex gap-5 text-[#94A3B8]">

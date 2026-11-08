@@ -5,11 +5,13 @@ API endpoints for LangGraph Agent Chat (Synchronous and SSE Streaming).
 import json
 import asyncio
 import logging
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from sse_starlette.sse import EventSourceResponse
 from app.agent.graph import tabletell_agent
 from app.services.quality_service import quality_service
 from app.schemas.analytics import ChatRequest
+from app.core.auth import get_current_user, AuthenticatedUser
+from app.core.rate_limit import check_and_apply_ai_access
 
 logger = logging.getLogger("tabletell.chat")
 
@@ -17,8 +19,14 @@ router = APIRouter(prefix="/chat", tags=["Agent Chat & Analysis"])
 
 
 @router.post("")
-async def chat_endpoint(req: ChatRequest):
+async def chat_endpoint(
+    req: ChatRequest,
+    request: Request,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """Standard synchronous chat endpoint returning complete analytical payload."""
+    access = check_and_apply_ai_access(request, current_user, increment=True)
+
     try:
         schema_digest = quality_service.get_schema_digest(req.dataset_id, version=req.version)
     except Exception as e:
@@ -39,7 +47,8 @@ async def chat_endpoint(req: ChatRequest):
         "error": None,
         "status": "planning",
         "history": [],
-        "run_id": None
+        "run_id": None,
+        "api_key": access.get("api_key")
     }
 
     try:
@@ -68,12 +77,18 @@ async def chat_endpoint(req: ChatRequest):
 
 
 @router.post("/stream")
-async def chat_stream_endpoint(req: ChatRequest, request: Request):
+async def chat_stream_endpoint(
+    req: ChatRequest,
+    request: Request,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """
     Server-Sent Events (SSE) streaming endpoint.
     Emits real-time progression events (planning -> executing -> self-healing -> complete).
     Supports client-side query cancellation and connection abort.
     """
+    access = check_and_apply_ai_access(request, current_user, increment=True)
+
     try:
         schema_digest = quality_service.get_schema_digest(req.dataset_id, version=req.version)
     except Exception as e:
@@ -94,7 +109,8 @@ async def chat_stream_endpoint(req: ChatRequest, request: Request):
         "error": None,
         "status": "planning",
         "history": [],
-        "run_id": None
+        "run_id": None,
+        "api_key": access.get("api_key")
     }
 
     async def event_generator():

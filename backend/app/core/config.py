@@ -33,7 +33,15 @@ class Settings(BaseSettings):
     DEFAULT_MODEL: str = os.getenv("DEFAULT_MODEL", "agy/gemini-3.8-flash-high")
     MODEL_NAME: str = os.getenv("MODEL_NAME", "Gemini 3.8 flash")
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("AI_API_KEY", "")
+    # Optional backup provider: a free Google AI Studio key (AIza...) used when the primary router fails
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
+    BACKUP_MODEL: str = os.getenv("BACKUP_MODEL", "gemini-2.5-flash")
     
+    # Rate Limiting & BYOK Configuration
+    DAILY_FREE_QUERIES_LIMIT: int = int(os.getenv("DAILY_FREE_QUERIES_LIMIT", "20"))
+    ENABLE_DAILY_LIMITS: bool = os.getenv("ENABLE_DAILY_LIMITS", "true").lower() in ("true", "1", "yes")
+    ALLOW_BYOK: bool = os.getenv("ALLOW_BYOK", "true").lower() in ("true", "1", "yes")
+
     # Clerk Authentication Configuration
     CLERK_SECRET_KEY: str = os.getenv("CLERK_SECRET_KEY", "")
     CLERK_PUBLISHABLE_KEY: str = os.getenv("CLERK_PUBLISHABLE_KEY", "") or os.getenv("VITE_CLERK_PUBLISHABLE_KEY", "")

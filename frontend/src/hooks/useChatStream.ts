@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { fetchEventSource } from '@microsoft/fetch-event-source';
 import type { ChatRequest, StreamEvent, ChatResponsePayload, StreamStatusStep } from '../types/api';
 import { getAuthToken, readErrorMessage } from '../lib/api';
+import { getCustomApiKey, getClientId } from '../lib/apiKeyStorage';
 import { logger } from '../lib/logger';
 
 export interface UseChatStreamReturn {
@@ -86,6 +87,14 @@ export function useChatStream(): UseChatStreamReturn {
         if (token) {
           headers['Authorization'] = `Bearer ${token}`;
         }
+        const customKey = getCustomApiKey();
+        if (customKey) {
+          headers['X-Custom-AI-Key'] = customKey;
+        }
+        const clientId = getClientId();
+        if (clientId) {
+          headers['X-Client-Id'] = clientId;
+        }
 
         await fetchEventSource('/api/chat/stream', {
           method: 'POST',
@@ -158,7 +167,11 @@ export function useChatStream(): UseChatStreamReturn {
           // Normal abort triggered by user cancel
           return;
         }
-        setError(err instanceof Error ? err.message : 'Failed to execute query stream.');
+        const errMsg = err instanceof Error ? err.message : 'Failed to execute query stream.';
+        if (errMsg.includes('daily free limit') || errMsg.includes('429') || errMsg.includes('BYOK') || errMsg.includes('API key')) {
+          window.dispatchEvent(new CustomEvent('open-api-key-modal'));
+        }
+        setError(errMsg);
         setIsStreaming(false);
         abortControllerRef.current = null;
       }

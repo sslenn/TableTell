@@ -34,7 +34,32 @@ TableTell eliminates both by coupling an **agentic LangGraph state machine** wit
 2. **Immutable Lakehouse Lineage**: Uploaded raw files are permanently preserved in `data_lake/raw/`. Cleaning transformations never mutate source files—each cleaning cycle creates an audited, immutable Parquet version (`v1` $\rightarrow$ `v2` $\rightarrow$ `v3`).
 3. **Autonomous Self-Healing**: If a query encounters a DuckDB syntax or binder error, the LangGraph agent intercepts the traceback, dynamically repairs the SQL, and re-executes automatically.
 4. **Real-Time Streaming & Instant Cancellation**: Progression milestones stream over Server-Sent Events (SSE). Queries can be cancelled instantly with zero zombie compute via client-side `AbortController` and backend disconnect detection.
-5. **Enterprise Identity & Session Governance**: Seamless **Clerk Authentication** with cryptographic JWKS JWT verification, role-aware access control across all protected API routes, and an offline local developer mode.
+5. **Zero-Cost Production Safeguards (BYOK & Free Quota)**: Deployed demo instances grant visitors **20 free queries/day** while strictly protecting against runaway compute costs. Visitors can enter their own free Google Gemini key (**BYOK**) for unlimited private analysis.
+
+---
+
+## 💼 Real-World Case Studies (Data Analyst Portfolio)
+
+> *Full quantitative reports, formulas, SQL queries, and strategic business takeaways are documented in [`docs/CASE_STUDIES.md`](./docs/CASE_STUDIES.md).*
+
+TableTell comes pre-seeded with 3 realistic enterprise business benchmarks ready for immediate 1-click exploration:
+
+### 1. 🛒 Retail Superstore Sales (10,000 Orders · \$2.4M Sales)
+* **The Business Problem**: Top-line sales grew +18% YoY, but operating net profit remained flat.
+* **TableTell Discovery**: Generated DuckDB SQL uncovered a **15.4% negative margin leak** concentrated in `Tables` (-\$83,069.60 loss, -18.5% margin) and `Supplies` (-\$8,311.98 loss, -21.3% margin).
+* **Root-Cause Attribution**: TableTell drilled into discount bands: orders with `discount >= 30%` suffered a disastrous **-50.27% profit margin (-\$76,219 loss across 256 orders)**.
+* **Strategic ROI**: Implementing an automated 15% discount guardrail immediately recovers **+\$76,219** in operating profit.
+
+### 2. 👥 E-Commerce Customer Churn (5,000 Customers · Driver Analysis)
+* **The Business Problem**: Identifying the underlying behavioral drivers of subscriber attrition across city tiers.
+* **TableTell Discovery**: Statistical driver analysis revealed that new customers ($\le 6\text{ months}$) who submit an unresolved complaint suffer an alarming **70.8% churn rate** (vs 11.2% baseline for tenured accounts without complaints).
+* **Statistical Significance**: Two-sample test of proportions yielded $Z = 9.24$ ($p < 0.0001$).
+* **Strategic ROI**: Automated Tier-1 90-day ticket escalation reduces platform churn by an estimated **6.2 percentage points**.
+
+### 3. 📈 B2B SaaS Recurring Revenue (1,200 Accounts · \$33.2M ARR)
+* **The Business Problem**: Evaluating customer acquisition cost efficiency and renewal concentration risk.
+* **TableTell Discovery**: Extreme **Pareto 80/20 concentration**: **136 Enterprise accounts (11.3% of accounts) drive \$20.5M ARR (61.7% of total revenue)**.
+* **LTV:CAC Ratio**: Enterprise customer LTV:CAC reaches **34.6x** compared to 11.2x for Starter tiers, proving massive headroom for high-touch enterprise acquisition.
 
 ---
 
