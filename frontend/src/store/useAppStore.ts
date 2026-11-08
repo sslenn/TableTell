@@ -14,6 +14,7 @@ interface AppState {
   datasetId: string;
   activeTab: AppTab;
   messages: MessageItem[];
+  messagesByDataset: Record<string, MessageItem[]>;
   datasets: DatasetSummary[];
   auditReport: DatasetAuditReport | null;
   sidebarCollapsed: boolean;
@@ -52,6 +53,7 @@ export const useAppStore = create<AppState>()(
       datasetId: 'ecommerce_sales',
       activeTab: 'studio',
       messages: [],
+      messagesByDataset: {},
       datasets: [],
       auditReport: null,
       sidebarCollapsed: false,
@@ -76,7 +78,32 @@ export const useAppStore = create<AppState>()(
 
       setLogoVariant: (logoVariant) => set({ logoVariant }),
 
-      setDatasetId: (datasetId) => set({ datasetId }),
+      setDatasetId: (nextDatasetId) =>
+        set((state) => {
+          if (nextDatasetId === state.datasetId) {
+            return { datasetId: nextDatasetId };
+          }
+          const prevId = state.datasetId;
+          const prevMessages = state.messages.filter(
+            (m) => !m.datasetId || m.datasetId === prevId
+          );
+          const updatedMap = {
+            ...(state.messagesByDataset || {}),
+            ...(prevId ? { [prevId]: prevMessages } : {})
+          };
+          const nextMessages = (updatedMap[nextDatasetId] || []).filter(
+            (m) => m.datasetId === nextDatasetId
+          );
+          return {
+            datasetId: nextDatasetId,
+            messages: nextMessages,
+            messagesByDataset: updatedMap,
+            activeColumns: [],
+            auditReport: null,
+            suggestedPrompt: ''
+          };
+        }),
+
       setActiveTab: (activeTab) => set({ activeTab }),
       setDatasets: (datasets) => set({ datasets }),
       setAuditReport: (auditReport) => set({ auditReport }),
@@ -92,15 +119,33 @@ export const useAppStore = create<AppState>()(
       toggleCopilot: () => set((s) => ({ copilotOpen: !s.copilotOpen })),
 
       addMessage: (msg) => {
+        const currentDatasetId = get().datasetId;
         const newMsg: MessageItem = {
           ...msg,
+          datasetId: msg.datasetId || currentDatasetId,
           id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
-        set((state) => ({ messages: [...state.messages, newMsg] }));
+        set((state) => {
+          const nextList = [...state.messages, newMsg];
+          return {
+            messages: nextList,
+            messagesByDataset: {
+              ...(state.messagesByDataset || {}),
+              [currentDatasetId]: nextList
+            }
+          };
+        });
       },
 
-      clearMessages: () => set({ messages: [] })
+      clearMessages: () =>
+        set((state) => ({
+          messages: [],
+          messagesByDataset: {
+            ...(state.messagesByDataset || {}),
+            [state.datasetId]: []
+          }
+        }))
     }),
     {
       name: 'tabletell_app_storage',
@@ -108,6 +153,7 @@ export const useAppStore = create<AppState>()(
         theme: state.theme,
         datasetId: state.datasetId,
         messages: state.messages,
+        messagesByDataset: state.messagesByDataset,
         sidebarCollapsed: state.sidebarCollapsed
       })
     }

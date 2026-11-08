@@ -82,40 +82,69 @@ class UniversalModelService:
             payload["stream"] = True
         return payload
 
+    def _candidate_models(self, primary_model: str) -> List[str]:
+        candidates = [primary_model]
+        for fallback in ["agy/gemini-3.8-flash-high", "gemini-2.5-flash", "gemini-2.0-flash", "gpt-4o-mini"]:
+            if fallback not in candidates:
+                candidates.append(fallback)
+        return candidates
+
     def generate_content(self, model: str, contents: str, config: Any = None) -> UniversalResponse:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        payload = self._build_payload(model, contents, config, stream=False)
+        last_err: Optional[Exception] = None
         with httpx.Client(timeout=45.0) as client:
-            resp = client.post(self.chat_url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            text = data["choices"][0]["message"].get("content", "")
-            return UniversalResponse(text)
+            for candidate in self._candidate_models(model):
+                try:
+                    payload = self._build_payload(candidate, contents, config, stream=False)
+                    resp = client.post(self.chat_url, headers=headers, json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = data["choices"][0]["message"].get("content", "")
+                    if text:
+                        return UniversalResponse(text)
+                except Exception as err:
+                    last_err = err
+                    continue
+        if last_err:
+            raise last_err
+        raise RuntimeError("No content returned from model endpoint.")
 
     def generate_content_stream(self, model: str, contents: str, config: Any = None):
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
         }
-        payload = self._build_payload(model, contents, config, stream=True)
-        with httpx.Client(timeout=45.0) as client:
-            with client.stream("POST", self.chat_url, headers=headers, json=payload) as response:
-                response.raise_for_status()
-                for line in response.iter_lines():
-                    if line.startswith("data: "):
-                        data_str = line[6:].strip()
-                        if data_str == "[DONE]":
-                            break
-                        try:
-                            d = json.loads(data_str)
-                            token = d["choices"][0]["delta"].get("content", "")
-                            if token:
-                                yield UniversalChunk(token)
-                        except Exception:
-                            continue
+        last_err: Optional[Exception] = None
+        for candidate in self._candidate_models(model):
+            payload = self._build_payload(candidate, contents, config, stream=True)
+            try:
+                with httpx.Client(timeout=45.0) as client:
+                    with client.stream("POST", self.chat_url, headers=headers, json=payload) as response:
+                        response.raise_for_status()
+                        yielded_any = False
+                        for line in response.iter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:].strip()
+                                if data_str == "[DONE]":
+                                    break
+                                try:
+                                    d = json.loads(data_str)
+                                    token = d["choices"][0]["delta"].get("content", "")
+                                    if token:
+                                        yielded_any = True
+                                        yield UniversalChunk(token)
+                                except Exception:
+                                    continue
+                        if yielded_any:
+                            return
+            except Exception as err:
+                last_err = err
+                continue
+        if last_err:
+            raise last_err
 
 
 class UniversalClient:
@@ -124,21 +153,135 @@ class UniversalClient:
         self.models = UniversalModelService(api_key, endpoint)
 
 
+class GoogleGenAIModelService:
+    """
+    Native Google Generative Language REST service adapter (`https://generativelanguage.googleapis.com/v1beta`).
+    Supports both `AIza...` and `AQ....` Gemini API keys with automatic model fallback.
+    """
+    BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+    FALLBACK_MODELS = [
+        "gemini-3-flash-preview",
+        "gemini-3.1-flash-lite-preview",
+        "gemini-flash-latest",
+        "gemma-4-31b-it",
+    ]
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+
+    def _normalize_model(self, model: str) -> str:
+        clean = (model or "").strip()
+        if "/" in clean:
+            clean = clean.split("/")[-1]
+        if clean in ("gemini-3.8-flash-high", "gemini-3.8-flash", "gemini-2.5-flash", "gemini-2.0-flash", ""):
+            return "gemini-3-flash-preview"
+        return clean
+
+    def _candidate_models(self, primary_model: str) -> List[str]:
+        norm = self._normalize_model(primary_model)
+        candidates = [norm]
+        for fb in self.FALLBACK_MODELS:
+            if fb not in candidates:
+                candidates.append(fb)
+        return candidates
+
+    def _build_payload(self, contents: str, config: Any = None) -> Dict[str, Any]:
+        system_instruction = None
+        temperature = 0.2
+        if config:
+            if hasattr(config, "system_instruction") and config.system_instruction:
+                system_instruction = str(config.system_instruction)
+            elif isinstance(config, dict) and "system_instruction" in config:
+                system_instruction = str(config["system_instruction"])
+            if hasattr(config, "temperature") and config.temperature is not None:
+                temperature = config.temperature
+            elif isinstance(config, dict) and "temperature" in config:
+                temperature = config["temperature"]
+
+        payload: Dict[str, Any] = {
+            "contents": [{"role": "user", "parts": [{"text": str(contents)}]}],
+            "generationConfig": {"temperature": temperature},
+        }
+        if system_instruction:
+            payload["systemInstruction"] = {"parts": [{"text": system_instruction}]}
+        return payload
+
+    def generate_content(self, model: str, contents: str, config: Any = None) -> UniversalResponse:
+        payload = self._build_payload(contents, config)
+        last_err: Optional[Exception] = None
+        with httpx.Client(timeout=35.0) as client:
+            for candidate in self._candidate_models(model):
+                try:
+                    url = f"{self.BASE_URL}/{candidate}:generateContent"
+                    resp = client.post(url, params={"key": self.api_key}, json=payload)
+                    resp.raise_for_status()
+                    data = resp.json()
+                    parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                    text = "".join(p.get("text", "") for p in parts if "text" in p)
+                    if text:
+                        return UniversalResponse(text)
+                except Exception as err:
+                    last_err = err
+                    continue
+        if last_err:
+            raise last_err
+        raise RuntimeError("No content returned from Google Gemini API.")
+
+    def generate_content_stream(self, model: str, contents: str, config: Any = None):
+        payload = self._build_payload(contents, config)
+        last_err: Optional[Exception] = None
+        for candidate in self._candidate_models(model):
+            url = f"{self.BASE_URL}/{candidate}:streamGenerateContent"
+            try:
+                with httpx.Client(timeout=35.0) as client:
+                    with client.stream("POST", url, params={"key": self.api_key, "alt": "sse"}, json=payload) as response:
+                        response.raise_for_status()
+                        yielded_any = False
+                        for line in response.iter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:].strip()
+                                if not data_str or data_str == "[DONE]":
+                                    continue
+                                try:
+                                    d = json.loads(data_str)
+                                    parts = d.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                                    token = "".join(p.get("text", "") for p in parts if "text" in p)
+                                    if token:
+                                        yielded_any = True
+                                        yield UniversalChunk(token)
+                                except Exception:
+                                    continue
+                        if yielded_any:
+                            return
+            except Exception as err:
+                last_err = err
+                continue
+        if last_err:
+            raise last_err
+
+
+class GoogleGenAIClient:
+    """Google Gemini native REST client holding `.models` service."""
+    def __init__(self, api_key: str):
+        self.models = GoogleGenAIModelService(api_key)
+
+
 SYSTEM_PROMPT = """You are TableTell, an expert AI Data Analyst and Business Intelligence Engineer.
 Your task is to write high-efficiency, clean SQL for DuckDB to answer user analytical questions.
 
 RULES FOR DUCKDB SQL:
 1. TARGET TABLE: Always query from the table named '{dataset_id}'.
 2. COLUMN NAMES: Strictly use exact column names from the provided schema. Wrap column names in double quotes if needed.
-3. AGGREGATIONS: Use standard SQL aggregations (SUM, AVG, COUNT, MIN, MAX, GROUP BY, ORDER BY, LIMIT).
+3. AGGREGATIONS: Use standard SQL aggregations (SUM, AVG, COUNT, MIN, MAX, STDDEV_SAMP, MEDIAN, QUANTILE_CONT, CORR, GROUP BY, ORDER BY, LIMIT).
 4. LIMIT: Do NOT artificially restrict GROUP BY categorical queries with small limits unless the user explicitly requested a top N (e.g. 'top 5'). When aggregating by category, allow returning all groups. If the user asks for 'all rows', 'all records', or raw data, allow up to LIMIT 1000.
 5. NO MARKDOWN: Output ONLY the executable SQL query inside a ```sql ``` block. No conversational fluff outside.
 """
 
 
-def get_gemini_client():
-    api_key = (
-        getattr(settings, "AI_API_KEY", None)
+def get_gemini_client(api_key: Optional[str] = None):
+    chosen_key = (
+        api_key
+        or getattr(settings, "AI_API_KEY", None)
         or getattr(settings, "GEMINI_API_KEY", None)
         or os.environ.get("AI_API_KEY")
         or os.environ.get("GEMINI_API_KEY")
@@ -148,18 +291,22 @@ def get_gemini_client():
         or os.environ.get("AI_ENDPOINT", "")
     )
 
-    if not api_key:
+    if not chosen_key:
         return None
 
+    # Native Google Gemini keys (AIza... or AQ....) or generativelanguage endpoint
+    if chosen_key.startswith(("AIza", "AQ.")) or "generativelanguage.googleapis.com" in endpoint:
+        return GoogleGenAIClient(api_key=chosen_key)
+
     # Router/Proxy or OpenAI-format key
-    if endpoint or api_key.startswith("sk-"):
+    if endpoint or chosen_key.startswith("sk-"):
         target_endpoint = endpoint or "https://router.dockified.com/v1"
-        return UniversalClient(api_key=api_key, endpoint=target_endpoint)
+        return UniversalClient(api_key=chosen_key, endpoint=target_endpoint)
 
     # Native Google GenAI SDK fallback
     if HAS_GENAI:
         try:
-            return genai.Client(api_key=api_key)
+            return genai.Client(api_key=chosen_key)
         except Exception:
             return None
 
@@ -288,9 +435,10 @@ def generate_sql(
     schema_digest: str,
     col_names: List[str],
     dtypes: Dict[str, str],
+    api_key: Optional[str] = None,
 ) -> str:
     """Orchestrates SQL generation using Gemini or schema-aware fallback."""
-    client = get_gemini_client()
+    client = get_gemini_client(api_key=api_key)
     if client:
         try:
             prompt = f"""Dataset Schema:

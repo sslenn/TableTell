@@ -3,7 +3,6 @@ System Health and Diagnostics Endpoint for Production Monitoring.
 """
 
 import shutil
-import sqlite3
 import datetime
 from fastapi import APIRouter
 from app.core.config import settings
@@ -22,20 +21,18 @@ async def get_health_status():
     health_status = "healthy"
     diagnostics = {}
 
-    # 1. SQLite Metadata DB Check
+    # 1. SQLite Metadata DB Check (no host filesystem path disclosure)
     try:
         datasets = metadata_repo.list_datasets()
         datasets_count = len(datasets)
         diagnostics["metadata_db"] = {
             "status": "connected",
             "datasets_count": datasets_count,
-            "db_path": str(settings.METADATA_DB_PATH)
         }
-    except Exception as e:
+    except Exception:
         health_status = "degraded"
         diagnostics["metadata_db"] = {
-            "status": "error",
-            "error": str(e)
+            "status": "error"
         }
 
     # 2. DuckDB Engine Check
@@ -48,11 +45,10 @@ async def get_health_status():
         }
         if not duckdb_ready:
             health_status = "degraded"
-    except Exception as e:
+    except Exception:
         health_status = "degraded"
         diagnostics["duckdb_engine"] = {
-            "status": "error",
-            "error": str(e)
+            "status": "error"
         }
 
     # 3. Data Lake Disk Usage
@@ -69,7 +65,6 @@ async def get_health_status():
 
         total_mb = round(total_bytes / (1024 * 1024), 2)
 
-        # Host disk partition space
         disk_usage = shutil.disk_usage(lake_path)
         diagnostics["storage"] = {
             "data_lake_size_mb": total_mb,
@@ -78,17 +73,16 @@ async def get_health_status():
             "disk_free_gb": round(disk_usage.free / (1024**3), 2),
             "disk_total_gb": round(disk_usage.total / (1024**3), 2)
         }
-    except Exception as e:
+    except Exception:
         diagnostics["storage"] = {
-            "status": "warning",
-            "error": str(e)
+            "status": "warning"
         }
 
     # 4. AI Provider Configuration Check
     diagnostics["ai_engine"] = {
         "provider": "Google Gemini",
         "model": settings.DEFAULT_MODEL,
-        "api_key_configured": bool(settings.GEMINI_API_KEY.strip())
+        "api_key_configured": bool(settings.GEMINI_API_KEY.strip() or settings.AI_API_KEY.strip())
     }
 
     # 5. Authentication Configuration Check

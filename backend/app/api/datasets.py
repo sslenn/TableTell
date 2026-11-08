@@ -2,11 +2,13 @@
 API endpoints for Dataset Catalog, Schema, Preview, Profiling, and Versions.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+import re
+from fastapi import APIRouter, HTTPException, Query, Depends
 from fastapi.responses import Response, FileResponse
 from pydantic import BaseModel, Field
 import pandas as pd
 from typing import List, Dict, Any, Optional
+from app.core.auth import get_current_user, AuthenticatedUser
 from app.services.dataset_service import dataset_service
 from app.services.quality_service import quality_service
 from app.storage.metadata_repo import metadata_repo
@@ -15,25 +17,32 @@ from app.analytics.executor import query_executor
 from app.schemas.dataset import DatasetSummary, DatasetDetail
 from app.schemas.quality import DatasetAuditReport
 from app.core.exceptions import DatasetNotFoundError
+from app.profiling.correlation import correlation_analyzer
 
 router = APIRouter(prefix="/datasets", tags=["Datasets & Catalog"])
 
 
+def _safe_download_filename(name: str) -> str:
+    """Sanitizes download filename to prevent Content-Disposition header injection."""
+    cleaned = re.sub(r'[^a-zA-Z0-9._\-]', '_', (name or "dataset").strip())
+    return cleaned[:120] or "dataset"
+
+
 @router.get("", response_model=Dict[str, Any])
-async def list_datasets():
-    """Lists all available datasets in the catalog with cached health scores and metrics."""
+async def list_datasets(current_user: AuthenticatedUser = Depends(get_current_user)):
+    """Lists all available datasets in the catalog visible to the current user."""
     try:
-        datasets = dataset_service.list_datasets()
+        datasets = dataset_service.list_datasets(owner_id=current_user.user_id)
         return {"status": "success", "datasets": datasets}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to list datasets: {str(e)}")
 
 
 @router.get("/{dataset_id}", response_model=Dict[str, Any])
-async def get_dataset(dataset_id: str):
+async def get_dataset(dataset_id: str, current_user: AuthenticatedUser = Depends(get_current_user)):
     """Returns dataset details, version history, and lineage."""
     try:
-        detail = dataset_service.get_dataset_detail(dataset_id)
+        detail = dataset_service.get_dataset_detail(dataset_id, owner_id=current_user.user_id)
         return {"status": "success", "data": detail}
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -47,8 +56,9 @@ async def preview_dataset(
 ):
     """Returns rows of a dataset for tabular preview (defaults to 50, supports up to 5000)."""
     try:
-        sql = f'SELECT * FROM "{dataset_id}" LIMIT {limit}'
-        res = query_executor.execute_query(dataset_id, sql, version=version, max_rows=limit)
+        safe_id = parquet_store.sanitize_id(dataset_id)
+        sql = f'SELECT * FROM "{safe_id}" LIMIT {limit}'
+        res = query_executor.execute_query(safe_id, sql, version=version, max_rows=limit)
         return {"status": "success", "data": res}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")
@@ -100,9 +110,8 @@ async def export_dataset(
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found: {str(e)}")
 
     try:
-        # If Parquet format requested, return the parquet file directly
         if format == "parquet":
-            out_name = filename or f"{dataset_id}.parquet"
+            out_name = _safe_download_filename(filename or f"{dataset_id}.parquet")
             if not out_name.endswith(".parquet"):
                 out_name += ".parquet"
             return FileResponse(
@@ -116,20 +125,18 @@ async def export_dataset(
 
         if format in ("csv", "tsv"):
             sep = delimiter if delimiter else ("\t" if format == "tsv" else ",")
-            # Handle escaped tab character passed as string '\t'
             if sep in (r"\t", "\\t"):
                 sep = "\t"
 
             csv_text = df.to_csv(index=False, sep=sep, header=include_header)
 
-            # UTF-8 BOM for Excel compatibility
             if bom:
                 content_bytes = b"\xef\xbb\xbf" + csv_text.encode("utf-8")
             else:
                 content_bytes = csv_text.encode("utf-8")
 
             default_ext = "tsv" if sep == "\t" else "csv"
-            out_name = filename or f"{dataset_id}.{default_ext}"
+            out_name = _safe_download_filename(filename or f"{dataset_id}.{default_ext}")
             if not (out_name.endswith(".csv") or out_name.endswith(".tsv")):
                 out_name += f".{default_ext}"
 
@@ -146,7 +153,7 @@ async def export_dataset(
 
         elif format == "json":
             json_text = df.to_json(orient="records", indent=2, date_format="iso")
-            out_name = filename or f"{dataset_id}.json"
+            out_name = _safe_download_filename(filename or f"{dataset_id}.json")
             if not out_name.endswith(".json"):
                 out_name += ".json"
             return Response(
@@ -165,15 +172,17 @@ async def export_dataset(
 
 
 @router.delete("/{dataset_id}", response_model=Dict[str, Any])
-async def delete_dataset(dataset_id: str):
+async def delete_dataset(dataset_id: str, current_user: AuthenticatedUser = Depends(get_current_user)):
     """
     Deletes an uploaded dataset, removing its metadata, versions, and lake files.
     """
     try:
-        res = dataset_service.delete_dataset(dataset_id)
+        res = dataset_service.delete_dataset(dataset_id, owner_id=current_user.user_id)
         return res
     except DatasetNotFoundError:
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to delete dataset: {str(e)}")
 
@@ -184,25 +193,25 @@ class RenameDatasetRequest(BaseModel):
 
 @router.post("/{dataset_id}/rename", response_model=Dict[str, Any])
 @router.patch("/{dataset_id}/rename", response_model=Dict[str, Any])
-async def rename_dataset(dataset_id: str, payload: RenameDatasetRequest):
+async def rename_dataset(
+    dataset_id: str,
+    payload: RenameDatasetRequest,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """
     Renames an uploaded or existing dataset, updating lake files, DuckDB engine, and catalog metadata.
     """
     try:
-        res = dataset_service.rename_dataset(dataset_id, payload.new_name)
+        res = dataset_service.rename_dataset(dataset_id, payload.new_name, owner_id=current_user.user_id)
         return res
     except DatasetNotFoundError:
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to rename dataset: {str(e)}")
-
-
-
-
-
-from app.profiling.correlation import correlation_analyzer
 
 
 @router.get("/{dataset_id}/correlations", response_model=Dict[str, Any])

@@ -44,7 +44,8 @@ class MetadataRepository:
                     updated_at TEXT NOT NULL,
                     raw_storage_path TEXT,
                     current_version INTEGER NOT NULL DEFAULT 1,
-                    description TEXT DEFAULT ''
+                    description TEXT DEFAULT '',
+                    owner_id TEXT NOT NULL DEFAULT 'public'
                 );
 
                 CREATE TABLE IF NOT EXISTS dataset_versions (
@@ -108,8 +109,9 @@ class MetadataRepository:
                     title TEXT NOT NULL,
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
-                    model TEXT NOT NULL DEFAULT 'gemini-2.5-flash',
-                    is_archived INTEGER NOT NULL DEFAULT 0
+                    model TEXT NOT NULL DEFAULT 'gemini-3-flash-preview',
+                    is_archived INTEGER NOT NULL DEFAULT 0,
+                    owner_id TEXT NOT NULL DEFAULT 'public'
                 );
 
                 CREATE TABLE IF NOT EXISTS assistant_messages (
@@ -122,11 +124,27 @@ class MetadataRepository:
                     FOREIGN KEY (conversation_id) REFERENCES assistant_conversations(id) ON DELETE CASCADE
                 );
 
+                CREATE TABLE IF NOT EXISTS daily_usage (
+                    id TEXT PRIMARY KEY,
+                    user_identifier TEXT NOT NULL,
+                    usage_date TEXT NOT NULL,
+                    query_count INTEGER NOT NULL DEFAULT 0,
+                    last_request_at TEXT NOT NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_versions_dataset ON dataset_versions(dataset_id);
                 CREATE INDEX IF NOT EXISTS idx_runs_dataset ON analytical_runs(dataset_id);
                 CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id);
                 CREATE INDEX IF NOT EXISTS idx_assistant_messages_conv ON assistant_messages(conversation_id, created_at);
+                CREATE INDEX IF NOT EXISTS idx_daily_usage_user_date ON daily_usage(user_identifier, usage_date);
             """)
+            # Backwards-compatible column migrations for existing databases
+            ds_cols = {r["name"] for r in conn.execute("PRAGMA table_info(datasets)").fetchall()}
+            if "owner_id" not in ds_cols:
+                conn.execute("ALTER TABLE datasets ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'public'")
+            conv_cols = {r["name"] for r in conn.execute("PRAGMA table_info(assistant_conversations)").fetchall()}
+            if "owner_id" not in conv_cols:
+                conn.execute("ALTER TABLE assistant_conversations ADD COLUMN owner_id TEXT NOT NULL DEFAULT 'public'")
 
     # -------------------------------------------------------------------------
     # Dataset Operations
@@ -140,27 +158,34 @@ class MetadataRepository:
         source_format: str,
         raw_storage_path: Optional[str] = None,
         description: str = "",
+        owner_id: str = "public",
     ) -> Dict[str, Any]:
         now = datetime.now(timezone.utc).isoformat()
         with self._get_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO datasets (id, name, original_filename, source_format, created_at, updated_at, raw_storage_path, current_version, description)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                INSERT INTO datasets (id, name, original_filename, source_format, created_at, updated_at, raw_storage_path, current_version, description, owner_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     name=excluded.name,
                     updated_at=excluded.updated_at,
                     raw_storage_path=COALESCE(excluded.raw_storage_path, datasets.raw_storage_path),
                     description=excluded.description
                 """,
-                (dataset_id, name, original_filename, source_format, now, now, raw_storage_path, description)
+                (dataset_id, name, original_filename, source_format, now, now, raw_storage_path, description, owner_id or "public")
             )
-        self.record_audit("dataset", dataset_id, "create_dataset", {"name": name, "format": source_format})
+        self.record_audit("dataset", dataset_id, "create_dataset", {"name": name, "format": source_format, "owner_id": owner_id})
         return self.get_dataset(dataset_id)
 
-    def get_dataset(self, dataset_id: str) -> Optional[Dict[str, Any]]:
+    def get_dataset(self, dataset_id: str, owner_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
         with self._get_connection() as conn:
-            row = conn.execute("SELECT * FROM datasets WHERE id = ?", (dataset_id,)).fetchone()
+            if owner_id and owner_id not in ("public", "local_analyst"):
+                row = conn.execute(
+                    "SELECT * FROM datasets WHERE id = ? AND (owner_id = 'public' OR owner_id = ?)",
+                    (dataset_id, owner_id)
+                ).fetchone()
+            else:
+                row = conn.execute("SELECT * FROM datasets WHERE id = ?", (dataset_id,)).fetchone()
             if not row:
                 return None
             res = dict(row)
@@ -187,9 +212,15 @@ class MetadataRepository:
                 res["version_info"] = None
             return res
 
-    def list_datasets(self) -> List[Dict[str, Any]]:
+    def list_datasets(self, owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
         with self._get_connection() as conn:
-            rows = conn.execute("SELECT * FROM datasets ORDER BY updated_at DESC").fetchall()
+            if owner_id and owner_id not in ("public", "local_analyst"):
+                rows = conn.execute(
+                    "SELECT * FROM datasets WHERE owner_id = 'public' OR owner_id = ? ORDER BY updated_at DESC",
+                    (owner_id,)
+                ).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM datasets ORDER BY updated_at DESC").fetchall()
             result = []
             for r in rows:
                 d = dict(r)
@@ -567,20 +598,24 @@ class MetadataRepository:
     # AI Assistant Operations
     # -------------------------------------------------------------------------
 
-    def get_or_create_default_conversation(self) -> Dict[str, Any]:
-        """Returns or creates the default persistent conversation for the assistant."""
+    def get_or_create_default_conversation(self, owner_id: str = "public") -> Dict[str, Any]:
+        """Returns or creates the default persistent conversation for the given user."""
+        safe_owner = (owner_id or "public").strip()
         with self._get_connection() as conn:
-            row = conn.execute("SELECT * FROM assistant_conversations WHERE is_archived = 0 ORDER BY updated_at DESC LIMIT 1").fetchone()
+            row = conn.execute(
+                "SELECT * FROM assistant_conversations WHERE owner_id = ? AND is_archived = 0 ORDER BY updated_at DESC LIMIT 1",
+                (safe_owner,)
+            ).fetchone()
             if row:
                 return dict(row)
             
-            # Create default conversation
+            # Create default conversation for this user
             import uuid
             conv_id = f"conv_{uuid.uuid4().hex[:10]}"
             now = datetime.now(timezone.utc).isoformat()
             conn.execute(
-                "INSERT INTO assistant_conversations (id, title, created_at, updated_at, model) VALUES (?, ?, ?, ?, ?)",
-                (conv_id, "TableTell Copilot", now, now, settings.DEFAULT_MODEL)
+                "INSERT INTO assistant_conversations (id, title, created_at, updated_at, model, owner_id) VALUES (?, ?, ?, ?, ?, ?)",
+                (conv_id, "TableTell Copilot", now, now, settings.DEFAULT_MODEL, safe_owner)
             )
             return {
                 "id": conv_id,
@@ -588,7 +623,8 @@ class MetadataRepository:
                 "created_at": now,
                 "updated_at": now,
                 "model": settings.DEFAULT_MODEL,
-                "is_archived": 0
+                "is_archived": 0,
+                "owner_id": safe_owner
             }
 
     def save_assistant_message(
@@ -635,6 +671,33 @@ class MetadataRepository:
         with self._get_connection() as conn:
             conn.execute("DELETE FROM assistant_messages WHERE conversation_id = ?", (conversation_id,))
             conn.execute("UPDATE assistant_conversations SET updated_at = ? WHERE id = ?", (now, conversation_id))
+
+    def get_daily_usage(self, user_identifier: str, usage_date: str) -> int:
+        """Retrieves count of queries used by a user/client for a given calendar date (YYYY-MM-DD)."""
+        with self._get_connection() as conn:
+            row = conn.execute(
+                "SELECT query_count FROM daily_usage WHERE user_identifier = ? AND usage_date = ?",
+                (user_identifier, usage_date)
+            ).fetchone()
+            return int(row["query_count"]) if row else 0
+
+    def record_usage(self, user_identifier: str, usage_date: str) -> int:
+        """Increments and returns the updated daily query count for a user/client."""
+        now = datetime.now(timezone.utc).isoformat()
+        record_id = f"{user_identifier}:{usage_date}"
+        with self._get_connection() as conn:
+            conn.execute("""
+                INSERT INTO daily_usage (id, user_identifier, usage_date, query_count, last_request_at)
+                VALUES (?, ?, ?, 1, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    query_count = query_count + 1,
+                    last_request_at = excluded.last_request_at;
+            """, (record_id, user_identifier, usage_date, now))
+            row = conn.execute(
+                "SELECT query_count FROM daily_usage WHERE id = ?",
+                (record_id,)
+            ).fetchone()
+            return int(row["query_count"]) if row else 1
 
 
 metadata_repo = MetadataRepository()

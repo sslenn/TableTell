@@ -6,12 +6,15 @@ from fastapi.responses import FileResponse
 from app.core.config import settings
 from app.api.router import api_router
 
+is_prod = settings.ENVIRONMENT.lower() == "production"
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Autonomous AI Data Analyst backend powered by DuckDB, Parquet, and LangGraph.",
-    docs_url="/docs",
-    redoc_url="/redoc"
+    docs_url=None if is_prod else "/docs",
+    redoc_url=None if is_prod else "/redoc",
+    openapi_url=None if is_prod else "/openapi.json",
 )
 
 # CORS setup for decoupled frontend and VPS origins
@@ -32,7 +35,7 @@ possible_dist_paths = [
     Path("/app/frontend/dist"),
     settings.BASE_DIR / "static"
 ]
-FRONTEND_DIST = next((p for p in possible_dist_paths if p.exists() and (p / "index.html").exists()), None)
+FRONTEND_DIST = next((p.resolve() for p in possible_dist_paths if p.exists() and (p / "index.html").exists()), None)
 
 if FRONTEND_DIST:
     assets_dir = FRONTEND_DIST / "assets"
@@ -43,9 +46,16 @@ if FRONTEND_DIST:
     async def serve_spa(full_path: str):
         if full_path.startswith("api") or full_path.startswith("docs") or full_path.startswith("redoc") or full_path == "openapi.json":
             raise HTTPException(status_code=404, detail="Not Found")
-        target_file = FRONTEND_DIST / full_path
-        if target_file.is_file():
-            return FileResponse(str(target_file))
+        try:
+            target_file = (FRONTEND_DIST / full_path).resolve()
+            if not target_file.is_relative_to(FRONTEND_DIST):
+                raise HTTPException(status_code=403, detail="Forbidden")
+            if target_file.is_file():
+                return FileResponse(str(target_file))
+        except HTTPException:
+            raise
+        except Exception:
+            pass
         return FileResponse(str(FRONTEND_DIST / "index.html"))
 else:
     @app.get("/", tags=["Health"])
@@ -54,6 +64,5 @@ else:
             "status": "online",
             "service": settings.PROJECT_NAME,
             "version": settings.VERSION,
-            "docs": "/docs",
             "health": "/api/health"
         }

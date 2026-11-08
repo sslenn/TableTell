@@ -17,7 +17,7 @@ ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
 RUN npm run build
 
 # ==============================================================================
-# Stage 2: Production Python 3.13 Runtime (FastAPI + DuckDB)
+# Stage 2: Production Python 3.13 Runtime (FastAPI + DuckDB, Non-Root User)
 # ==============================================================================
 FROM python:3.13-slim
 
@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gcc \
     && rm -rf /var/lib/apt/lists/*
+
+# Create dedicated unprivileged runtime user
+RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 
 # Install Python requirements
 COPY backend/requirements.txt ./
@@ -40,8 +43,9 @@ COPY backend/ /app/backend/
 # Copy built frontend distribution from builder stage
 COPY --from=frontend-builder /app/frontend/dist /app/frontend/dist
 
-# Create persistent storage directories
-RUN mkdir -p /app/data_lake/raw /app/data_lake/processed /app/data_lake/metadata
+# Create persistent storage directories matching settings.DATA_LAKE_DIR (/app/backend/data_lake)
+RUN mkdir -p /app/backend/data_lake/raw /app/backend/data_lake/processed /app/backend/data_lake/metadata && \
+    chown -R appuser:appuser /app /home/appuser
 
 # Configure environment variables
 ENV PYTHONUNBUFFERED=1 \
@@ -56,6 +60,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:8000/api/health || exit 1
 
 WORKDIR /app/backend
+USER appuser
 
 # Launch production server
 CMD ["python", "run.py"]

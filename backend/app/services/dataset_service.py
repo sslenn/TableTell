@@ -65,12 +65,12 @@ class DatasetService:
                 except Exception:
                     continue
 
-    def list_datasets(self) -> List[Dict[str, Any]]:
+    def list_datasets(self, owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Returns all registered datasets with pre-computed cached health scores and metrics.
-        Eliminates N+1 DuckDB full table scans!
+        Returns all registered datasets visible to `owner_id` (public benchmark datasets + user's own uploads)
+        with pre-computed cached health scores and metrics.
         """
-        datasets = metadata_repo.list_datasets()
+        datasets = metadata_repo.list_datasets(owner_id=owner_id)
         # Format for exact frontend compatibility
         formatted = []
         for d in datasets:
@@ -82,28 +82,33 @@ class DatasetService:
                 "data_health_score": d.get("quality_score", 100),
                 "size_kb": d.get("size_kb", 0.0),
                 "current_version": d.get("current_version", 1),
-                "source_format": d.get("source_format", "csv")
+                "source_format": d.get("source_format", "csv"),
+                "owner_id": d.get("owner_id", "public")
             })
         return formatted
 
-    def get_dataset_detail(self, dataset_id: str) -> Dict[str, Any]:
-        d = metadata_repo.get_dataset(dataset_id)
+    def get_dataset_detail(self, dataset_id: str, owner_id: Optional[str] = None) -> Dict[str, Any]:
+        d = metadata_repo.get_dataset(dataset_id, owner_id=owner_id)
         if not d:
             raise DatasetNotFoundError(dataset_id)
         versions = metadata_repo.list_versions(dataset_id)
         d["versions"] = versions
         return d
 
-    def delete_dataset(self, dataset_id: str) -> Dict[str, Any]:
+    def delete_dataset(self, dataset_id: str, owner_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Deletes a dataset and all associated versions, files, and metadata:
-        1. Checks existence
+        1. Checks existence & ownership
         2. Deletes physical raw and processed parquet files
         3. Cascades deletion in SQLite metadata repository
         """
-        d = metadata_repo.get_dataset(dataset_id)
+        d = metadata_repo.get_dataset(dataset_id, owner_id=owner_id)
         if not d:
             raise DatasetNotFoundError(dataset_id)
+
+        ds_owner = d.get("owner_id", "public")
+        if owner_id and owner_id not in ("local_analyst", "public") and ds_owner != owner_id:
+            raise PermissionError(f"Cannot delete shared benchmark dataset '{dataset_id}'.")
 
         deleted_files = []
 
@@ -145,7 +150,7 @@ class DatasetService:
             "message": f"Dataset '{dataset_id}' and all associated files deleted successfully"
         }
 
-    def rename_dataset(self, old_dataset_id: str, new_name: str) -> Dict[str, Any]:
+    def rename_dataset(self, old_dataset_id: str, new_name: str, owner_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Renames an existing dataset across physical files, SQLite metadata, and DuckDB views.
         """
@@ -153,9 +158,13 @@ class DatasetService:
             raise ValueError("New dataset name cannot be empty")
 
         old_id = old_dataset_id.strip()
-        d = metadata_repo.get_dataset(old_id)
+        d = metadata_repo.get_dataset(old_id, owner_id=owner_id)
         if not d:
             raise DatasetNotFoundError(old_id)
+
+        ds_owner = d.get("owner_id", "public")
+        if owner_id and owner_id not in ("local_analyst", "public") and ds_owner != owner_id:
+            raise PermissionError(f"Cannot rename shared benchmark dataset '{old_id}'.")
 
         # Sanitize new_name into a valid dataset identifier
         raw = new_name.strip()
@@ -210,7 +219,8 @@ class DatasetService:
         self,
         file_content: bytes,
         filename: str,
-        custom_name: Optional[str] = None
+        custom_name: Optional[str] = None,
+        owner_id: str = "public"
     ) -> Dict[str, Any]:
         """
         Ingests uploaded file:
@@ -218,7 +228,7 @@ class DatasetService:
         - Stores raw file immutably in data_lake/raw/
         - Converts to clean Parquet in data_lake/processed/
         - Runs initial profile and quality audit
-        - Persists metadata and version 1 in SQLite
+        - Persists metadata and version 1 in SQLite scoped to `owner_id`
         """
         validate_upload_file(filename, len(file_content))
 
@@ -253,7 +263,8 @@ class DatasetService:
             original_filename=filename,
             source_format=ext,
             raw_storage_path=str(raw_path),
-            description=f"Uploaded {filename}"
+            description=f"Uploaded {filename}",
+            owner_id=owner_id or "public"
         )
 
         metadata_repo.create_version(
@@ -283,31 +294,13 @@ class DatasetService:
 
     def _ensure_benchmark_datasets_exist(self):
         """Creates benchmark datasets if they don't exist yet."""
-        ecom_path = settings.DATA_LAKE_DIR / "ecommerce_sales.parquet"
-        if not ecom_path.exists():
-            rng = np.random.default_rng(42)
-            n_rows = 5000
-            categories = ["Electronics", "Fashion", "Home & Living", "Beauty & Health", "Books"]
-            cat_choices = rng.choice(categories, size=n_rows, p=[0.30, 0.25, 0.20, 0.15, 0.10])
-            dates = pd.date_range("2026-01-01", "2026-06-30", freq="h")
-            prices = {"Electronics": 150.0, "Fashion": 45.0, "Home & Living": 85.0, "Beauty & Health": 30.0, "Books": 22.0}
-            unit_prices = [round(prices[c] * rng.uniform(0.7, 1.4), 2) for c in cat_choices]
-            quantities = rng.choice([1, 2, 3, 4, 5], size=n_rows)
-            discounts = rng.choice([0.0, 0.05, 0.10, 0.15, 0.20], size=n_rows)
-            revenue = [round(p * q * (1 - d), 2) for p, q, d in zip(unit_prices, quantities, discounts)]
-
-            df = pd.DataFrame({
-                "order_id": [f"ORD-{i:05d}" for i in range(1001, 1001 + n_rows)],
-                "order_date": rng.choice(dates, size=n_rows),
-                "product_category": cat_choices,
-                "unit_price_usd": unit_prices,
-                "quantity": quantities,
-                "discount_pct": [round(d * 100, 1) for d in discounts],
-                "revenue_usd": revenue,
-                "country": rng.choice(["United States", "Germany", "United Kingdom", "Japan", "Singapore"], size=n_rows),
-                "delivery_status": rng.choice(["Delivered", "Shipped", "Processing", "Cancelled"], size=n_rows, p=[0.75, 0.15, 0.07, 0.03])
-            })
-            df.to_parquet(ecom_path, engine="pyarrow", index=False)
+        retail_path = settings.DATA_LAKE_DIR / "retail_superstore_sales.parquet"
+        if not retail_path.exists():
+            try:
+                from app.scripts.seed_data import run_seeder
+                run_seeder()
+            except Exception as e:
+                pass
 
 
 dataset_service = DatasetService()

@@ -47,6 +47,7 @@ export type StreamEvent =
 
 export interface MessageItem {
   id: string;
+  datasetId?: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;

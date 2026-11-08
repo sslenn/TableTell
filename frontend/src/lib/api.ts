@@ -1,4 +1,5 @@
 import type { ChatRequest, ChatResponsePayload } from '../types/api';
+import { getCustomApiKey, getClientId } from './apiKeyStorage';
 import type {
   DatasetSummary,
   DatasetAuditReport,
@@ -121,6 +122,11 @@ async function request(path: string, options: RequestOptions = {}): Promise<Resp
     forceFreshToken = false;
     if (token) headers.set('Authorization', `Bearer ${token}`);
 
+    const customKey = getCustomApiKey();
+    if (customKey) headers.set('X-Custom-AI-Key', customKey);
+    const clientId = getClientId();
+    if (clientId) headers.set('X-Client-Id', clientId);
+
     const timeoutSignal = AbortSignal.timeout(timeoutMs);
     const signal = callerSignal ? AbortSignal.any([callerSignal, timeoutSignal]) : timeoutSignal;
 
@@ -199,6 +205,14 @@ export async function authFetch(input: RequestInfo | URL, init?: RequestInit): P
   const token = await getAuthToken();
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
+  }
+  const customKey = getCustomApiKey();
+  if (customKey) {
+    headers.set('X-Custom-AI-Key', customKey);
+  }
+  const clientId = getClientId();
+  if (clientId) {
+    headers.set('X-Client-Id', clientId);
   }
   return fetch(input, { ...init, headers });
 }
@@ -410,4 +424,34 @@ export async function fetchDriverAnalysis(
     errorContext: 'Could not analyze drivers'
   });
   return data.data;
+}
+
+export interface QuotaStatus {
+  byok_active: boolean;
+  daily_limit: number | null;
+  used_today: number;
+  remaining: number | null;
+  resets_at: string | null;
+  server_has_default_key: boolean;
+  byok_key_preview: string | null;
+}
+
+export async function fetchQuotaStatus(): Promise<QuotaStatus> {
+  return requestJson<QuotaStatus>(`${BASE_URL}/usage/quota`, {
+    errorContext: 'Could not fetch quota status'
+  });
+}
+
+export async function verifyApiKey(
+  apiKey: string
+): Promise<{ valid: boolean; provider?: string; message?: string; error?: string }> {
+  return requestJson<{ valid: boolean; provider?: string; message?: string; error?: string }>(
+    `${BASE_URL}/usage/verify-key`,
+    {
+      method: 'POST',
+      ...jsonBody({ api_key: apiKey }),
+      timeoutMs: 15_000,
+      errorContext: 'Key verification failed'
+    }
+  );
 }
