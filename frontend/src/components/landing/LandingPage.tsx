@@ -265,9 +265,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSign
               </h1>
 
               <p className="mt-5 text-base sm:text-lg leading-relaxed max-w-xl text-[#CBD5E1]">
-                TableTell is an AI analyst that turns plain-English questions into SQL, runs them on
-                a real columnar engine, and returns charts you can audit. The numbers are computed,
-                never generated.
+                TableTell audits and cleans your raw spreadsheets into analysis-ready data, then
+                turns plain-English questions into verified DuckDB SQL and charts you can audit.
               </p>
 
               <div className="mt-7 flex flex-wrap gap-3">

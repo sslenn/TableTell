@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <strong>Autonomous AI Data Analyst & Deterministic Lakehouse Assistant</strong><br>
-  <em>Turn raw datasets into explainable, mathematically verified business intelligence.</em>
+  <strong>AI Data Preparation & Conversational Lakehouse Studio</strong><br>
+  <em>TableTell audits and cleans your raw spreadsheets into analysis-ready data, then turns plain-English questions into verified DuckDB SQL and charts you can audit.</em>
 </p>
 
 <p align="center">
