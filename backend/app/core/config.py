@@ -35,7 +35,12 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "") or os.getenv("AI_API_KEY", "")
     # Optional backup provider: a free Google AI Studio key (AIza...) used when the primary router fails
     GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY", "")
-    BACKUP_MODEL: str = os.getenv("BACKUP_MODEL", "gemini-2.5-flash")
+    BACKUP_MODEL: str = os.getenv("BACKUP_MODEL", "gemini-3-flash-preview")
+
+    # Rate Limiting & BYOK Settings
+    ALLOW_BYOK: bool = os.getenv("ALLOW_BYOK", "true").lower() in ("true", "1", "yes")
+    ENABLE_DAILY_LIMITS: bool = os.getenv("ENABLE_DAILY_LIMITS", "true").lower() in ("true", "1", "yes")
+    DAILY_FREE_QUERIES_LIMIT: int = int(os.getenv("DAILY_FREE_QUERIES_LIMIT", "20"))
     
     # Rate Limiting & BYOK Configuration
     DAILY_FREE_QUERIES_LIMIT: int = int(os.getenv("DAILY_FREE_QUERIES_LIMIT", "20"))
@@ -46,14 +51,17 @@ class Settings(BaseSettings):
     CLERK_SECRET_KEY: str = os.getenv("CLERK_SECRET_KEY", "")
     CLERK_PUBLISHABLE_KEY: str = os.getenv("CLERK_PUBLISHABLE_KEY", "") or os.getenv("VITE_CLERK_PUBLISHABLE_KEY", "")
     CLERK_JWKS_URL: str = os.getenv("CLERK_JWKS_URL", "")
-    
-    # CORS Origins (allow React Vite dev, Next.js, and Streamlit)
+    CLERK_ISSUER: str = os.getenv("CLERK_ISSUER", "")
+    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
+
+    # CORS Origins (allow React Vite dev, Next.js, Streamlit, plus comma-separated CORS_ORIGINS env var)
     CORS_ORIGINS: list[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "http://localhost:8501", # Streamlit dev compatibility
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8501",
+        ).split(",")
+        if origin.strip()
     ]
 
     class Config:

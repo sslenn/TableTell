@@ -11,10 +11,11 @@ import json
 import math
 import asyncio
 from typing import Dict, Any, List, Optional, AsyncGenerator
+import duckdb
 from app.core.config import settings
 from app.storage.metadata_repo import metadata_repo
 from app.storage.parquet_store import parquet_store
-from app.analytics.executor import query_executor
+from app.analytics.executor import query_executor, _bind_views_on_conn, _apply_duckdb_sandbox
 from app.analytics.sql_generator import get_gemini_client, UniversalClient, GoogleGenAIClient
 
 GOOGLE_OPENAI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
@@ -337,34 +338,46 @@ def _fmt_num(val: Any, decimals: int = 2) -> str:
 
 
 class AssistantService:
-    def get_or_create_conversation(self, conversation_id: Optional[str] = None) -> Dict[str, Any]:
-        """Resolves active conversation or returns default thread."""
-        if conversation_id:
-            conv = metadata_repo.get_or_create_default_conversation()
-            return conv
-        return metadata_repo.get_or_create_default_conversation()
+    def get_or_create_conversation(
+        self,
+        conversation_id: Optional[str] = None,
+        user_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Resolves active conversation or returns default thread scoped to `user_id`."""
+        owner = (user_id or "public").strip()
+        return metadata_repo.get_or_create_default_conversation(owner_id=owner)
 
-    def get_history(self, conversation_id: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Fetches chronological messages for the active assistant thread."""
-        conv = self.get_or_create_conversation(conversation_id)
+    def get_history(
+        self,
+        conversation_id: Optional[str] = None,
+        user_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Fetches chronological messages for the active user's assistant thread."""
+        conv = self.get_or_create_conversation(conversation_id, user_id=user_id)
         return metadata_repo.list_assistant_messages(conv["id"])
 
-    def clear_history(self, conversation_id: Optional[str] = None) -> None:
-        """Clears all messages in the active thread."""
-        conv = self.get_or_create_conversation(conversation_id)
+    def clear_history(
+        self,
+        conversation_id: Optional[str] = None,
+        user_id: Optional[str] = None
+    ) -> None:
+        """Clears all messages in the active user's thread."""
+        conv = self.get_or_create_conversation(conversation_id, user_id=user_id)
         metadata_repo.clear_assistant_history(conv["id"])
 
     def _compute_dataset_statistics(self, dataset_id: Optional[str]) -> Dict[str, Any]:
         """
         Computes real-time DuckDB descriptive statistics, quartiles, skewness, and pairwise correlations
-        for the active dataset so both the LLM and fallback engine can cite verified numbers.
+        for the active dataset inside an isolated in-memory DuckDB connection.
         """
         if not dataset_id:
             return {}
+        conn = None
         try:
             parquet_path = parquet_store.resolve_dataset_path(dataset_id)
-            query_executor.register_dataset_view(dataset_id, parquet_path)
-            conn = query_executor.conn
+            conn = duckdb.connect(database=":memory:")
+            _bind_views_on_conn(conn, dataset_id, parquet_path)
+            _apply_duckdb_sandbox(conn)
 
             schema_rows = conn.execute("DESCRIBE dataset").fetchall()
             numeric_types = ("INT", "BIGINT", "DOUBLE", "FLOAT", "DECIMAL", "NUMERIC", "REAL", "HUGEINT", "SMALLINT", "TINYINT")
@@ -469,6 +482,12 @@ class AssistantService:
             }
         except Exception:
             return {}
+        finally:
+            if conn is not None:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
 
     def _format_live_stats_markdown(self, stats_bundle: Dict[str, Any]) -> str:
         """Formats live DuckDB descriptive statistics into a readable Markdown table."""
@@ -565,6 +584,8 @@ class AssistantService:
 
     def _provider_chain(self, api_key: Optional[str] = None) -> List[Any]:
         """Ordered list of (label, client, model) to try: primary client, then optional Google Gemini backup."""
+        if api_key == "__OFFLINE_QUOTA_EXCEEDED__":
+            return []
         chain: List[Any] = []
         primary = get_gemini_client(api_key=api_key)
         if primary:
@@ -579,6 +600,8 @@ class AssistantService:
         return chain
 
     def _call_llm(self, prompt: str, api_key: Optional[str] = None) -> str:
+        if api_key == "__OFFLINE_QUOTA_EXCEEDED__":
+            raise RuntimeError("Daily free AI query quota reached")
         errors: List[str] = []
         for label, client, model in self._provider_chain(api_key=api_key):
             try:
@@ -616,16 +639,17 @@ class AssistantService:
         query: str,
         conversation_id: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Processes a user question:
-        1. Saves user query to SQLite
+        1. Saves user query to SQLite (scoped to `user_id`)
         2. Computes live DuckDB statistical profile for the active dataset
         3. Calls the AI model chain (primary router -> Google backup), or the offline library if all fail
         4. Saves assistant answer to SQLite
         """
-        conv = self.get_or_create_conversation(conversation_id)
+        conv = self.get_or_create_conversation(conversation_id, user_id=user_id)
         conv_id = conv["id"]
         metadata_repo.save_assistant_message(conv_id, role="user", content=query)
 
@@ -653,12 +677,13 @@ class AssistantService:
         query: str,
         conversation_id: Optional[str] = None,
         context: Optional[Dict[str, Any]] = None,
-        api_key: Optional[str] = None
+        api_key: Optional[str] = None,
+        user_id: Optional[str] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Server-Sent Events streaming generator for real-time token delivery.
         """
-        conv = self.get_or_create_conversation(conversation_id)
+        conv = self.get_or_create_conversation(conversation_id, user_id=user_id)
         conv_id = conv["id"]
         metadata_repo.save_assistant_message(conv_id, role="user", content=query)
 

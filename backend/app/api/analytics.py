@@ -2,21 +2,29 @@
 API endpoints for Direct Analytical Queries and Run Lineage.
 """
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request, Depends
 from typing import List, Dict, Any, Optional
+from app.core.auth import get_current_user, AuthenticatedUser
+from app.core.rate_limit import check_and_apply_ai_access
 from app.services.analytics_service import analytics_service
 from app.storage.metadata_repo import metadata_repo
-from app.schemas.analytics import ChatRequest, ChatResponsePayload, AnalyticalRunDetail
+from app.schemas.analytics import ChatRequest, ChatResponsePayload, AnalyticalRunDetail, DriverAnalysisRequest
+from app.analytics.driver_analyzer import driver_analyzer
 
 router = APIRouter(prefix="/analytics", tags=["Analytics & Lineage"])
 
 
 @router.post("/query", response_model=ChatResponsePayload)
-async def execute_query(req: ChatRequest):
+async def execute_query(
+    req: ChatRequest,
+    request: Request,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """
     Direct analytical query endpoint returning verified DuckDB table,
     Plotly chart specification, and executive takeaway.
     """
+    check_and_apply_ai_access(request, current_user, increment=True)
     try:
         return analytics_service.process_query(
             dataset_id=req.dataset_id,
@@ -48,10 +56,6 @@ async def get_analytical_run(run_id: str):
     if not run:
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
     return {"status": "success", "data": run}
-
-
-from app.analytics.driver_analyzer import driver_analyzer
-from app.schemas.analytics import DriverAnalysisRequest
 
 
 @router.post("/drivers")

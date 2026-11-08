@@ -16,22 +16,22 @@ from app.storage.metadata_repo import metadata_repo
 
 def get_client_identifier(request: Request, user: Optional[AuthenticatedUser] = None) -> str:
     """
-    Identifies the caller uniquely:
-    1. Authenticated user ID (if not generic local/guest)
-    2. 'x-client-id' header generated and persisted by frontend in localStorage
-    3. Client IP address as fallback
+    Identifies the caller uniquely for daily rate limiting:
+    1. Verified Clerk user ID (cannot be spoofed)
+    2. Client IP address (prevents bypassing rate limits by rotating a client-side `x-client-id` header)
     """
     if user and user.user_id and user.user_id not in ("guest_analyst", "local_analyst"):
         return f"user:{user.user_id}"
 
-    client_id = request.headers.get("x-client-id", "").strip()
-    if client_id:
-        return f"cid:{client_id}"
+    # Check trusted reverse-proxy headers (Nginx X-Real-IP or X-Forwarded-For)
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip and real_ip.strip():
+        return f"ip:{real_ip.strip()}"
 
     client_ip = request.client.host if request.client else "127.0.0.1"
-    # Check X-Forwarded-For if behind a proxy like Coolify / Render / Nginx
     forwarded = request.headers.get("x-forwarded-for")
     if forwarded:
+        # Use the first client hop IP
         client_ip = forwarded.split(",")[0].strip()
 
     return f"ip:{client_ip}"

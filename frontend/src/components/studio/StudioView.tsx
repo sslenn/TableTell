@@ -45,15 +45,20 @@ export const StudioView: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const activeDatasetObj = datasets.find((d) => d.dataset_id === datasetId);
+  const datasetMessages = React.useMemo(
+    () => messages.filter((m) => m.datasetId === datasetId),
+    [messages, datasetId]
+  );
 
   // Auto-scroll when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isStreaming]);
+  }, [datasetMessages, isStreaming]);
 
   // Fetch columns whenever datasetId changes
   useEffect(() => {
     if (!datasetId) return;
+    setActiveColumns([]);
     fetchDatasetPreview(datasetId, 1)
       .then((res) => {
         const cols = (res.columns as string[]) || [];
@@ -95,8 +100,46 @@ export const StudioView: React.FC = () => {
     const colList = activeColumns.map((c) => c.toLowerCase());
     const idLower = datasetId.toLowerCase();
 
-    // 1. SaaS / Churn dataset
-    if (idLower.includes('churn') || colList.includes('churned') || colList.includes('plan_tier')) {
+    // 1. SaaS Subscription Financials dataset (subscription_tier, arr_usd, customer_ltv_usd, customer_cac_usd)
+    if (
+      idLower.includes('saas_subscription') ||
+      colList.includes('subscription_tier') ||
+      colList.includes('arr_usd')
+    ) {
+      return [
+        {
+          tag: 'ARR Share',
+          title: 'ARR by Subscription Tier',
+          desc: 'Compare Annual Recurring Revenue across Enterprise, Pro, and Starter.',
+          icon: DollarSign,
+          query: 'What percentage of total ARR comes from each subscription_tier? Show with a bar chart'
+        },
+        {
+          tag: 'Unit Economics',
+          title: 'LTV vs CAC by Tier',
+          desc: 'Evaluate average customer LTV and CAC across subscription tiers.',
+          icon: TrendingUp,
+          query: 'Compare average customer_ltv_usd and customer_cac_usd across subscription_tier'
+        },
+        {
+          tag: 'Industry',
+          title: 'Top Industries by ARR',
+          desc: 'Rank customer industries by total ARR and expansion revenue.',
+          icon: Layers,
+          query: 'Which industry generates the highest total arr_usd and expansion_revenue_usd?'
+        },
+        {
+          tag: 'Renewals',
+          title: 'Renewal Status Breakdown',
+          desc: 'Account counts and MRR at risk by renewal_status.',
+          icon: Users,
+          query: 'Show account count and total mrr_usd grouped by renewal_status'
+        }
+      ];
+    }
+
+    // 2. Customer Churn dataset
+    if (idLower.includes('churn') || colList.includes('churned') || colList.includes('plan_tier') || colList.includes('churn')) {
       return [
         {
           tag: 'Retention',
@@ -256,7 +299,7 @@ export const StudioView: React.FC = () => {
 
         {/* Messages Scroll Area */}
         <div className="flex-1 overflow-y-auto pr-1 min-h-0">
-          {messages.length === 0 ? (
+          {datasetMessages.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 px-4 text-center max-w-3xl mx-auto">
               {/* Brand Hero Lockup */}
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3.5 bg-[#0D9488]/15 border border-[#0D9488]/30 text-[#0D9488] shadow-[var(--tt-shadow-card)]">
@@ -346,7 +389,7 @@ export const StudioView: React.FC = () => {
             </div>
           ) : (
             <div className="py-2">
-              {messages.map((m) => (
+              {datasetMessages.map((m) => (
                 <ChatMessage key={m.id} message={m} />
               ))}
               <div ref={messagesEndRef} />

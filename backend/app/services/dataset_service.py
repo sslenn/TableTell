@@ -65,12 +65,12 @@ class DatasetService:
                 except Exception:
                     continue
 
-    def list_datasets(self) -> List[Dict[str, Any]]:
+    def list_datasets(self, owner_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Returns all registered datasets with pre-computed cached health scores and metrics.
-        Eliminates N+1 DuckDB full table scans!
+        Returns all registered datasets visible to `owner_id` (public benchmark datasets + user's own uploads)
+        with pre-computed cached health scores and metrics.
         """
-        datasets = metadata_repo.list_datasets()
+        datasets = metadata_repo.list_datasets(owner_id=owner_id)
         # Format for exact frontend compatibility
         formatted = []
         for d in datasets:
@@ -82,28 +82,33 @@ class DatasetService:
                 "data_health_score": d.get("quality_score", 100),
                 "size_kb": d.get("size_kb", 0.0),
                 "current_version": d.get("current_version", 1),
-                "source_format": d.get("source_format", "csv")
+                "source_format": d.get("source_format", "csv"),
+                "owner_id": d.get("owner_id", "public")
             })
         return formatted
 
-    def get_dataset_detail(self, dataset_id: str) -> Dict[str, Any]:
-        d = metadata_repo.get_dataset(dataset_id)
+    def get_dataset_detail(self, dataset_id: str, owner_id: Optional[str] = None) -> Dict[str, Any]:
+        d = metadata_repo.get_dataset(dataset_id, owner_id=owner_id)
         if not d:
             raise DatasetNotFoundError(dataset_id)
         versions = metadata_repo.list_versions(dataset_id)
         d["versions"] = versions
         return d
 
-    def delete_dataset(self, dataset_id: str) -> Dict[str, Any]:
+    def delete_dataset(self, dataset_id: str, owner_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Deletes a dataset and all associated versions, files, and metadata:
-        1. Checks existence
+        1. Checks existence & ownership
         2. Deletes physical raw and processed parquet files
         3. Cascades deletion in SQLite metadata repository
         """
-        d = metadata_repo.get_dataset(dataset_id)
+        d = metadata_repo.get_dataset(dataset_id, owner_id=owner_id)
         if not d:
             raise DatasetNotFoundError(dataset_id)
+
+        ds_owner = d.get("owner_id", "public")
+        if owner_id and owner_id not in ("local_analyst", "public") and ds_owner != owner_id:
+            raise PermissionError(f"Cannot delete shared benchmark dataset '{dataset_id}'.")
 
         deleted_files = []
 
@@ -145,7 +150,7 @@ class DatasetService:
             "message": f"Dataset '{dataset_id}' and all associated files deleted successfully"
         }
 
-    def rename_dataset(self, old_dataset_id: str, new_name: str) -> Dict[str, Any]:
+    def rename_dataset(self, old_dataset_id: str, new_name: str, owner_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Renames an existing dataset across physical files, SQLite metadata, and DuckDB views.
         """
@@ -153,9 +158,13 @@ class DatasetService:
             raise ValueError("New dataset name cannot be empty")
 
         old_id = old_dataset_id.strip()
-        d = metadata_repo.get_dataset(old_id)
+        d = metadata_repo.get_dataset(old_id, owner_id=owner_id)
         if not d:
             raise DatasetNotFoundError(old_id)
+
+        ds_owner = d.get("owner_id", "public")
+        if owner_id and owner_id not in ("local_analyst", "public") and ds_owner != owner_id:
+            raise PermissionError(f"Cannot rename shared benchmark dataset '{old_id}'.")
 
         # Sanitize new_name into a valid dataset identifier
         raw = new_name.strip()
@@ -210,7 +219,8 @@ class DatasetService:
         self,
         file_content: bytes,
         filename: str,
-        custom_name: Optional[str] = None
+        custom_name: Optional[str] = None,
+        owner_id: str = "public"
     ) -> Dict[str, Any]:
         """
         Ingests uploaded file:
@@ -218,7 +228,7 @@ class DatasetService:
         - Stores raw file immutably in data_lake/raw/
         - Converts to clean Parquet in data_lake/processed/
         - Runs initial profile and quality audit
-        - Persists metadata and version 1 in SQLite
+        - Persists metadata and version 1 in SQLite scoped to `owner_id`
         """
         validate_upload_file(filename, len(file_content))
 
@@ -253,7 +263,8 @@ class DatasetService:
             original_filename=filename,
             source_format=ext,
             raw_storage_path=str(raw_path),
-            description=f"Uploaded {filename}"
+            description=f"Uploaded {filename}",
+            owner_id=owner_id or "public"
         )
 
         metadata_repo.create_version(

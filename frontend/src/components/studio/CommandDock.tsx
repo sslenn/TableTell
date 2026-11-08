@@ -38,6 +38,7 @@ export const CommandDock: React.FC<CommandDockProps> = ({
 
   const {
     datasetId,
+    activeColumns,
     suggestedPrompt,
     setSuggestedPrompt
   } = useAppStore();
@@ -235,11 +236,36 @@ export const CommandDock: React.FC<CommandDockProps> = ({
     }
   };
 
+  const primaryCatCol =
+    activeColumns.find(
+      (c) =>
+        !c.endsWith('_id') &&
+        !c.includes('date') &&
+        !c.includes('time') &&
+        !c.includes('usd') &&
+        !c.includes('pct') &&
+        !c.includes('count') &&
+        !c.includes('score')
+    ) || 'category';
+
+  const primaryNumCol =
+    activeColumns.find(
+      (c) =>
+        c.includes('arr') ||
+        c.includes('mrr') ||
+        c.includes('revenue') ||
+        c.includes('sales') ||
+        c.includes('spend') ||
+        c.includes('score') ||
+        c.includes('price') ||
+        c.includes('amount')
+    ) || activeColumns[1] || 'value';
+
   const quickTemplates = [
-    { label: 'Top 10', icon: Award, template: 'Show the top 10 records ordered by ' },
-    { label: 'Breakdown', icon: BarChart2, template: 'Compare total revenue and row counts across categories' },
-    { label: 'Trends', icon: TrendingUp, template: 'Show the weekly or monthly trend over time with a chart' },
-    { label: 'Summary', icon: Layers, template: 'Calculate statistical summary (mean, median, min, max) for ' }
+    { label: 'Top 10', icon: Award, template: `Show the top 10 records in ${datasetId} ordered by ${primaryNumCol} descending` },
+    { label: 'Breakdown', icon: BarChart2, template: `Compare total ${primaryNumCol} and record counts grouped by ${primaryCatCol}` },
+    { label: 'Trends', icon: TrendingUp, template: `Show the distribution or trend of ${primaryNumCol} across ${primaryCatCol} with a chart` },
+    { label: 'Summary', icon: Layers, template: `Calculate statistical summary (mean, median, min, max) for ${primaryNumCol} grouped by ${primaryCatCol}` }
   ];
 
   return (

@@ -1,13 +1,16 @@
 """
 DuckDB Analytical Query Executor for TableTell.
-Executes validated read-only SQL queries via registered views against Parquet files.
+Executes validated read-only SQL queries in isolated, directory-jailed DuckDB connections
+against Parquet files in the data lake.
 """
 
 import time
 import math
+import threading
 from pathlib import Path
 from typing import Dict, Any, Optional
 import duckdb
+from app.core.config import settings
 from app.analytics.sql_validator import validate_read_only_sql
 from app.storage.parquet_store import parquet_store
 from app.core.exceptions import QueryExecutionError
@@ -18,29 +21,50 @@ def _format_cell_value(col: str, val: Any) -> Any:
         if not math.isfinite(val):
             return None
         col_lower = col.lower()
-        if any(kw in col_lower for kw in ["price", "revenue", "cost", "amount", "spend", "sales", "profit", "fee", "salary", "discount", "pricing", "charge", "tax", "total", "subtotal", "val"]):
+        if any(kw in col_lower for kw in [
+            "price", "revenue", "cost", "amount", "spend", "sales",
+            "profit", "fee", "salary", "discount", "pricing", "charge",
+            "tax", "total", "subtotal", "val"
+        ]):
             return round(val, 2)
         return round(val, 4)
     return val
 
 
+def _apply_duckdb_sandbox(conn: duckdb.DuckDBPyConnection) -> None:
+    """
+    Restricts DuckDB filesystem access strictly to DATA_LAKE_DIR and locks configuration
+    so user queries can never read host files outside the data lake or modify DuckDB settings.
+    """
+    lake_dir_str = str(settings.DATA_LAKE_DIR.resolve()).replace("\\", "/").replace("'", "''")
+    try:
+        conn.execute(f"SET allowed_directories = ['{lake_dir_str}'];")
+        conn.execute("SET lock_configuration = true;")
+    except Exception:
+        pass
+
+
+def _bind_views_on_conn(conn: duckdb.DuckDBPyConnection, dataset_id: str, parquet_path: Path) -> None:
+    path_str = str(parquet_path.resolve()).replace("\\", "/").replace("'", "''")
+    safe_id = parquet_store.sanitize_id(dataset_id)
+    conn.execute(f'CREATE OR REPLACE VIEW "{safe_id}" AS SELECT * FROM \'{path_str}\'')
+    conn.execute(f'CREATE OR REPLACE VIEW dataset AS SELECT * FROM "{safe_id}"')
+    conn.execute(f'CREATE OR REPLACE VIEW df AS SELECT * FROM "{safe_id}"')
+    conn.execute(f'CREATE OR REPLACE VIEW data AS SELECT * FROM "{safe_id}"')
+
+
 class QueryExecutor:
     def __init__(self, conn: Optional[duckdb.DuckDBPyConnection] = None):
+        self._lock = threading.RLock()
         self.conn = conn or duckdb.connect(database=":memory:")
+        _apply_duckdb_sandbox(self.conn)
 
     def register_dataset_view(self, dataset_id: str, parquet_path: Path):
         """
-        Registers a Parquet file as a clean DuckDB View.
-        Eliminates regex string table replacement!
+        Registers a Parquet file as a clean DuckDB View on the shared connection (thread-safe).
         """
-        path_str = str(parquet_path).replace("\\", "/")
-        safe_id = parquet_store.sanitize_id(dataset_id)
-        
-        # Register main table view and common aliases
-        self.conn.execute(f'CREATE OR REPLACE VIEW "{safe_id}" AS SELECT * FROM \'{path_str}\'')
-        self.conn.execute(f'CREATE OR REPLACE VIEW dataset AS SELECT * FROM "{safe_id}"')
-        self.conn.execute(f'CREATE OR REPLACE VIEW df AS SELECT * FROM "{safe_id}"')
-        self.conn.execute(f'CREATE OR REPLACE VIEW data AS SELECT * FROM "{safe_id}"')
+        with self._lock:
+            _bind_views_on_conn(self.conn, dataset_id, parquet_path)
 
     def execute_query(
         self,
@@ -50,14 +74,18 @@ class QueryExecutor:
         max_rows: int = 1000,
     ) -> Dict[str, Any]:
         """
-        Validates and executes analytical SQL against the target dataset version.
+        Validates and executes analytical SQL against the target dataset version
+        inside an isolated per-request in-memory DuckDB connection so concurrent requests
+        never overwrite each other's `dataset` / `df` views.
         """
         parquet_path = parquet_store.resolve_dataset_path(dataset_id, version=version)
-        self.register_dataset_view(dataset_id, parquet_path)
 
         # 1. Validate read-only constraints
         try:
-            validated_sql = validate_read_only_sql(sql_query, allowed_table_names=[dataset_id, "dataset", "df", "data"])
+            validated_sql = validate_read_only_sql(
+                sql_query,
+                allowed_table_names=[dataset_id, "dataset", "df", "data"]
+            )
         except Exception as e:
             return {
                 "success": False,
@@ -69,10 +97,14 @@ class QueryExecutor:
                 "error": f"Validation Error: {str(e)}"
             }
 
-        # 2. Execute with timing
+        # 2. Execute in an isolated, directory-jailed DuckDB connection
         start_time = time.perf_counter()
+        isolated_conn = duckdb.connect(database=":memory:")
         try:
-            res = self.conn.execute(validated_sql)
+            _bind_views_on_conn(isolated_conn, dataset_id, parquet_path)
+            _apply_duckdb_sandbox(isolated_conn)
+
+            res = isolated_conn.execute(validated_sql)
             columns = [desc[0] for desc in res.description] if res.description else []
             records = res.fetchmany(max_rows)
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
@@ -99,6 +131,11 @@ class QueryExecutor:
                 "duration_ms": duration_ms,
                 "error": f"{type(e).__name__}: {str(e)}"
             }
+        finally:
+            try:
+                isolated_conn.close()
+            except Exception:
+                pass
 
 
 query_executor = QueryExecutor()

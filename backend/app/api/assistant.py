@@ -1,6 +1,7 @@
 """
 API endpoints for TableTell Floating AI Assistant (REST and SSE streaming).
-Enriched with contextual awareness (active tab, selected dataset, health score, active columns).
+Enriched with contextual awareness (active tab, selected dataset, health score, active columns)
+and per-user conversation isolation.
 """
 
 from fastapi import APIRouter, HTTPException, Query, Request, Depends
@@ -44,7 +45,7 @@ async def chat_with_assistant(
     except HTTPException:
         # If daily quota is reached or server key is missing without BYOK,
         # gracefully fall back to the built-in statistical knowledge base
-        custom_api_key = None
+        custom_api_key = "__OFFLINE_QUOTA_EXCEEDED__"
 
     try:
         context_dict = req.context.model_dump(exclude_none=True) if req.context else None
@@ -52,7 +53,8 @@ async def chat_with_assistant(
             query=req.query,
             conversation_id=req.conversation_id,
             context=context_dict,
-            api_key=custom_api_key
+            api_key=custom_api_key,
+            user_id=current_user.user_id
         )
         return res
     except Exception as e:
@@ -71,7 +73,7 @@ async def stream_assistant_chat(
         access = check_and_apply_ai_access(request, current_user, increment=True)
         custom_api_key = access.get("api_key")
     except HTTPException:
-        custom_api_key = None
+        custom_api_key = "__OFFLINE_QUOTA_EXCEEDED__"
 
     try:
         context_dict = req.context.model_dump(exclude_none=True) if req.context else None
@@ -80,7 +82,8 @@ async def stream_assistant_chat(
                 query=req.query,
                 conversation_id=req.conversation_id,
                 context=context_dict,
-                api_key=custom_api_key
+                api_key=custom_api_key,
+                user_id=current_user.user_id
             )
         )
     except Exception as e:
@@ -88,20 +91,32 @@ async def stream_assistant_chat(
 
 
 @router.get("/history")
-async def get_assistant_history(conversation_id: Optional[str] = Query(None)) -> Dict[str, Any]:
-    """Retrieves conversation message history for the active thread."""
+async def get_assistant_history(
+    conversation_id: Optional[str] = Query(None),
+    current_user: AuthenticatedUser = Depends(get_optional_user)
+) -> Dict[str, Any]:
+    """Retrieves conversation message history for the active user's thread."""
     try:
-        messages = assistant_service.get_history(conversation_id=conversation_id)
+        messages = assistant_service.get_history(
+            conversation_id=conversation_id,
+            user_id=current_user.user_id
+        )
         return {"status": "success", "messages": messages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
 
 
 @router.delete("/history")
-async def clear_assistant_history(conversation_id: Optional[str] = Query(None)) -> Dict[str, Any]:
-    """Clears all conversation messages in the thread."""
+async def clear_assistant_history(
+    conversation_id: Optional[str] = Query(None),
+    current_user: AuthenticatedUser = Depends(get_optional_user)
+) -> Dict[str, Any]:
+    """Clears all conversation messages in the active user's thread."""
     try:
-        assistant_service.clear_history(conversation_id=conversation_id)
+        assistant_service.clear_history(
+            conversation_id=conversation_id,
+            user_id=current_user.user_id
+        )
         return {"status": "success", "message": "Assistant history cleared."}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to clear history: {str(e)}")
