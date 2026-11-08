@@ -8,6 +8,7 @@ import logging
 from fastapi import APIRouter, HTTPException, Request, Depends
 from sse_starlette.sse import EventSourceResponse
 from app.agent.graph import tabletell_agent
+from app.services.dataset_service import dataset_service
 from app.services.quality_service import quality_service
 from app.schemas.analytics import ChatRequest
 from app.core.auth import get_current_user, AuthenticatedUser
@@ -28,6 +29,7 @@ async def chat_endpoint(
     access = check_and_apply_ai_access(request, current_user, increment=True)
 
     try:
+        dataset_service.get_dataset_detail(req.dataset_id, owner_id=current_user.user_id)
         schema_digest = quality_service.get_schema_digest(req.dataset_id, version=req.version)
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Dataset error: {str(e)}")
@@ -90,6 +92,7 @@ async def chat_stream_endpoint(
     access = check_and_apply_ai_access(request, current_user, increment=True)
 
     try:
+        dataset_service.get_dataset_detail(req.dataset_id, owner_id=current_user.user_id)
         schema_digest = quality_service.get_schema_digest(req.dataset_id, version=req.version)
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Dataset error: {str(e)}")

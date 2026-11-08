@@ -144,7 +144,8 @@ class DataCleaningPipeline:
         self,
         dataset_id: str,
         approved_rec_ids: Optional[List[str]] = None,
-        description: str = "Auto-cleaned dataset version"
+        description: str = "Auto-cleaned dataset version",
+        owner_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Executes cleaning pipeline with:
@@ -152,8 +153,10 @@ class DataCleaningPipeline:
         2. Before-and-after statistics
         3. Backward-compatible keys for frontend UI
         """
-        # Resolve source parquet
-        d_meta = metadata_repo.get_dataset(dataset_id)
+        # Resolve source parquet and verify ownership
+        d_meta = metadata_repo.get_dataset(dataset_id, owner_id=owner_id)
+        if not d_meta and metadata_repo.get_dataset(dataset_id) is not None:
+            raise DatasetNotFoundError(dataset_id)
         current_version = d_meta["current_version"] if d_meta else 1
         source_path = parquet_store.resolve_dataset_path(dataset_id, version=current_version)
 
@@ -214,6 +217,14 @@ class DataCleaningPipeline:
             changelog=all_changelog
         )
 
+        # Determine owner for the cleaned dataset (preserve user privacy)
+        source_owner = d_meta.get("owner_id", "public") if d_meta else "public"
+        effective_owner = (
+            owner_id
+            if (owner_id and owner_id not in ("public", "local_analyst"))
+            else source_owner
+        )
+
         # Also register the clean alias as a dataset for legacy catalog cards
         metadata_repo.create_dataset(
             dataset_id=clean_dataset_id,
@@ -221,7 +232,8 @@ class DataCleaningPipeline:
             original_filename=f"{clean_dataset_id}.parquet",
             source_format="parquet",
             raw_storage_path=str(source_path),
-            description=f"Cleaned version derived from {dataset_id}"
+            description=f"Cleaned version derived from {dataset_id}",
+            owner_id=effective_owner,
         )
         metadata_repo.create_version(
             dataset_id=clean_dataset_id,

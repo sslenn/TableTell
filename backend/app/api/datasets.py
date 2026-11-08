@@ -52,14 +52,18 @@ async def get_dataset(dataset_id: str, current_user: AuthenticatedUser = Depends
 async def preview_dataset(
     dataset_id: str,
     limit: int = Query(50, ge=1, le=5000),
-    version: Optional[int] = Query(None)
+    version: Optional[int] = Query(None),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Returns rows of a dataset for tabular preview (defaults to 50, supports up to 5000)."""
     try:
+        dataset_service.get_dataset_detail(dataset_id, owner_id=current_user.user_id)
         safe_id = parquet_store.sanitize_id(dataset_id)
         sql = f'SELECT * FROM "{safe_id}" LIMIT {limit}'
         res = query_executor.execute_query(safe_id, sql, version=version, max_rows=limit)
         return {"status": "success", "data": res}
+    except DatasetNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Preview failed: {str(e)}")
 
@@ -70,10 +74,12 @@ async def preview_dataset(
 async def audit_dataset(
     dataset_id: str,
     version: Optional[int] = Query(None),
-    refresh: bool = Query(False)
+    refresh: bool = Query(False),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """Returns the comprehensive multi-dimensional data quality audit and health score."""
     try:
+        dataset_service.get_dataset_detail(dataset_id, owner_id=current_user.user_id)
         audit = quality_service.get_dataset_audit(dataset_id, version=version, force_recompute=refresh)
         return {"status": "success", "data": audit.model_dump()}
     except Exception as e:
@@ -81,11 +87,17 @@ async def audit_dataset(
 
 
 @router.get("/{dataset_id}/versions", response_model=Dict[str, Any])
-async def list_versions(dataset_id: str):
+async def list_versions(
+    dataset_id: str,
+    current_user: AuthenticatedUser = Depends(get_current_user)
+):
     """Returns all recorded versions and transformations for a dataset."""
     try:
+        dataset_service.get_dataset_detail(dataset_id, owner_id=current_user.user_id)
         versions = metadata_repo.list_versions(dataset_id)
         return {"status": "success", "data": versions}
+    except DatasetNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch versions: {str(e)}")
 
@@ -98,13 +110,15 @@ async def export_dataset(
     delimiter: Optional[str] = Query(None, description="Delimiter for CSV/TSV (e.g. ',', ';', '\\t')"),
     include_header: bool = Query(True, description="Whether to include column headers"),
     bom: bool = Query(True, description="Prepend UTF-8 BOM for Microsoft Excel compatibility"),
-    filename: Optional[str] = Query(None, description="Custom filename for download")
+    filename: Optional[str] = Query(None, description="Custom filename for download"),
+    current_user: AuthenticatedUser = Depends(get_current_user)
 ):
     """
     Exports the entire dataset (or clean version) as a file (CSV, TSV, JSON, Parquet).
     Streams or returns full dataset without arbitrary row truncations.
     """
     try:
+        dataset_service.get_dataset_detail(dataset_id, owner_id=current_user.user_id)
         parquet_path = parquet_store.resolve_dataset_path(dataset_id, version=version)
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found: {str(e)}")
