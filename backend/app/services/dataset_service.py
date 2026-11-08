@@ -23,17 +23,28 @@ class DatasetService:
     def __init__(self):
         self._sync_existing_datasets()
 
+    PUBLIC_BENCHMARK_IDS = {
+        "ecommerce_sales",
+        "retail_superstore_sales",
+        "saas_subscription_financials",
+        "customer_churn_telecom",
+        "saas_churn",
+        "online_retail",
+    }
+
     def _sync_existing_datasets(self):
         """
-        Auto-registers existing benchmark datasets in the data lake into SQLite metadata storage.
-        Guarantees that files like ecommerce_sales, saas_churn, online_retail are immediately available
-        without requiring re-upload.
+        Auto-registers official benchmark datasets in the data lake into SQLite metadata storage.
+        Guarantees that built-in benchmark tables are immediately available as 'public'
+        without accidentally exposing user-uploaded or user-cleaned files.
         """
         self._ensure_benchmark_datasets_exist()
 
         parquet_files = list(settings.DATA_LAKE_DIR.glob("*.parquet"))
         for p in parquet_files:
             d_id = p.stem
+            if d_id not in self.PUBLIC_BENCHMARK_IDS:
+                continue
             existing = metadata_repo.get_dataset(d_id)
             if not existing:
                 try:
@@ -47,7 +58,8 @@ class DatasetService:
                         original_filename=p.name,
                         source_format="parquet",
                         raw_storage_path=str(p),
-                        description=f"Auto-discovered dataset from {p.name}"
+                        description=f"Auto-discovered benchmark dataset from {p.name}",
+                        owner_id="public"
                     )
                     metadata_repo.create_version(
                         dataset_id=d_id,
