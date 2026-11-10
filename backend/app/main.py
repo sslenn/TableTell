@@ -50,13 +50,16 @@ if FRONTEND_DIST:
             target_file = (FRONTEND_DIST / full_path).resolve()
             if not target_file.is_relative_to(FRONTEND_DIST):
                 raise HTTPException(status_code=403, detail="Forbidden")
-            if target_file.is_file():
+            if target_file.is_file() and target_file.name != "index.html":
                 return FileResponse(str(target_file))
         except HTTPException:
             raise
         except Exception:
             pass
-        return FileResponse(str(FRONTEND_DIST / "index.html"))
+        return FileResponse(
+            str(FRONTEND_DIST / "index.html"),
+            headers={"Cache-Control": "no-cache, no-store, must-revalidate, max-age=0"},
+        )
 else:
     @app.get("/", tags=["Health"])
     async def root():
