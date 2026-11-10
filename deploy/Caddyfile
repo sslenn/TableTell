@@ -7,9 +7,19 @@ your-domain.com {
     # Automatic TLS certificate acquisition
     encode gzip zstd
 
-    # Allow dataset uploads up to 100MB
+    # Security hardening headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "geolocation=(), camera=(), microphone=(self)"
+        -Server
+    }
+
+    # Allow dataset uploads up to 25MB (matches settings.MAX_UPLOAD_SIZE_MB)
     request_body {
-        max_size 100MB
+        max_size 25MB
     }
 
     # Proxy traffic to TableTell container or systemd service

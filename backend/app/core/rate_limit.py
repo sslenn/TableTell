@@ -6,12 +6,52 @@ Provides:
 3. Unrestricted execution for users who provide their own API key.
 """
 
+from collections import deque
 from datetime import datetime, timezone
-from typing import Optional, Tuple, Dict, Any
+import threading
+import time
+from typing import Optional, Tuple, Dict, Any, Deque
 from fastapi import Request, HTTPException, status
 from app.core.config import settings
 from app.core.auth import AuthenticatedUser
 from app.storage.metadata_repo import metadata_repo
+
+# Sliding-window burst rate limiter (protects LLM & DuckDB endpoints against rapid request floods)
+BURST_WINDOW_SECONDS = 60.0
+BURST_MAX_REQUESTS = 10
+_burst_lock = threading.Lock()
+_burst_buckets: Dict[str, Deque[float]] = {}
+
+
+def enforce_burst_rate_limit(client_id: str) -> None:
+    """
+    Enforces a per-client sliding-window burst limit (max 10 requests per 60 seconds).
+    Applies to both free-quota and BYOK requests to prevent CPU/SSE exhaustion.
+    """
+    now = time.monotonic()
+    cutoff = now - BURST_WINDOW_SECONDS
+    with _burst_lock:
+        if len(_burst_buckets) > 2048:
+            # Periodic cleanup of idle buckets
+            stale_keys = [k for k, q in _burst_buckets.items() if not q or q[-1] < cutoff]
+            for k in stale_keys:
+                _burst_buckets.pop(k, None)
+
+        bucket = _burst_buckets.setdefault(client_id, deque())
+        while bucket and bucket[0] < cutoff:
+            bucket.popleft()
+
+        if len(bucket) >= BURST_MAX_REQUESTS:
+            retry_after = max(1, int(BURST_WINDOW_SECONDS - (now - bucket[0])))
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=(
+                    f"Rate limit exceeded: maximum {BURST_MAX_REQUESTS} AI requests per minute. "
+                    f"Please wait {retry_after}s before sending another query."
+                ),
+                headers={"Retry-After": str(retry_after)},
+            )
+        bucket.append(now)
 
 
 def get_client_identifier(request: Request, user: Optional[AuthenticatedUser] = None) -> str:
@@ -73,9 +113,13 @@ def check_and_apply_ai_access(
         HTTPException(400) if no API key is available (server key missing and no BYOK).
         HTTPException(429) if daily free query limit has been exceeded.
     """
+    client_id = get_client_identifier(request, user)
+    if increment:
+        enforce_burst_rate_limit(client_id)
+
     custom_key = get_custom_api_key(request) if settings.ALLOW_BYOK else None
 
-    # Case 1: User brings their own API key (BYOK) -> Unlimited, bypass rate limit
+    # Case 1: User brings their own API key (BYOK) -> Unlimited daily quota, burst-protected
     if custom_key:
         return {
             "api_key": custom_key,

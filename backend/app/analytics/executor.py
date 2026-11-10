@@ -31,13 +31,18 @@ def _format_cell_value(col: str, val: Any) -> Any:
     return val
 
 
+QUERY_TIMEOUT_SECONDS = 5.0
+
+
 def _apply_duckdb_sandbox(conn: duckdb.DuckDBPyConnection) -> None:
     """
-    Restricts DuckDB filesystem access strictly to DATA_LAKE_DIR and locks configuration
-    so user queries can never read host files outside the data lake or modify DuckDB settings.
+    Restricts DuckDB filesystem access strictly to DATA_LAKE_DIR, caps per-query RAM & CPU threads,
+    and locks configuration so user queries can never read host files or exhaust server memory.
     """
     lake_dir_str = str(settings.DATA_LAKE_DIR.resolve()).replace("\\", "/").replace("'", "''")
     try:
+        conn.execute("SET memory_limit = '512MB';")
+        conn.execute("SET threads = 2;")
         conn.execute(f"SET allowed_directories = ['{lake_dir_str}'];")
         conn.execute("SET lock_configuration = true;")
     except Exception:
@@ -97,16 +102,20 @@ class QueryExecutor:
                 "error": f"Validation Error: {str(e)}"
             }
 
-        # 2. Execute in an isolated, directory-jailed DuckDB connection
+        # 2. Execute in an isolated, directory-jailed DuckDB connection with 5s timeout guard
         start_time = time.perf_counter()
         isolated_conn = duckdb.connect(database=":memory:")
+        watchdog = threading.Timer(QUERY_TIMEOUT_SECONDS, isolated_conn.interrupt)
+        watchdog.daemon = True
         try:
             _bind_views_on_conn(isolated_conn, dataset_id, parquet_path)
             _apply_duckdb_sandbox(isolated_conn)
 
+            watchdog.start()
             res = isolated_conn.execute(validated_sql)
             columns = [desc[0] for desc in res.description] if res.description else []
             records = res.fetchmany(max_rows)
+            watchdog.cancel()
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
             rows = [{col: _format_cell_value(col, val) for col, val in zip(columns, row)} for row in records]
@@ -121,6 +130,7 @@ class QueryExecutor:
                 "error": None
             }
         except Exception as e:
+            watchdog.cancel()
             duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
             return {
                 "success": False,
@@ -132,6 +142,7 @@ class QueryExecutor:
                 "error": f"{type(e).__name__}: {str(e)}"
             }
         finally:
+            watchdog.cancel()
             try:
                 isolated_conn.close()
             except Exception:
