@@ -104,6 +104,7 @@ export const ClerkAuthProvider: React.FC<ClerkAuthProviderProps> = ({ children }
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (isMounted && data?.publishable_key) {
+          useAppStore.getState().setShowLanding(false);
           setPublishableKey(data.publishable_key);
         }
       })
