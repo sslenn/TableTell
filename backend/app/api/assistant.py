@@ -42,7 +42,9 @@ async def chat_with_assistant(
     try:
         access = check_and_apply_ai_access(request, current_user, increment=True)
         custom_api_key = access.get("api_key")
-    except HTTPException:
+    except HTTPException as exc:
+        if "Rate limit exceeded:" in str(exc.detail):
+            raise
         # If daily quota is reached or server key is missing without BYOK,
         # gracefully fall back to the built-in statistical knowledge base
         custom_api_key = "__OFFLINE_QUOTA_EXCEEDED__"
@@ -72,7 +74,9 @@ async def stream_assistant_chat(
     try:
         access = check_and_apply_ai_access(request, current_user, increment=True)
         custom_api_key = access.get("api_key")
-    except HTTPException:
+    except HTTPException as exc:
+        if "Rate limit exceeded:" in str(exc.detail):
+            raise
         custom_api_key = "__OFFLINE_QUOTA_EXCEEDED__"
 
     try:
