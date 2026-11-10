@@ -28,10 +28,13 @@ const STATIC_CLERK_KEY: string = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || 
 const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isLoaded, isSignedIn, getToken, signOut } = useAuth();
   const [showSignIn, setShowSignIn] = useState(false);
-  const { setDatasetId, setSuggestedPrompt, setShowLanding } = useAppStore();
+  const { setDatasetId, setSuggestedPrompt, setShowLanding, setActiveTab } = useAppStore();
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {
+      setShowSignIn(false);
+      setShowLanding(false);
+      setActiveTab('studio');
       setAuthTokenGetter((options) => getToken(options));
       // A 401 that survives a token refresh means the session is no longer valid.
       // Signing out returns the user to the sign-in page instead of leaving broken views.
@@ -45,7 +48,7 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     return () => {
       setUnauthorizedHandler(null);
     };
-  }, [isLoaded, isSignedIn, getToken, signOut]);
+  }, [isLoaded, isSignedIn, getToken, signOut, setShowLanding, setActiveTab]);
 
   if (!isLoaded) {
     return (
@@ -66,10 +69,12 @@ const AuthGate: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           onLaunchStudio={(ds, prompt) => {
             if (ds) setDatasetId(ds);
             if (prompt) setSuggestedPrompt(prompt);
+            setActiveTab('studio');
             setShowLanding(false);
             setShowSignIn(true);
           }}
           onSignIn={() => {
+            setActiveTab('studio');
             setShowLanding(false);
             setShowSignIn(true);
           }}

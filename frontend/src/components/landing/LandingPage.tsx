@@ -31,7 +31,7 @@ const HERO_REGIONS: { label: string; heightPx: number; gradient: string; delayMs
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSignIn }) => {
   const [scrolled, setScrolled] = useState(false);
-  const [activeNav, setActiveNav] = useState<'how' | 'trust' | 'pricing' | 'docs'>('how');
+  const [activeNav, setActiveNav] = useState<'how' | 'trust' | 'docs'>('how');
   const [activeSteps, setActiveSteps] = useState<boolean[]>([false, false, false, false]);
   const [spineHeight, setSpineHeight] = useState<number>(0);
   const [typedQuery, setTypedQuery] = useState('');
@@ -110,7 +110,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSign
     return () => observer.disconnect();
   }, []);
 
-  const scrollToSection = (id: string, navKey?: 'how' | 'trust' | 'pricing' | 'docs') => {
+  const scrollToSection = (id: string, navKey?: 'how' | 'trust' | 'docs') => {
     if (navKey) setActiveNav(navKey);
     if (id === 'top') {
       containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -195,17 +195,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSign
               }`}
             >
               Trust
-            </button>
-            <button
-              type="button"
-              onClick={() => scrollToSection('comparison', 'pricing')}
-              className={`text-sm px-3.5 py-1.5 rounded-full transition-colors cursor-pointer ${
-                activeNav === 'pricing'
-                  ? 'text-[#F8FAFC] bg-[#2DD4BF]/15 font-medium'
-                  : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#2DD4BF]/10'
-              }`}
-            >
-              Pricing
             </button>
             <button
               type="button"
@@ -1078,7 +1067,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLaunchStudio, onSign
                 <li>
                   <button
                     type="button"
-                    onClick={() => scrollToSection('comparison', 'pricing')}
+                    onClick={() => scrollToSection('comparison', 'trust')}
                     className="hover:text-[#F8FAFC] transition-colors cursor-pointer text-left"
                   >
                     Why TableTell

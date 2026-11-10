@@ -59,7 +59,7 @@ export const useAppStore = create<AppState>()(
       sidebarCollapsed: false,
       activeColumns: [],
       suggestedPrompt: '',
-      showLanding: true,
+      showLanding: !Boolean((import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '').trim()),
       schemaInspectorOpen: false,
       copilotOpen: false,
 
@@ -152,6 +152,7 @@ export const useAppStore = create<AppState>()(
       partialize: (state) => ({
         theme: state.theme,
         datasetId: state.datasetId,
+        suggestedPrompt: state.suggestedPrompt,
         messages: state.messages,
         messagesByDataset: state.messagesByDataset,
         sidebarCollapsed: state.sidebarCollapsed
