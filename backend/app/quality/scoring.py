@@ -222,6 +222,7 @@ class QualityScoringEngine:
                 semantic_type=c.get("semantic_type", "categorical"),
                 variable_type=c.get("variable_type", "Categorical"),
                 statistical_type=c.get("statistical_type", "Nominal"),
+                classification_reason=c.get("classification_reason"),
                 null_count=c["null_count"],
                 null_pct=c["null_pct"],
                 distinct_count=c["distinct_count"],

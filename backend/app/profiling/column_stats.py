@@ -31,13 +31,24 @@ def classify_statistical_variable_type(
     Returns dict:
     - 'variable_type': "Categorical" | "Numerical"
     - 'statistical_type': "Nominal" | "Ordinal" | "Discrete" | "Continuous (Interval)" | "Continuous (Ratio)"
+    - 'classification_reason': Brief human-readable explanation of why this column received its classification
     """
     c_lower = col_name.lower().strip()
     dtype_upper = dtype.upper().strip()
     samples = sample_values or []
     str_samples = [str(s).lower().strip() for s in samples if s is not None and str(s).strip() != ""]
+    sample_preview = ", ".join(str(s) for s in samples[:2]) if samples else ""
 
-    # 1. Check for Ordinal (Categorical)
+    # 1. Check for Identifiers, Keys, and Codes first (Nominal Categorical)
+    is_id_name = any(c_lower.endswith(sfx) for sfx in ["_id", "id", "no", "number", "code", "key", "guid", "uuid", "ssn", "zip", "postal"])
+    if is_id_name and (distinct_count / max(1, total_rows) > 0.6 or "id" in c_lower.split("_") or "key" in c_lower.split("_")):
+        return {
+            "variable_type": "Categorical",
+            "statistical_type": "Nominal",
+            "classification_reason": f"Unique entity identifier ({distinct_count:,} distinct keys); labels records without quantitative magnitude."
+        }
+
+    # 2. Check for Ordinal (Categorical)
     ordinal_col_keywords = [
         "tier", "rating", "rank", "ranking", "level", "grade", "stage",
         "priority", "severity", "satisfaction", "sentiment", "class"
@@ -53,12 +64,17 @@ def classify_statistical_variable_type(
         {"beginner", "intermediate", "advanced", "expert"},
         {"first", "second", "third"}
     ]
+    is_numeric_type = any(t in dtype_upper for t in ["INT", "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "REAL", "BIGINT", "SMALLINT", "TINYINT"])
+    has_decimal_samples = any("." in s and not s.endswith(".0") for s in str_samples)
     is_ordinal_name = any(kw in c_lower for kw in ordinal_col_keywords)
-    is_numeric_rating = (
-        is_ordinal_name
-        and distinct_count <= 10
-        and (any(t in dtype_upper for t in ["INT", "FLOAT", "DOUBLE", "NUMERIC"]) or all(s.replace(".", "", 1).isdigit() for s in str_samples if s))
+
+    # Check if string samples follow ranked numbering like "Year 3, Year 4" or "Level 1, Level 2"
+    is_ranked_label_samples = (
+        not is_numeric_type
+        and bool(str_samples)
+        and all(any(prefix in s for prefix in ["year ", "yr ", "grade ", "level ", "tier ", "stage ", "phase ", "step ", "q1", "q2", "q3", "q4"]) for s in str_samples)
     )
+
     is_ordinal_values = False
     if str_samples:
         for val_set in ordinal_value_patterns:
@@ -67,40 +83,42 @@ def classify_statistical_variable_type(
                 is_ordinal_values = True
                 break
 
-    if is_ordinal_name or is_ordinal_values or is_numeric_rating:
+    # If a column is named "satisfaction" or "rating" but stores high-cardinality continuous decimals (e.g. DOUBLE with >12 distinct decimal scores),
+    # only classify as Categorical Ordinal when it has bounded discrete levels (<=12 distinct) or non-decimal ordinal categories.
+    if is_ordinal_values or is_ranked_label_samples or (is_ordinal_name and (not is_numeric_type or (distinct_count <= 12 and not has_decimal_samples))):
+        reason = (
+            f"Ordered progression labels ({sample_preview}) with a natural rank hierarchy."
+            if (is_ordinal_values or is_ranked_label_samples)
+            else f"Ordered rating/tier attribute ('{col_name}', {distinct_count} levels) where rank order matters."
+        )
         return {
             "variable_type": "Categorical",
-            "statistical_type": "Ordinal"
-        }
-
-    # 2. Check for Identifiers, Keys, and Codes (Nominal Categorical)
-    is_id_name = any(c_lower.endswith(sfx) for sfx in ["_id", "id", "no", "number", "code", "key", "guid", "uuid", "ssn", "zip", "postal"])
-    if is_id_name and (distinct_count / max(1, total_rows) > 0.6 or "id" in c_lower.split("_") or "key" in c_lower.split("_")):
-        return {
-            "variable_type": "Categorical",
-            "statistical_type": "Nominal"
+            "statistical_type": "Ordinal",
+            "classification_reason": reason
         }
 
     # 3. Check for Booleans & Binary indicators (Nominal Categorical)
     if any(t in dtype_upper for t in ["BOOL", "BOOLEAN"]) or (distinct_count <= 2 and any(c_lower.startswith(p) for p in ["is_", "has_", "flag_"])):
         return {
             "variable_type": "Categorical",
-            "statistical_type": "Nominal"
+            "statistical_type": "Nominal",
+            "classification_reason": f"Binary indicator ({dtype_upper}, {distinct_count} states) representing mutually exclusive groups."
         }
 
     # 4. Check for Dates / Timestamps (Continuous - Interval)
     if any(t in dtype_upper for t in ["DATE", "TIME", "TIMESTAMP"]) or any(d in c_lower for d in ["date", "timestamp", "time"]):
         return {
             "variable_type": "Numerical",
-            "statistical_type": "Continuous (Interval)"
+            "statistical_type": "Continuous (Interval)",
+            "classification_reason": f"Temporal timestamp ({dtype_upper}) measured along a continuous calendar interval scale."
         }
 
     # 5. Check for General Strings / Text (Nominal Categorical)
-    is_numeric_type = any(t in dtype_upper for t in ["INT", "FLOAT", "DOUBLE", "DECIMAL", "NUMERIC", "REAL", "BIGINT", "SMALLINT", "TINYINT"])
     if not is_numeric_type:
         return {
             "variable_type": "Categorical",
-            "statistical_type": "Nominal"
+            "statistical_type": "Nominal",
+            "classification_reason": f"Text attribute ({dtype_upper}, {distinct_count:,} distinct categories) representing unordered named groups."
         }
 
     # 6. Check for Discrete Numerical (Countable whole numbers)
@@ -116,11 +134,13 @@ def classify_statistical_variable_type(
         if c_lower in ["year", "yr", "birth_year"]:
             return {
                 "variable_type": "Numerical",
-                "statistical_type": "Continuous (Interval)"
+                "statistical_type": "Continuous (Interval)",
+                "classification_reason": f"Calendar year ({dtype_upper}) with meaningful intervals between years but no absolute zero."
             }
         return {
             "variable_type": "Numerical",
-            "statistical_type": "Discrete"
+            "statistical_type": "Discrete",
+            "classification_reason": f"Whole-number integer values ({dtype_upper}, {distinct_count:,} distinct counts/scores) with no fractional steps."
         }
 
     # 7. Check for Continuous (Interval vs Ratio)
@@ -128,13 +148,15 @@ def classify_statistical_variable_type(
     if any(kw in c_lower for kw in interval_keywords):
         return {
             "variable_type": "Numerical",
-            "statistical_type": "Continuous (Interval)"
+            "statistical_type": "Continuous (Interval)",
+            "classification_reason": f"Numeric interval scale ({dtype_upper}) where differences are meaningful without a true zero point."
         }
 
-    # Continuous - Ratio: True zero point (money, measurement, duration, weights, percentages, amounts)
+    # Continuous - Ratio: True zero point (money, measurement, duration, weights, percentages, scores, amounts)
     return {
         "variable_type": "Numerical",
-        "statistical_type": "Continuous (Ratio)"
+        "statistical_type": "Continuous (Ratio)",
+        "classification_reason": f"Floating-point numeric measurement ({dtype_upper}, {distinct_count:,} distinct values) on a continuous scale with a true zero."
     }
 
 

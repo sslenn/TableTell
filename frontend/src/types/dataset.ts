@@ -60,6 +60,7 @@ export interface ColumnStat {
   semantic_type?: string;
   variable_type?: string;
   statistical_type?: string;
+  classification_reason?: string | null;
   null_count: number;
   null_pct: number;
   distinct_count: number;
