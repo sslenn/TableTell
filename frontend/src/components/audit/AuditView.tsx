@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAppStore } from '../../store/useAppStore';
 import { fetchAuditReport, cleanDataset, fetchDatasets, downloadDatasetExport } from '../../lib/api';
-import type { DatasetAuditReport } from '../../types/dataset';
+import type { ColumnStat, DatasetAuditReport } from '../../types/dataset';
 import { DistributionProfiler } from './DistributionProfiler';
 import { CorrelationHeatmap } from './CorrelationHeatmap';
 import { ExportDatasetModal } from '../common/ExportDatasetModal';
@@ -29,6 +29,115 @@ import {
   Sliders
 } from 'lucide-react';
 
+function resolveColumnClassification(
+  col: ColumnStat,
+  totalRows: number
+): { varType: 'Categorical' | 'Numerical'; statType: string; explanation: string } {
+  const nameLower = (col.column_name || '').toLowerCase();
+  const dtypeUpper = (col.data_type || '').toUpperCase();
+  const distinctCount = col.distinct_count ?? 0;
+  const samples = Array.isArray(col.sample_values) ? col.sample_values : [];
+  const samplePreview = samples.length > 0 ? samples.slice(0, 2).join(', ') : '';
+  const sampleStrs = samples.filter((v) => v !== null && v !== undefined).map((v) => String(v).trim().toLowerCase());
+
+  const isNumericDtype = ['INT', 'FLOAT', 'DOUBLE', 'NUMERIC', 'BIGINT', 'DECIMAL', 'REAL', 'HUGEINT'].some((t) =>
+    dtypeUpper.includes(t)
+  );
+  const isFloatDtype = ['FLOAT', 'DOUBLE', 'DECIMAL', 'REAL', 'NUMERIC'].some((t) => dtypeUpper.includes(t));
+
+  let varType: 'Categorical' | 'Numerical' =
+    col.variable_type === 'Numerical' || (!col.variable_type && isNumericDtype) ? 'Numerical' : 'Categorical';
+  let statType = col.statistical_type || (varType === 'Numerical' ? (isFloatDtype ? 'Continuous (Ratio)' : 'Discrete') : 'Nominal');
+
+  // Upgrade legacy cached reports that haven't been re-profiled yet
+  if (!col.classification_reason) {
+    const hasRankedLabelPattern =
+      sampleStrs.length > 0 &&
+      sampleStrs.every((s) => /^(year|yr|grade|level|tier|step|phase|stage|sem|semester|week|wk|day|q|quarter)\s*\d+$/i.test(s));
+
+    if (varType === 'Categorical' && statType === 'Nominal' && hasRankedLabelPattern) {
+      statType = 'Ordinal';
+    }
+
+    const hasDecimalSample = samples.some((v) => typeof v === 'number' && !Number.isInteger(v));
+    if (varType === 'Categorical' && isFloatDtype && (distinctCount > 12 || hasDecimalSample)) {
+      varType = 'Numerical';
+      statType = 'Continuous (Ratio)';
+    }
+  }
+
+  if (col.classification_reason && col.classification_reason.trim().length > 0) {
+    return { varType, statType, explanation: col.classification_reason };
+  }
+
+  const isIdName =
+    nameLower === 'id' ||
+    nameLower.endsWith('_id') ||
+    nameLower.endsWith('_key') ||
+    nameLower.endsWith('_code') ||
+    ['uuid', 'guid', 'sku', 'code'].some((k) => nameLower.includes(k));
+
+  if (col.is_identifier || isIdName || (totalRows > 10 && distinctCount === totalRows && dtypeUpper.includes('CHAR'))) {
+    return {
+      varType: 'Categorical',
+      statType: 'Nominal',
+      explanation: `Unique entity identifier (${distinctCount.toLocaleString()}/${totalRows.toLocaleString()} distinct keys); labels records without quantitative magnitude.`
+    };
+  }
+
+  if (varType === 'Categorical' && statType.includes('Ordinal')) {
+    if (isNumericDtype) {
+      return {
+        varType,
+        statType,
+        explanation: `Ordered rating/scale feature (${dtypeUpper}, ${distinctCount.toLocaleString()} levels${samplePreview ? ` e.g. ${samplePreview}` : ''}) representing relative rank.`
+      };
+    }
+    return {
+      varType,
+      statType,
+      explanation: `Ordered progression labels (${distinctCount.toLocaleString()} distinct levels${samplePreview ? `: ${samplePreview}` : ''}) with a natural rank hierarchy.`
+    };
+  }
+
+  if (varType === 'Categorical') {
+    if (dtypeUpper.includes('BOOL')) {
+      return {
+        varType,
+        statType,
+        explanation: 'Binary boolean flag with two unordered states (True/False).'
+      };
+    }
+    return {
+      varType,
+      statType,
+      explanation: `Unordered text categories (${dtypeUpper}, ${distinctCount.toLocaleString()} distinct groups${samplePreview ? `: ${samplePreview}` : ''}) with no inherent ranking.`
+    };
+  }
+
+  if (statType.includes('Discrete')) {
+    return {
+      varType,
+      statType,
+      explanation: `Whole-number integer values (${dtypeUpper}, ${distinctCount.toLocaleString()} distinct counts/scores${samplePreview ? ` e.g. ${samplePreview}` : ''}) with no fractional steps.`
+    };
+  }
+
+  if (statType.includes('Interval')) {
+    return {
+      varType,
+      statType,
+      explanation: `Ordered temporal/interval scale (${dtypeUpper}) with equal step differences across ${distinctCount.toLocaleString()} points.`
+    };
+  }
+
+  return {
+    varType,
+    statType,
+    explanation: `Floating-point numeric measurement (${dtypeUpper}, ${distinctCount.toLocaleString()} distinct values${samplePreview ? ` e.g. ${samplePreview}` : ''}) on a continuous scale with a true zero.`
+  };
+}
+
 export const AuditView: React.FC = () => {
   const { datasetId, setDatasetId, setDatasets } = useAppStore();
   const [report, setReport] = useState<DatasetAuditReport | null>(null);
@@ -38,7 +147,7 @@ export const AuditView: React.FC = () => {
   const [alertDismissed, setAlertDismissed] = useState(false);
   const [findingsDismissed, setFindingsDismissed] = useState(false);
   const [showCriteriaDetails, setShowCriteriaDetails] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState(null as string | null);
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'distributions' | 'columns' | 'correlations'>('overview');
   const [showExportModal, setShowExportModal] = useState(false);
   const [quickExporting, setQuickExporting] = useState(false);
@@ -398,7 +507,6 @@ export const AuditView: React.FC = () => {
           </div>
 
           {/* Sub-Navigation Tabs */}
-          {/* Sub-Navigation Tabs */}
           <div className="flex items-center gap-6 border-b border-[var(--tt-border-subtle)] pt-1">
             <button
               type="button"
@@ -669,7 +777,7 @@ export const AuditView: React.FC = () => {
                     Column Schema & Statistical Classification
                   </h3>
                   <p className="text-[11px] text-[var(--tt-text-muted)] mt-0.5">
-                    Formal taxonomy mapping: Nominal, Ordinal, Discrete, and Continuous ratio features.
+                    Formal taxonomy mapping: Nominal, Ordinal, Discrete, and Continuous ratio features with classification rationale.
                   </p>
                 </div>
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[var(--tt-bg-surface)] border border-[var(--tt-border-subtle)] text-[var(--tt-text-secondary)]">
@@ -685,14 +793,14 @@ export const AuditView: React.FC = () => {
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30">
                   <span className="font-bold">Categorical:</span>
                   <span className="tabular-nums font-bold">
-                    {report.columns.filter((c) => (c.variable_type || 'Categorical') === 'Categorical').length}
+                    {report.columns.filter((c) => resolveColumnClassification(c, report.total_rows).varType === 'Categorical').length}
                   </span>
                   <span className="text-[10px] opacity-75">(Nominal / Ordinal)</span>
                 </span>
                 <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-teal-500/15 text-teal-600 dark:text-teal-400 border border-teal-500/30">
                   <span className="font-bold">Numerical:</span>
                   <span className="tabular-nums font-bold">
-                    {report.columns.filter((c) => c.variable_type === 'Numerical').length}
+                    {report.columns.filter((c) => resolveColumnClassification(c, report.total_rows).varType === 'Numerical').length}
                   </span>
                   <span className="text-[10px] opacity-75">(Discrete / Continuous)</span>
                 </span>
@@ -704,6 +812,7 @@ export const AuditView: React.FC = () => {
                     <tr className="border-b border-[var(--tt-border-subtle)] bg-[var(--tt-bg-canvas)] text-[var(--tt-text-muted)] font-semibold">
                       <th className="px-4 py-3">Column Name</th>
                       <th className="px-4 py-3">Variable Type (Statistical)</th>
+                      <th className="px-4 py-3">Why Classified Like This</th>
                       <th className="px-4 py-3">Data Type</th>
                       <th className="px-4 py-3">Null Count</th>
                       <th className="px-4 py-3">Null %</th>
@@ -716,8 +825,7 @@ export const AuditView: React.FC = () => {
                     {report.columns.map((col, idx) => {
                       const colName = col.column_name;
                       const colType = col.data_type;
-                      const varType = col.variable_type || (['INT', 'FLOAT', 'DOUBLE', 'NUMERIC', 'BIGINT', 'DECIMAL', 'REAL'].some((t) => (col.data_type || '').toUpperCase().includes(t)) ? 'Numerical' : 'Categorical');
-                      const statType = col.statistical_type || (varType === 'Numerical' ? 'Continuous (Ratio)' : 'Nominal');
+                      const { varType, statType, explanation } = resolveColumnClassification(col, report.total_rows);
                       const nullCount = col.null_count ?? 0;
                       const nullPct = col.null_pct ?? 0;
                       const distinctCount = col.distinct_count ?? 0;
@@ -729,11 +837,11 @@ export const AuditView: React.FC = () => {
                           key={colName || idx}
                           className="border-b border-[var(--tt-border-subtle)] hover:bg-[var(--tt-bg-elevated)] transition-colors"
                         >
-                          <td className="px-4 py-3 font-mono font-bold text-[var(--tt-text-primary)]">
+                          <td className="px-4 py-3 font-mono font-bold text-[var(--tt-text-primary)] whitespace-nowrap">
                             {colName}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5 flex-wrap">
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
                               <span
                                 className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                                   varType === 'Numerical'
@@ -748,7 +856,10 @@ export const AuditView: React.FC = () => {
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-3 font-mono text-[11px] text-[var(--tt-text-muted)]">
+                          <td className="px-4 py-3 text-[11px] text-[var(--tt-text-secondary)] leading-relaxed max-w-sm">
+                            {explanation}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-[11px] text-[var(--tt-text-muted)] whitespace-nowrap">
                             {colType}
                           </td>
                           <td className="px-4 py-3 font-mono tabular-nums text-[var(--tt-text-secondary)]">
@@ -762,7 +873,7 @@ export const AuditView: React.FC = () => {
                           <td className="px-4 py-3 font-mono tabular-nums text-[var(--tt-text-secondary)]">
                             {distinctCount.toLocaleString()}
                           </td>
-                          <td className="px-4 py-3 text-xs">
+                          <td className="px-4 py-3 text-xs whitespace-nowrap">
                             {colDist ? (
                               <button
                                 type="button"
@@ -805,4 +916,3 @@ export const AuditView: React.FC = () => {
     </div>
   );
 };
-

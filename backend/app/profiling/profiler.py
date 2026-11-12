@@ -89,6 +89,13 @@ class DatasetProfiler:
             dist_profile = None
             cat_stats = None
 
+            if not sample_df.empty and col in sample_df.columns:
+                raw_samples = sample_df[col].dropna().unique()[:3].tolist()
+                sample_vals = [
+                    str(v) if not isinstance(v, (int, float, bool, str)) or pd.isna(v) else v
+                    for v in raw_samples
+                ]
+
             stat_info = classify_statistical_variable_type(
                 col_name=col,
                 dtype=dtype,
@@ -98,11 +105,6 @@ class DatasetProfiler:
             )
 
             if not sample_df.empty and col in sample_df.columns:
-                raw_samples = sample_df[col].dropna().unique()[:3].tolist()
-                sample_vals = [
-                    str(v) if not isinstance(v, (int, float, bool, str)) or pd.isna(v) else v
-                    for v in raw_samples
-                ]
                 if semantic_type == "numeric":
                     num_stats = compute_numeric_stats(sample_df[col])
                     dist_profile = compute_column_distribution(sample_df[col], col, total_rows)
@@ -134,6 +136,7 @@ class DatasetProfiler:
                 "semantic_type": semantic_type,
                 "variable_type": stat_info["variable_type"],
                 "statistical_type": stat_info["statistical_type"],
+                "classification_reason": stat_info.get("classification_reason"),
                 "null_count": null_c,
                 "null_pct": pct,
                 "distinct_count": dist_c,

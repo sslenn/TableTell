@@ -47,6 +47,7 @@ class ColumnStat(BaseModel):
     semantic_type: Optional[str] = "categorical"
     variable_type: Optional[str] = "Categorical"
     statistical_type: Optional[str] = "Nominal"
+    classification_reason: Optional[str] = None
     null_count: int
     null_pct: float
     distinct_count: int
